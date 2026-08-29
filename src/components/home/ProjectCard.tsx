@@ -8,9 +8,13 @@ type ProjectCardProps = {
 
 export function ProjectCard({ name, path, onSelect }: ProjectCardProps) {
   return (
-    <button className="project-card" type="button" onClick={onSelect}>
-      <span className="project-card__name">{name}</span>
-      <span className="project-card__path">{path}</span>
+    <button
+      className="w-full text-left rounded-lg border border-border bg-card p-4 transition-colors hover:bg-accent/50"
+      type="button"
+      onClick={onSelect}
+    >
+      <span className="block font-semibold text-card-foreground truncate">{name}</span>
+      <span className="block text-xs text-muted-foreground truncate mt-1 font-mono">{path}</span>
     </button>
   );
 }

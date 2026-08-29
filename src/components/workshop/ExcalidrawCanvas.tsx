@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useRef } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import { saveDiagram, type ExcalidrawInitialDataState } from "@/lib/diagram";
 import type { FunTheme } from "@/lib/theme";
@@ -18,12 +18,16 @@ const Excalidraw = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="workshop-canvas__label">Chargement du canvas…</p>
+      <p className="text-lg font-semibold text-foreground">Chargement du canvas…</p>
     ),
   },
 );
 
 type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps["onChange"]>;
+
+export type ExcalidrawCanvasHandle = {
+  applyScene: (json: string) => void;
+};
 
 type ExcalidrawCanvasProps = {
   projectPath: string;
@@ -33,100 +37,123 @@ type ExcalidrawCanvasProps = {
   onSaveError?: (message: string) => void;
 };
 
-export function ExcalidrawCanvas({
-  projectPath,
-  diagramPath,
-  theme,
-  initialData,
-  onSaveError,
-}: ExcalidrawCanvasProps) {
-  const skipSaveRef = useRef(true);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingSaveRef = useRef<{
-    projectPath: string;
-    diagramPath: string;
-    content: string;
-  } | null>(null);
+export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCanvasProps>(
+  function ExcalidrawCanvas(
+    { projectPath, diagramPath, theme, initialData, onSaveError },
+    ref,
+  ) {
+    const skipSaveRef = useRef(true);
+    const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const pendingSaveRef = useRef<{
+      projectPath: string;
+      diagramPath: string;
+      content: string;
+    } | null>(null);
+    const sceneUpdateRef = useRef<string | null>(null);
+    const sceneKeyRef = useRef(0);
 
-  useEffect(() => {
-    skipSaveRef.current = true;
-    pendingSaveRef.current = null;
+    useEffect(() => {
+      skipSaveRef.current = true;
+      pendingSaveRef.current = null;
 
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-      saveTimeoutRef.current = null;
-    }
-
-    const readyTimer = setTimeout(() => {
-      skipSaveRef.current = false;
-    }, 100);
-
-    return () => {
-      clearTimeout(readyTimer);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
       }
-    };
-  }, [diagramPath, initialData]);
 
-  const flushSave = useCallback(async () => {
-    const pending = pendingSaveRef.current;
-    if (!pending) {
-      return;
-    }
+      const readyTimer = setTimeout(() => {
+        skipSaveRef.current = false;
+      }, 100);
 
-    pendingSaveRef.current = null;
-    try {
-      await saveDiagram(
-        pending.projectPath,
-        pending.diagramPath,
-        pending.content,
-      );
-    } catch {
-      onSaveError?.("Impossible de sauvegarder le diagramme.");
-    }
-  }, [onSaveError]);
+      return () => {
+        clearTimeout(readyTimer);
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+      };
+    }, [diagramPath, initialData]);
 
-  useEffect(() => {
-    return () => {
-      void flushSave();
-    };
-  }, [flushSave]);
-
-  const handleChange = useCallback<ExcalidrawChangeHandler>(
-    (elements, appState, files) => {
-      if (skipSaveRef.current) {
+    const flushSave = useCallback(async () => {
+      const pending = pendingSaveRef.current;
+      if (!pending) {
         return;
       }
 
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
+      pendingSaveRef.current = null;
+      try {
+        await saveDiagram(
+          pending.projectPath,
+          pending.diagramPath,
+          pending.content,
+        );
+      } catch {
+        onSaveError?.("Impossible de sauvegarder le diagramme.");
       }
+    }, [onSaveError]);
 
-      saveTimeoutRef.current = setTimeout(() => {
-        saveTimeoutRef.current = null;
-        void (async () => {
-          const { serializeAsJSON } = await import("@excalidraw/excalidraw");
-          pendingSaveRef.current = {
-            projectPath,
-            diagramPath,
-            content: serializeAsJSON(elements, appState, files, "local"),
-          };
-          await flushSave();
-        })();
-      }, SAVE_DEBOUNCE_MS);
-    },
-    [diagramPath, flushSave, projectPath],
-  );
+    useEffect(() => {
+      return () => {
+        void flushSave();
+      };
+    }, [flushSave]);
 
-  return (
-    <div className="workshop-canvas__embed">
-      <Excalidraw
-        key={`${diagramPath}-${theme}`}
-        initialData={initialData}
-        theme={theme}
-        onChange={handleChange}
-      />
-    </div>
-  );
-}
+    const handleChange = useCallback<ExcalidrawChangeHandler>(
+      (elements, appState, files) => {
+        if (skipSaveRef.current) {
+          return;
+        }
+
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+
+        saveTimeoutRef.current = setTimeout(() => {
+          saveTimeoutRef.current = null;
+          void (async () => {
+            const { serializeAsJSON } = await import("@excalidraw/excalidraw");
+            pendingSaveRef.current = {
+              projectPath,
+              diagramPath,
+              content: serializeAsJSON(elements, appState, files, "local"),
+            };
+            await flushSave();
+          })();
+        }, SAVE_DEBOUNCE_MS);
+      },
+      [diagramPath, flushSave, projectPath],
+    );
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        applyScene(json: string) {
+          sceneUpdateRef.current = json;
+          sceneKeyRef.current += 1;
+        },
+      }),
+      [],
+    );
+
+    const resolvedInitialData = sceneUpdateRef.current
+      ? (() => {
+          try {
+            const parsed = JSON.parse(sceneUpdateRef.current) as ExcalidrawInitialDataState;
+            return parsed;
+          } catch {
+            return initialData;
+          }
+        })()
+      : initialData;
+
+    return (
+      <div className="flex-1 relative">
+        <Excalidraw
+          key={`${diagramPath}-${theme}-${sceneKeyRef.current}`}
+          initialData={resolvedInitialData}
+          theme={theme}
+          onChange={handleChange}
+        />
+      </div>
+    );
+  },
+);

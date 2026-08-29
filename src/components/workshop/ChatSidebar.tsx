@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 import type { AiStatus, ChatTurn } from "@/lib/ai";
 
 type ChatSidebarProps = {
@@ -62,61 +63,74 @@ export function ChatSidebar({
   );
 
   return (
-    <aside className="workshop-chat" aria-label="Chat">
-      <p className="workshop-chat__label">Chat</p>
+    <aside className="flex flex-col w-80 border-l border-border bg-card" aria-label="Chat">
+      <p className="px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-border">
+        Chat
+      </p>
 
       {aiError ? (
-        <p className="workshop-chat__error">{aiError}</p>
+        <p className="px-4 py-2 text-xs text-destructive">{aiError}</p>
       ) : null}
 
       {chatError ? (
-        <p className="workshop-chat__error">{chatError}</p>
+        <p className="px-4 py-2 text-xs text-destructive">{chatError}</p>
       ) : null}
 
       {aiStatus && !aiStatus.key_configured ? (
-        <p className="workshop-chat__hint">
-          Définissez OPENROUTER_API_KEY dans le fichier .env à la racine du
-          projet.
+        <p className="px-4 py-2 text-xs text-muted-foreground">
+          Définissez OPENROUTER_API_KEY dans le fichier .env à la racine du projet.
         </p>
       ) : null}
 
       <div
-        className="workshop-chat__messages"
+        className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3"
         ref={messagesContainerRef}
         role="log"
         aria-live="polite"
       >
         {history.length === 0 && !loading ? (
-          <p className="workshop-chat__empty">
+          <p className="text-sm text-muted-foreground text-center mt-8">
             Posez une question sur votre diagramme ou demandez une modification.
           </p>
         ) : (
           history.map((turn, i) => (
             <div
               key={i}
-              className={`workshop-chat__message workshop-chat__message--${turn.role}`}
+              className={cn(
+                "flex flex-col gap-0.5",
+                turn.role === "user" ? "items-end" : "items-start",
+              )}
             >
               {turn.role === "assistant" ? (
-                <span className="workshop-chat__persona">Claire</span>
+                <span className="text-xs font-semibold text-muted-foreground">Claire</span>
               ) : null}
-              <p className="workshop-chat__message-text">{turn.content}</p>
+              <p
+                className={cn(
+                  "text-sm rounded-lg px-3 py-2 max-w-[90%]",
+                  turn.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground",
+                )}
+              >
+                {turn.content}
+              </p>
             </div>
           ))
         )}
 
         {loading ? (
-          <div className="workshop-chat__message workshop-chat__message--assistant">
-            <span className="workshop-chat__persona">Claire</span>
-            <p className="workshop-chat__typing">IA en cours…</p>
+          <div className="flex flex-col items-start gap-0.5">
+            <span className="text-xs font-semibold text-muted-foreground">Claire</span>
+            <p className="text-sm text-muted-foreground italic">IA en cours…</p>
           </div>
         ) : null}
 
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="workshop-chat__input-area">
+      <div className="flex items-end gap-2 p-3 border-t border-border">
         <textarea
-          className="workshop-chat__input"
+          className="flex-1 resize-none rounded-lg border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
           rows={2}
           placeholder={
             aiStatus?.key_configured
@@ -130,7 +144,7 @@ export function ChatSidebar({
           aria-label="Message pour l'assistant"
         />
         <button
-          className="workshop-chat__send"
+          className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
           onClick={handleSend}
           disabled={!canSend}
           aria-label="Envoyer"

@@ -55,9 +55,9 @@ function WorkshopContent() {
 
   if (!projectPath) {
     return (
-      <main className="workshop">
-        <p className="workshop__hint">Aucun projet sélectionné.</p>
-        <Link className="workshop__back" href="/">
+      <main className="flex flex-col items-center justify-center h-screen gap-4">
+        <p className="text-sm text-muted-foreground">Aucun projet sélectionné.</p>
+        <Link className="text-sm text-foreground underline hover:opacity-80" href="/">
           Retour à l&apos;accueil
         </Link>
       </main>
@@ -67,14 +67,18 @@ function WorkshopContent() {
   const loading = !resolved;
 
   if (loading) {
-    return <main className="workshop">Ouverture du projet…</main>;
+    return (
+      <main className="flex items-center justify-center h-screen text-sm text-muted-foreground">
+        Ouverture du projet…
+      </main>
+    );
   }
 
   if (error) {
     return (
-      <main className="workshop">
-        <p className="workshop__error">{error}</p>
-        <Link className="workshop__back" href="/">
+      <main className="flex flex-col items-center justify-center h-screen gap-4">
+        <p className="text-sm text-destructive">{error}</p>
+        <Link className="text-sm text-foreground underline hover:opacity-80" href="/">
           Retour à l&apos;accueil
         </Link>
       </main>
@@ -96,7 +100,13 @@ function WorkshopPageInner() {
 
 export default function WorkshopPage() {
   return (
-    <Suspense fallback={<main className="workshop">Chargement…</main>}>
+    <Suspense
+      fallback={
+        <main className="flex items-center justify-center h-screen text-sm text-muted-foreground">
+          Chargement…
+        </main>
+      }
+    >
       <WorkshopPageInner />
     </Suspense>
   );

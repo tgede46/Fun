@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createAndLoadDiagram,
   listDiagrams,
@@ -10,6 +10,7 @@ import {
 } from "@/lib/diagram";
 import {
   getAiStatus,
+  generateDiagramFromCode,
   sendChatMessage,
   type AiStatus,
   type ChatTurn,
@@ -22,8 +23,14 @@ import {
 } from "@/lib/theme";
 import { CanvasArea } from "./CanvasArea";
 import { ChatSidebar } from "./ChatSidebar";
+import { MeditationOverlay } from "./MeditationOverlay";
 import { ModeRail } from "./ModeRail";
+import { PomodoroChip } from "./PomodoroChip";
 import { Toolbar } from "./Toolbar";
+import { usePomodoro } from "@/hooks/usePomodoro";
+import type { ExcalidrawCanvasHandle } from "./ExcalidrawCanvas";
+
+type WorkshopMode = "sketch" | "uml";
 
 type WorkshopLayoutProps = {
   projectName: string;
@@ -48,6 +55,23 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagramRawContent, setDiagramRawContent] = useState<string | null>(null);
+  const [pomodoroWork, setPomodoroWork] = useState(25);
+  const [pomodoroBreak, setPomodoroBreak] = useState(5);
+  const [mode, setMode] = useState<WorkshopMode>("sketch");
+  const [isGeneratingFromCode, setIsGeneratingFromCode] = useState(false);
+  const [codeGenError, setCodeGenError] = useState<string | null>(null);
+
+  const canvasRef = useRef<ExcalidrawCanvasHandle>(null);
+
+  const pomodoro = usePomodoro({
+    projectPath,
+    workMinutes: pomodoroWork,
+    breakMinutes: pomodoroBreak,
+    onDurationsChange: (work, brk) => {
+      setPomodoroWork(work);
+      setPomodoroBreak(brk);
+    },
+  });
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -71,6 +95,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         if (!cancelled) {
           setDiagrams(items);
           setTheme(parseFunTheme(settings.theme));
+          setPomodoroWork(settings.pomodoro_work_minutes);
+          setPomodoroBreak(settings.pomodoro_break_minutes);
           setAiStatus(ai);
           setAiError(null);
         }
@@ -177,6 +203,11 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         };
         setChatHistory([...historyWithUser, assistantTurn]);
 
+        if (result.diagram_update && activeDiagramPath) {
+          canvasRef.current?.applyScene(result.diagram_update);
+          setDiagramRawContent(result.diagram_update);
+        }
+
         if (result.diagram_reset && activeDiagramPath) {
           try {
             const reloaded = await loadDiagramIntoCanvas(
@@ -202,33 +233,60 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     [projectPath, activeDiagramPath, diagramRawContent, chatHistory],
   );
 
+  const handleGenerateFromCode = useCallback(async () => {
+    setIsGeneratingFromCode(true);
+    setCodeGenError(null);
+
+    try {
+      const result = await generateDiagramFromCode(projectPath);
+      await refreshDiagramList();
+      await openDiagram(result.path);
+    } catch (err) {
+      setCodeGenError(
+        err instanceof Error
+          ? err.message
+          : "Impossible de générer le diagramme depuis le code.",
+      );
+    } finally {
+      setIsGeneratingFromCode(false);
+    }
+  }, [projectPath, refreshDiagramList, openDiagram]);
+
   return (
-    <div className="workshop-shell" data-fun-theme={theme}>
+    <div className="flex flex-col h-screen bg-background" data-fun-theme={theme}>
       <Toolbar
         projectName={projectName}
         theme={theme}
         themeError={themeError}
+        mode={mode}
         onToggleTheme={() => {
           void handleToggleTheme();
         }}
         onNewDiagram={() => {
           void handleNewDiagram();
         }}
+        onGenerateFromCode={() => {
+          void handleGenerateFromCode();
+        }}
         isCreatingDiagram={isCreatingDiagram}
+        isGeneratingFromCode={isGeneratingFromCode}
       />
-      <div className="workshop-shell__body">
-        <ModeRail />
+      <div className="flex flex-1 min-h-0">
+        <ModeRail activeMode={mode} onModeChange={setMode} />
         <CanvasArea
           projectPath={projectPath}
           theme={theme}
+          mode={mode}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
           diagramName={diagramName}
           initialData={initialData}
           error={diagramError}
           saveError={saveError}
+          codeGenError={codeGenError}
           onSelectDiagram={handleSelectDiagram}
           onSaveError={handleSaveError}
+          canvasRef={canvasRef}
         />
         <ChatSidebar
           aiStatus={aiStatus}
@@ -239,6 +297,25 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onSend={handleSendChat}
         />
       </div>
+      <PomodoroChip
+        timerLabel={pomodoro.timerLabel}
+        timerDisplay={pomodoro.timerDisplay}
+        isRunning={pomodoro.isRunning}
+        configOpen={pomodoro.configOpen}
+        workMinutes={pomodoro.workMinutes}
+        breakMinutes={pomodoro.breakMinutes}
+        saveError={pomodoro.saveError}
+        onToggleConfig={() => pomodoro.setConfigOpen(!pomodoro.configOpen)}
+        onWorkChange={pomodoro.setWorkMinutes}
+        onBreakChange={pomodoro.setBreakMinutes}
+        onSaveConfig={() => void pomodoro.saveConfig()}
+        onStart={pomodoro.handleStart}
+        onStop={pomodoro.handleStop}
+      />
+      <MeditationOverlay
+        open={pomodoro.showMeditation}
+        onDismiss={pomodoro.dismissMeditation}
+      />
     </div>
   );
 }

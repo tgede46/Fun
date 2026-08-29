@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import type { DiagramListItem } from "@/lib/diagram";
 
 type DiagramListProps = {
@@ -16,9 +17,9 @@ export function DiagramList({
   }
 
   return (
-    <nav className="workshop-diagram-list" aria-label="Diagrammes du projet">
-      <span className="workshop-diagram-list__label">Diagrammes</span>
-      <ul className="workshop-diagram-list__items">
+    <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Diagrammes du projet">
+      <span className="text-xs text-muted-foreground px-2 shrink-0">Diagrammes</span>
+      <ul className="flex gap-1">
         {diagrams.map((diagram) => {
           const isActive = diagram.path === activePath;
 
@@ -26,9 +27,12 @@ export function DiagramList({
             <li key={diagram.path}>
               <button
                 type="button"
-                className={`workshop-diagram-list__item${
-                  isActive ? " workshop-diagram-list__item--active" : ""
-                }`}
+                className={cn(
+                  "px-3 py-1 text-sm rounded-md transition-colors whitespace-nowrap",
+                  isActive
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+                )}
                 onClick={() => onSelect(diagram.path)}
                 aria-current={isActive ? "true" : undefined}
               >
