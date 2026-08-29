@@ -8,6 +8,12 @@ import {
   type DiagramListItem,
   type ExcalidrawInitialDataState,
 } from "@/lib/diagram";
+import { getProjectSettings, setProjectTheme } from "@/lib/settings";
+import {
+  parseFunTheme,
+  toggleFunTheme,
+  type FunTheme,
+} from "@/lib/theme";
 import { CanvasArea } from "./CanvasArea";
 import { ChatSidebar } from "./ChatSidebar";
 import { ModeRail } from "./ModeRail";
@@ -28,6 +34,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [isCreatingDiagram, setIsCreatingDiagram] = useState(false);
   const [diagramError, setDiagramError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<FunTheme>("light");
+  const [themeError, setThemeError] = useState<string | null>(null);
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -43,9 +51,13 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
     void (async () => {
       try {
-        const items = await listDiagrams(projectPath);
+        const [items, settings] = await Promise.all([
+          listDiagrams(projectPath),
+          getProjectSettings(projectPath),
+        ]);
         if (!cancelled) {
           setDiagrams(items);
+          setTheme(parseFunTheme(settings.theme));
         }
       } catch {
         if (!cancelled) {
@@ -112,10 +124,27 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     setSaveError(message);
   }, []);
 
+  const handleToggleTheme = useCallback(async () => {
+    const next = toggleFunTheme(theme);
+    setThemeError(null);
+
+    try {
+      const updated = await setProjectTheme(projectPath, next);
+      setTheme(parseFunTheme(updated.theme));
+    } catch {
+      setThemeError("Impossible de sauvegarder le thème.");
+    }
+  }, [projectPath, theme]);
+
   return (
-    <div className="workshop-shell">
+    <div className="workshop-shell" data-fun-theme={theme}>
       <Toolbar
         projectName={projectName}
+        theme={theme}
+        themeError={themeError}
+        onToggleTheme={() => {
+          void handleToggleTheme();
+        }}
         onNewDiagram={() => {
           void handleNewDiagram();
         }}
@@ -125,6 +154,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         <ModeRail />
         <CanvasArea
           projectPath={projectPath}
+          theme={theme}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
           diagramName={diagramName}

@@ -399,6 +399,12 @@
           "markdownDescription": "Crée un dossier projet et initialise `.fun/`."
         },
         {
+          "description": "Lit les paramètres du projet.",
+          "type": "string",
+          "const": "allow-get-project-settings",
+          "markdownDescription": "Lit les paramètres du projet."
+        },
+        {
           "description": "Charge la liste des projets récents.",
           "type": "string",
           "const": "allow-get-recent-projects",
@@ -439,6 +445,12 @@
           "type": "string",
           "const": "allow-save-diagram",
           "markdownDescription": "Persiste le JSON d'un diagramme Excalidraw."
+        },
+        {
+          "description": "Persiste le thème atelier dans settings.json.",
+          "type": "string",
+          "const": "allow-set-project-theme",
+          "markdownDescription": "Persiste le thème atelier dans settings.json."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

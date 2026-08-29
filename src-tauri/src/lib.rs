@@ -21,6 +21,8 @@ pub fn run() {
             commands::load_diagram,
             commands::save_diagram,
             commands::list_diagrams,
+            commands::get_project_settings,
+            commands::set_project_theme,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

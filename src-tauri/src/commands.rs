@@ -1,5 +1,6 @@
 use crate::project::diagram;
 use crate::project::init;
+use crate::project::settings::{self, FunTheme, ProjectSettings};
 use crate::recent::{list_recent_projects, touch_recent_project, RecentProject};
 use crate::state::AppState;
 use serde::Serialize;
@@ -28,9 +29,24 @@ pub struct LoadDiagramResult {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ProjectSettingsResult {
+    pub pomodoro_work_minutes: u32,
+    pub pomodoro_break_minutes: u32,
+    pub theme: String,
+}
+
+#[derive(Debug, Serialize)]
 pub struct DiagramListItem {
     pub path: String,
     pub name: String,
+}
+
+fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
+    ProjectSettingsResult {
+        pomodoro_work_minutes: settings.pomodoro_work_minutes,
+        pomodoro_break_minutes: settings.pomodoro_break_minutes,
+        theme: settings.theme.as_str().to_string(),
+    }
 }
 
 #[tauri::command]
@@ -157,6 +173,24 @@ pub fn list_diagrams(project_path: String) -> Result<Vec<DiagramListItem>, Strin
             name: entry.name,
         })
         .collect())
+}
+
+#[tauri::command]
+pub fn get_project_settings(project_path: String) -> Result<ProjectSettingsResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let loaded = settings::read_settings(project_root.as_path())?;
+    Ok(settings_to_result(loaded))
+}
+
+#[tauri::command]
+pub fn set_project_theme(
+    project_path: String,
+    theme: String,
+) -> Result<ProjectSettingsResult, String> {
+    let parsed = FunTheme::parse(&theme)?;
+    let project_root = PathBuf::from(&project_path);
+    let updated = settings::set_theme(project_root.as_path(), parsed)?;
+    Ok(settings_to_result(updated))
 }
 
 fn open_project_at(

@@ -66,6 +66,16 @@
   --fun-radius-full: 9999px;
 }
 
+.workshop-shell[data-fun-theme="dark"] {
+  --fun-canvas: var(--fun-canvas-dark);
+  --fun-surface-base: var(--fun-surface-base-dark);
+  --fun-surface-raised: var(--fun-surface-raised-dark);
+  --fun-foreground: var(--fun-foreground-dark);
+  --fun-foreground-muted: var(--fun-foreground-muted-dark);
+  --fun-accent: var(--fun-accent-dark);
+  --fun-border: var(--fun-border-dark);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -315,6 +325,33 @@ main {
 .workshop-toolbar__placeholder {
   color: var(--fun-foreground-muted);
   font-size: var(--fun-typography-ui-sm-size);
+}
+
+.workshop-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.workshop-toolbar__theme {
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--fun-border);
+  border-radius: var(--fun-radius-sm);
+  background: var(--fun-surface-raised);
+  color: var(--fun-foreground);
+  font-family: inherit;
+  font-size: var(--fun-typography-ui-sm-size);
+  cursor: pointer;
+}
+
+.workshop-toolbar__theme:hover {
+  background: var(--fun-surface-base);
+}
+
+.workshop-toolbar__error {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: #8b2e2e;
 }
 
 .workshop-toolbar__action {

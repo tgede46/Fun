@@ -17,6 +17,12 @@ struct ProjectJson {
 struct SettingsJson {
     pomodoro_work_minutes: u32,
     pomodoro_break_minutes: u32,
+    #[serde(default = "default_theme")]
+    theme: String,
+}
+
+fn default_theme() -> String {
+    "light".to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -61,6 +67,7 @@ fn default_settings_json() -> Result<String, String> {
     let payload = SettingsJson {
         pomodoro_work_minutes: 25,
         pomodoro_break_minutes: 5,
+        theme: default_theme(),
     };
     serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())
 }

@@ -1,5 +1,13 @@
 export type FunTheme = "light" | "dark";
 
+export function parseFunTheme(value: string): FunTheme {
+  return value === "dark" ? "dark" : "light";
+}
+
+export function toggleFunTheme(theme: FunTheme): FunTheme {
+  return theme === "light" ? "dark" : "light";
+}
+
 export type ThemeTokens = {
   canvas: string;
   surfaceBase: string;

@@ -1,9 +1,11 @@
 import type { DiagramListItem, ExcalidrawInitialDataState } from "@/lib/diagram";
+import type { FunTheme } from "@/lib/theme";
 import { DiagramList } from "./DiagramList";
 import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
 
 type CanvasAreaProps = {
   projectPath: string;
+  theme: FunTheme;
   diagrams: DiagramListItem[];
   activeDiagramPath: string | null;
   diagramName: string | null;
@@ -16,6 +18,7 @@ type CanvasAreaProps = {
 
 export function CanvasArea({
   projectPath,
+  theme,
   diagrams,
   activeDiagramPath,
   diagramName,
@@ -70,6 +73,7 @@ export function CanvasArea({
       <ExcalidrawCanvas
         projectPath={projectPath}
         diagramPath={activeDiagramPath}
+        theme={theme}
         initialData={initialData}
         onSaveError={onSaveError}
       />

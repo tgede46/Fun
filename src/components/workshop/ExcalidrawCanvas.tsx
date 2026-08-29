@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef } from "react";
 import type { ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import { saveDiagram, type ExcalidrawInitialDataState } from "@/lib/diagram";
+import type { FunTheme } from "@/lib/theme";
 
 import "@excalidraw/excalidraw/index.css";
 
@@ -27,6 +28,7 @@ type ExcalidrawChangeHandler = NonNullable<ExcalidrawProps["onChange"]>;
 type ExcalidrawCanvasProps = {
   projectPath: string;
   diagramPath: string;
+  theme: FunTheme;
   initialData: ExcalidrawInitialDataState;
   onSaveError?: (message: string) => void;
 };
@@ -34,6 +36,7 @@ type ExcalidrawCanvasProps = {
 export function ExcalidrawCanvas({
   projectPath,
   diagramPath,
+  theme,
   initialData,
   onSaveError,
 }: ExcalidrawCanvasProps) {
@@ -119,8 +122,9 @@ export function ExcalidrawCanvas({
   return (
     <div className="workshop-canvas__embed">
       <Excalidraw
-        key={diagramPath}
+        key={`${diagramPath}-${theme}`}
         initialData={initialData}
+        theme={theme}
         onChange={handleChange}
       />
     </div>
