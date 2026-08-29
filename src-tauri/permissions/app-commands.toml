@@ -52,3 +52,23 @@ commands.allow = ["get_project_settings"]
 identifier = "allow-set-project-theme"
 description = "Persiste le thème atelier dans settings.json."
 commands.allow = ["set_project_theme"]
+
+[[permission]]
+identifier = "allow-set-openrouter-api-key"
+description = "Enregistre la clé OpenRouter dans le stockage sécurisé OS."
+commands.allow = ["set_openrouter_api_key"]
+
+[[permission]]
+identifier = "allow-clear-openrouter-api-key"
+description = "Supprime la clé OpenRouter du stockage sécurisé."
+commands.allow = ["clear_openrouter_api_key"]
+
+[[permission]]
+identifier = "allow-get-openrouter-key-configured"
+description = "Indique si une clé OpenRouter est enregistrée."
+commands.allow = ["get_openrouter_key_configured"]
+
+[[permission]]
+identifier = "allow-get-ai-status"
+description = "Lit le statut IA (clé configurée, modèle actif)."
+commands.allow = ["get_ai_status"]

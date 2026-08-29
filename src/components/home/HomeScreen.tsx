@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { invoke } from "@tauri-apps/api/core";
 import { ProjectCard } from "./ProjectCard";
+import { OpenRouterSettings } from "./OpenRouterSettings";
 
 type RecentProject = {
   path: string;
@@ -200,6 +201,8 @@ export function HomeScreen() {
           </ul>
         )}
       </section>
+
+      <OpenRouterSettings />
     </main>
   );
 }

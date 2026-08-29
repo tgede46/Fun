@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 mod project;
 mod recent;
@@ -23,6 +24,10 @@ pub fn run() {
             commands::list_diagrams,
             commands::get_project_settings,
             commands::set_project_theme,
+            commands::set_openrouter_api_key,
+            commands::clear_openrouter_api_key,
+            commands::get_openrouter_key_configured,
+            commands::get_ai_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

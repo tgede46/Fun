@@ -387,6 +387,12 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Supprime la clé OpenRouter du stockage sécurisé.",
+          "type": "string",
+          "const": "allow-clear-openrouter-api-key",
+          "markdownDescription": "Supprime la clé OpenRouter du stockage sécurisé."
+        },
+        {
           "description": "Crée un diagramme Excalidraw vide sous `.fun/diagrams/`.",
           "type": "string",
           "const": "allow-create-diagram",
@@ -397,6 +403,18 @@
           "type": "string",
           "const": "allow-create-project",
           "markdownDescription": "Crée un dossier projet et initialise `.fun/`."
+        },
+        {
+          "description": "Lit le statut IA (clé configurée, modèle actif).",
+          "type": "string",
+          "const": "allow-get-ai-status",
+          "markdownDescription": "Lit le statut IA (clé configurée, modèle actif)."
+        },
+        {
+          "description": "Indique si une clé OpenRouter est enregistrée.",
+          "type": "string",
+          "const": "allow-get-openrouter-key-configured",
+          "markdownDescription": "Indique si une clé OpenRouter est enregistrée."
         },
         {
           "description": "Lit les paramètres du projet.",
@@ -445,6 +463,12 @@
           "type": "string",
           "const": "allow-save-diagram",
           "markdownDescription": "Persiste le JSON d'un diagramme Excalidraw."
+        },
+        {
+          "description": "Enregistre la clé OpenRouter dans le stockage sécurisé OS.",
+          "type": "string",
+          "const": "allow-set-openrouter-api-key",
+          "markdownDescription": "Enregistre la clé OpenRouter dans le stockage sécurisé OS."
         },
         {
           "description": "Persiste le thème atelier dans settings.json.",

@@ -1,3 +1,4 @@
+use crate::ai::{self, resolve_active_model_for_project};
 use crate::project::diagram;
 use crate::project::init;
 use crate::project::settings::{self, FunTheme, ProjectSettings};
@@ -191,6 +192,43 @@ pub fn set_project_theme(
     let project_root = PathBuf::from(&project_path);
     let updated = settings::set_theme(project_root.as_path(), parsed)?;
     Ok(settings_to_result(updated))
+}
+
+#[derive(Debug, Serialize)]
+pub struct AiStatusResult {
+    pub key_configured: bool,
+    pub active_model: String,
+    pub model_source: String,
+    pub openrouter_base_url: String,
+}
+
+#[tauri::command]
+pub fn set_openrouter_api_key(api_key: String) -> Result<(), String> {
+    ai::store_api_key(&api_key)
+}
+
+#[tauri::command]
+pub fn clear_openrouter_api_key() -> Result<(), String> {
+    ai::delete_api_key()
+}
+
+#[tauri::command]
+pub fn get_openrouter_key_configured() -> Result<bool, String> {
+    ai::has_api_key()
+}
+
+#[tauri::command]
+pub fn get_ai_status(project_path: String) -> Result<AiStatusResult, String> {
+    let key_configured = ai::has_api_key()?;
+    let project_root = PathBuf::from(&project_path);
+    let active = resolve_active_model_for_project(project_root.as_path())?;
+
+    Ok(AiStatusResult {
+        key_configured,
+        active_model: active.model_id,
+        model_source: active.source.as_str().to_string(),
+        openrouter_base_url: ai::OPENROUTER_API_BASE.to_string(),
+    })
 }
 
 fn open_project_at(

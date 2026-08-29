@@ -134,6 +134,64 @@ main {
   gap: 1.25rem;
 }
 
+.home__settings {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--fun-border);
+  border-radius: var(--fun-radius-md);
+  background: var(--fun-surface);
+}
+
+.home__settings-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.home__settings-hint,
+.home__settings-status {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: var(--fun-muted);
+}
+
+.home__settings-status--muted {
+  opacity: 0.85;
+}
+
+.home__settings-label {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: var(--fun-muted);
+}
+
+.home__settings-input {
+  width: 100%;
+  border: 1px solid var(--fun-border);
+  border-radius: var(--fun-radius-md);
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+  background: var(--fun-bg);
+  color: var(--fun-fg);
+}
+
+.home__settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.home__settings-error {
+  color: #8b2e2e;
+  font-size: var(--fun-typography-ui-sm-size);
+}
+
+.home__settings-success {
+  color: #2e6b3a;
+  font-size: var(--fun-typography-ui-sm-size);
+}
+
 .home__actions {
   display: flex;
   flex-wrap: wrap;
@@ -555,4 +613,30 @@ main {
   font-size: var(--fun-typography-ui-sm-size);
   line-height: var(--fun-typography-ui-sm-line-height);
   color: var(--fun-foreground-muted);
+}
+
+.workshop-chat__error {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: #8b2e2e;
+}
+
+.workshop-chat__model {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: var(--fun-foreground);
+  word-break: break-word;
+}
+
+.workshop-chat__model span {
+  font-family: ui-monospace, monospace;
+}
+
+.workshop-chat__model-source {
+  font-size: var(--fun-typography-ui-sm-size);
+  color: var(--fun-foreground-muted);
+}
+
+.workshop-chat__ai-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }

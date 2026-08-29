@@ -8,6 +8,7 @@ import {
   type DiagramListItem,
   type ExcalidrawInitialDataState,
 } from "@/lib/diagram";
+import { getAiStatus, type AiStatus } from "@/lib/ai";
 import { getProjectSettings, setProjectTheme } from "@/lib/settings";
 import {
   parseFunTheme,
@@ -36,6 +37,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [saveError, setSaveError] = useState<string | null>(null);
   const [theme, setTheme] = useState<FunTheme>("light");
   const [themeError, setThemeError] = useState<string | null>(null);
+  const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -51,17 +54,21 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
     void (async () => {
       try {
-        const [items, settings] = await Promise.all([
+        const [items, settings, ai] = await Promise.all([
           listDiagrams(projectPath),
           getProjectSettings(projectPath),
+          getAiStatus(projectPath),
         ]);
         if (!cancelled) {
           setDiagrams(items);
           setTheme(parseFunTheme(settings.theme));
+          setAiStatus(ai);
+          setAiError(null);
         }
       } catch {
         if (!cancelled) {
           setDiagramError("Impossible de charger la liste des diagrammes.");
+          setAiError("Impossible de charger le statut IA.");
         }
       }
     })();
@@ -164,7 +171,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onSelectDiagram={handleSelectDiagram}
           onSaveError={handleSaveError}
         />
-        <ChatSidebar />
+        <ChatSidebar aiStatus={aiStatus} aiError={aiError} />
       </div>
     </div>
   );
