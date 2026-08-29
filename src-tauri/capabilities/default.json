@@ -13,6 +13,8 @@
     "allow-pick-project-parent-folder",
     "allow-create-project",
     "allow-create-diagram",
-    "allow-load-diagram"
+    "allow-load-diagram",
+    "allow-save-diagram",
+    "allow-list-diagrams"
   ]
 }

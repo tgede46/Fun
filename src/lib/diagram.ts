@@ -11,6 +11,11 @@ export type LoadDiagramResult = {
   content: string;
 };
 
+export type DiagramListItem = {
+  path: string;
+  name: string;
+};
+
 export type { ExcalidrawInitialDataState };
 
 export async function createDiagram(
@@ -27,6 +32,24 @@ export async function loadDiagram(
     projectPath,
     diagramPath,
   });
+}
+
+export async function saveDiagram(
+  projectPath: string,
+  diagramPath: string,
+  content: string,
+): Promise<void> {
+  await invoke("save_diagram", {
+    projectPath,
+    diagramPath,
+    content,
+  });
+}
+
+export async function listDiagrams(
+  projectPath: string,
+): Promise<DiagramListItem[]> {
+  return invoke<DiagramListItem[]>("list_diagrams", { projectPath });
 }
 
 export function parseExcalidrawContent(content: string): ExcalidrawInitialDataState {
@@ -62,6 +85,25 @@ export async function createAndLoadDiagram(
   return {
     path: loaded.path,
     name: created.name,
+    initialData: parseExcalidrawContent(loaded.content),
+  };
+}
+
+export async function loadDiagramIntoCanvas(
+  projectPath: string,
+  diagramPath: string,
+): Promise<{
+  path: string;
+  name: string;
+  initialData: ExcalidrawInitialDataState;
+}> {
+  const loaded = await loadDiagram(projectPath, diagramPath);
+  const name =
+    diagramPath.split(/[/\\]/).pop()?.replace(/\.excalidraw$/, "") ?? "diagramme";
+
+  return {
+    path: loaded.path,
+    name,
     initialData: parseExcalidrawContent(loaded.content),
   };
 }

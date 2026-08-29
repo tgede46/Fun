@@ -71,10 +71,14 @@ fn validate_diagram_path(project_root: &Path, diagram_path: &Path) -> Result<(),
 
 fn sketch_filename() -> String {
     let now = Local::now();
+    let nanos = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.subsec_nanos())
+        .unwrap_or(0);
     format!(
         "sketch-{}-{}.excalidraw",
-        now.format("%Y%m%d"),
-        now.format("%H%M%S")
+        now.format("%Y%m%d-%H%M%S"),
+        nanos
     )
 }
 
@@ -86,17 +90,91 @@ pub fn create_diagram(project_root: &Path) -> Result<PathBuf, String> {
     let dir = diagrams_dir(project_root);
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
 
-    let filename = sketch_filename();
-    let path = dir.join(&filename);
     let content = empty_excalidraw_json()?;
-    fs::write(&path, content).map_err(|e| e.to_string())?;
 
-    Ok(path)
+    for _ in 0..10 {
+        let path = dir.join(sketch_filename());
+        if path.exists() {
+            continue;
+        }
+        fs::write(&path, &content).map_err(|e| e.to_string())?;
+        return Ok(path);
+    }
+
+    Err("Impossible de générer un nom de diagramme unique.".to_string())
 }
 
 pub fn load_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
     validate_diagram_path(project_root, diagram_path)?;
     fs::read_to_string(diagram_path).map_err(|e| e.to_string())
+}
+
+pub fn save_diagram(
+    project_root: &Path,
+    diagram_path: &Path,
+    content: &str,
+) -> Result<(), String> {
+    validate_diagram_path(project_root, diagram_path)?;
+
+    let parsed: serde_json::Value =
+        serde_json::from_str(content).map_err(|_| "JSON Excalidraw invalide.".to_string())?;
+
+    if parsed.get("type").and_then(|v| v.as_str()) != Some("excalidraw") {
+        return Err("JSON Excalidraw invalide.".to_string());
+    }
+
+    fs::write(diagram_path, content).map_err(|e| e.to_string())
+}
+
+#[derive(Debug, Serialize)]
+pub struct DiagramEntry {
+    pub path: String,
+    pub name: String,
+}
+
+pub fn list_diagrams(project_root: &Path) -> Result<Vec<DiagramEntry>, String> {
+    if !project_root.is_dir() {
+        return Err("Le dossier projet est introuvable.".to_string());
+    }
+
+    let dir = diagrams_dir(project_root);
+    if !dir.exists() {
+        return Ok(Vec::new());
+    }
+
+    let mut entries: Vec<(std::time::SystemTime, DiagramEntry)> = Vec::new();
+
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+
+        if path.extension().and_then(|e| e.to_str()) != Some("excalidraw") {
+            continue;
+        }
+
+        let modified = entry
+            .metadata()
+            .and_then(|m| m.modified())
+            .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+
+        let name = path
+            .file_stem()
+            .and_then(|n| n.to_str())
+            .unwrap_or("diagramme")
+            .to_string();
+
+        entries.push((
+            modified,
+            DiagramEntry {
+                path: path.to_string_lossy().into_owned(),
+                name,
+            },
+        ));
+    }
+
+    entries.sort_by(|a, b| b.0.cmp(&a.0));
+
+    Ok(entries.into_iter().map(|(_, entry)| entry).collect())
 }
 
 #[cfg(test)]
@@ -146,6 +224,45 @@ mod tests {
 
         let err = load_diagram(&project, &outside).expect_err("must reject");
         assert!(err.contains("non autorisé") || err.contains("introuvable"));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn save_diagram_persists_valid_json() {
+        let project = temp_project();
+        let diagram_path = create_diagram(&project).expect("create");
+
+        let updated = r##"{"type":"excalidraw","version":2,"source":"https://excalidraw.com","elements":[{"id":"a","type":"rectangle"}],"appState":{"viewBackgroundColor":"#ffffff"},"files":{}}"##;
+        save_diagram(&project, &diagram_path, updated).expect("save");
+
+        let loaded = load_diagram(&project, &diagram_path).expect("load");
+        assert!(loaded.contains("\"type\":\"excalidraw\"") || loaded.contains("\"type\": \"excalidraw\""));
+        assert!(loaded.contains("rectangle"));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn save_diagram_rejects_invalid_type() {
+        let project = temp_project();
+        let diagram_path = create_diagram(&project).expect("create");
+
+        let err = save_diagram(&project, &diagram_path, r#"{"type":"other"}"#)
+            .expect_err("must reject");
+        assert!(err.contains("invalide"));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn list_diagrams_returns_excalidraw_files() {
+        let project = temp_project();
+        let _ = create_diagram(&project).expect("create one");
+        let _ = create_diagram(&project).expect("create two");
+
+        let list = list_diagrams(&project).expect("list");
+        assert_eq!(list.len(), 2);
 
         let _ = fs::remove_dir_all(project);
     }

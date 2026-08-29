@@ -405,6 +405,12 @@
           "markdownDescription": "Charge la liste des projets récents."
         },
         {
+          "description": "Liste les diagrammes du projet.",
+          "type": "string",
+          "const": "allow-list-diagrams",
+          "markdownDescription": "Liste les diagrammes du projet."
+        },
+        {
           "description": "Charge le JSON d'un diagramme Excalidraw.",
           "type": "string",
           "const": "allow-load-diagram",
@@ -427,6 +433,12 @@
           "type": "string",
           "const": "allow-pick-project-parent-folder",
           "markdownDescription": "Choisit l'emplacement d'un nouveau projet."
+        },
+        {
+          "description": "Persiste le JSON d'un diagramme Excalidraw.",
+          "type": "string",
+          "const": "allow-save-diagram",
+          "markdownDescription": "Persiste le JSON d'un diagramme Excalidraw."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

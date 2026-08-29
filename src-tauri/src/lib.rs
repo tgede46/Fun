@@ -19,6 +19,8 @@ pub fn run() {
             commands::pick_project_parent_folder,
             commands::create_diagram,
             commands::load_diagram,
+            commands::save_diagram,
+            commands::list_diagrams,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

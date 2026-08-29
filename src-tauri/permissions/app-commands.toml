@@ -32,3 +32,13 @@ commands.allow = ["create_diagram"]
 identifier = "allow-load-diagram"
 description = "Charge le JSON d'un diagramme Excalidraw."
 commands.allow = ["load_diagram"]
+
+[[permission]]
+identifier = "allow-save-diagram"
+description = "Persiste le JSON d'un diagramme Excalidraw."
+commands.allow = ["save_diagram"]
+
+[[permission]]
+identifier = "allow-list-diagrams"
+description = "Liste les diagrammes du projet."
+commands.allow = ["list_diagrams"]

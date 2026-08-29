@@ -27,6 +27,12 @@ pub struct LoadDiagramResult {
     pub content: String,
 }
 
+#[derive(Debug, Serialize)]
+pub struct DiagramListItem {
+    pub path: String,
+    pub name: String,
+}
+
 #[tauri::command]
 pub fn get_recent_projects(app: AppHandle) -> Result<Vec<RecentProject>, String> {
     list_recent_projects(app)
@@ -127,6 +133,30 @@ pub fn load_diagram(project_path: String, diagram_path: String) -> Result<LoadDi
         path: diagram_path,
         content,
     })
+}
+
+#[tauri::command]
+pub fn save_diagram(
+    project_path: String,
+    diagram_path: String,
+    content: String,
+) -> Result<(), String> {
+    let project_root = PathBuf::from(&project_path);
+    let path = PathBuf::from(&diagram_path);
+    diagram::save_diagram(project_root.as_path(), path.as_path(), &content)
+}
+
+#[tauri::command]
+pub fn list_diagrams(project_path: String) -> Result<Vec<DiagramListItem>, String> {
+    let project_root = PathBuf::from(&project_path);
+    let entries = diagram::list_diagrams(project_root.as_path())?;
+    Ok(entries
+        .into_iter()
+        .map(|entry| DiagramListItem {
+            path: entry.path,
+            name: entry.name,
+        })
+        .collect())
 }
 
 fn open_project_at(
