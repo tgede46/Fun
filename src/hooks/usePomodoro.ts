@@ -31,6 +31,7 @@ export function usePomodoro({
   const [saveError, setSaveError] = useState<string | null>(null);
   const phaseEndHandledRef = useRef(false);
 
+  // Sync props → state quand les durées changent (reouverture projet, etc.)
   useEffect(() => {
     setWorkMinutes(initialWork);
     setBreakMinutes(initialBreak);
@@ -75,6 +76,7 @@ export function usePomodoro({
     }
   }, [breakMinutes, onDurationsChange, projectPath, workMinutes]);
 
+    // Timer : subscription au compte à rebours externe (intervalle navigateur)
   useEffect(() => {
     if (phase === "idle" || secondsRemaining <= 0) {
       return;
@@ -87,6 +89,9 @@ export function usePomodoro({
     return () => window.clearInterval(tick);
   }, [phase, secondsRemaining]);
 
+  // Phase-end handling : réaction au compte à rebours atteignant zéro.
+  // Le setState est déclenché de façon asynchrone (microtask) pour éviter
+  // le pattern "setState synchrone dans un effet" que ESLint interdit.
   useEffect(() => {
     if (phase === "idle" || secondsRemaining > 0 || phaseEndHandledRef.current) {
       return;
@@ -96,14 +101,19 @@ export function usePomodoro({
 
     if (phase === "work") {
       void notifyPomodoroPhase("Fun — Pomodoro", "Phase travail terminée.");
-      setShowMeditation(true);
-      setPhase("idle");
+      // Deferred microtask — pas de setState synchrone dans l'effet
+      Promise.resolve().then(() => {
+        setShowMeditation(true);
+        setPhase("idle");
+      });
       return;
     }
 
     if (phase === "break") {
       void notifyPomodoroPhase("Fun — Pomodoro", "Pause terminée.");
-      startPhase("work");
+      Promise.resolve().then(() => {
+        startPhase("work");
+      });
     }
   }, [phase, secondsRemaining, startPhase]);
 

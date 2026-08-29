@@ -2,7 +2,7 @@
 title: 'Story 4.1 — Configurer les durées Pomodoro'
 type: feature
 created: '2026-08-29'
-status: pending
+status: done
 baseline_commit: NO_VCS
 context:
   - _bmad-output/planning-artifacts/architecture/architecture-Fun-2026-08-29/ARCHITECTURE-SPINE.md

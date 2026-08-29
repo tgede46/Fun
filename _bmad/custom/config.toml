@@ -1,7 +1,41 @@
-# Team / enterprise overrides for _bmad/config.toml.
-# Committed to the repo — applies to every developer on the project.
-# Tables deep-merge over base config; keyed entries merge by key.
-# Example: override an agent descriptor, or add a new agent.
-#
-# [agents.bmad-agent-pm]
-# description = "Prefers short, bulleted PRDs over narrative drafts."
+# Agents Fun — roster custom (skills dans skills/)
+
+[agents.agent-dev-fun]
+module = "fun"
+team = "fun-atelier"
+name = "Artisan"
+title = "Ingénieur Fun"
+icon = "🔧"
+description = "Ingénieur senior Tauri 2 + Next.js pour le projet Fun desktop."
+
+[agents.agent-relecteur-diagramme]
+module = "fun"
+team = "fun-atelier"
+name = "Claire"
+title = "Relecteur de diagrammes"
+icon = "🔍"
+description = "Relit les diagrammes Excalidraw, signale les imperfections et guide le reset."
+
+[agents.agent-editeur-canvas]
+module = "fun"
+team = "fun-atelier"
+name = "Trace"
+title = "Éditeur canvas"
+icon = "✏️"
+description = "Applique les instructions utilisateur sur le canvas Excalidraw avec JSON valide."
+
+[agents.agent-architecte-code-uml]
+module = "fun"
+team = "fun-atelier"
+name = "Atlas"
+title = "Architecte code→diagramme"
+icon = "🗺️"
+description = "Génère des diagrammes Excalidraw depuis les sources du Projet Fun."
+
+[agents.agent-coach-focus]
+module = "fun"
+team = "fun-atelier"
+name = "Souffle"
+title = "Coach focus"
+icon = "🍅"
+description = "Pomodoro, pauses méditation et microcopy calme pour l'atelier Fun."

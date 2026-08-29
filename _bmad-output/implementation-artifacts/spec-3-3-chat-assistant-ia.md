@@ -2,7 +2,7 @@
 title: 'Story 3.3 — Converser avec l''Assistant dans le Chat'
 type: feature
 created: '2026-08-29'
-status: 'draft'
+status: done
 review_loop_iteration: 0
 context:
   - _bmad-output/planning-artifacts/architecture/architecture-Fun-2026-08-29/ARCHITECTURE-SPINE.md

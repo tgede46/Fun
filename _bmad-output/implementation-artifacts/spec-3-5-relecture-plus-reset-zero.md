@@ -2,7 +2,7 @@
 title: 'Story 3.5 — Relecture et repartir de zéro'
 type: feature
 created: '2026-08-29'
-status: pending
+status: done
 baseline_commit: NO_VCS
 context:
   - _bmad-output/planning-artifacts/architecture/architecture-Fun-2026-08-29/ARCHITECTURE-SPINE.md
