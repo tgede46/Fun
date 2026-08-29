@@ -63,13 +63,15 @@ context:
 **Acceptance Criteria:**
 - Given lancement sans projet, when accueil s'affiche, then grille centrée + CTA « Ouvrir un dossier ».
 - Given recents en store, when accueil charge, then cartes nom + chemin visibles.
-- Given clic carte ou dossier choisi, when navigation, then atelier placeholder affiche le projet.
+- Given clic carte ou dossier choisi, when navigation, then atelier affiche le projet via `/workshop?path=<encoded-path>` (navigation déjà implémentée dans `workshop/page.tsx`).
 - Given aucun recent, when accueil, then état vide calme.
 
 ## Verification
 
 **Commands:**
 - `npm run build` — expected: exit 0
+- `npx vitest run` — expected: 4 React I/O tests pass
+- `cargo test --lib recent` — expected: 9 Rust unit tests pass
 
 ## Suggested Review Order
 

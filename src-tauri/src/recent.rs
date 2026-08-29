@@ -37,13 +37,32 @@ fn read_store(path: &Path) -> RecentStore {
         .unwrap_or_default()
 }
 
+/// Canonicalize a path safely: returns the original unmodified path string if
+/// canonicalization fails (file missing, permission denied, etc.).
+fn canonicalize_safe(raw: &str) -> PathBuf {
+    let candidate = PathBuf::from(raw);
+    if candidate.is_dir() {
+        fs::canonicalize(&candidate).unwrap_or_else(|_| candidate.clone())
+    } else {
+        candidate.clone()
+    }
+}
+
 fn write_store(path: &Path, store: &RecentStore) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
 
     let raw = serde_json::to_string_pretty(store).map_err(|e| e.to_string())?;
-    fs::write(path, raw).map_err(|e| e.to_string())
+
+    // Atomic write: write to a temp file then rename. On Linux/macOS, rename
+    // is atomic when source and destination are on the same filesystem.
+    let tmp_path = path.with_file_name(format!(".{}.tmp", STORE_FILE));
+    fs::write(&tmp_path, &raw).map_err(|e| e.to_string())?;
+    fs::rename(&tmp_path, path).map_err(|e| {
+        let _ = fs::remove_file(&tmp_path);
+        e.to_string()
+    })
 }
 
 fn project_name(path: &Path) -> String {
@@ -84,15 +103,23 @@ pub fn touch_recent_project(app: AppHandle, project_path: String) -> Result<Rece
         return Err("Le dossier projet est introuvable.".to_string());
     }
 
+    // Canonicalize the incoming path to normalize symlinks and spellings.
+    let canonical = canonicalize_safe(&project_path);
+
     let entry = RecentProject {
-        path: project_path.clone(),
-        name: project_name(&path_buf),
+        path: canonical.to_string_lossy().into_owned(),
+        name: project_name(&canonical),
         last_opened: iso_timestamp(),
     };
 
     let store_path = store_path(&app)?;
     let mut store = read_store(&store_path);
-    store.projects.retain(|p| p.path != project_path);
+
+    // Deduplicate: remove any existing entry whose canonical path matches.
+    store.projects.retain(|p| {
+        let existing = PathBuf::from(&p.path);
+        existing != canonical && existing != PathBuf::from(&project_path)
+    });
     store.projects.insert(0, entry.clone());
 
     if store.projects.len() > MAX_RECENTS {
@@ -101,4 +128,138 @@ pub fn touch_recent_project(app: AppHandle, project_path: String) -> Result<Rece
 
     write_store(&store_path, &store)?;
     Ok(entry)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use std::os::unix::fs::PermissionsExt;
+    use tempfile::TempDir;
+
+    #[test]
+    fn canonicalize_safe_normalises_symlink() {
+        let tmp = TempDir::new().unwrap();
+        let target = tmp.path().join("real");
+        fs::create_dir_all(&target).unwrap();
+        let link = tmp.path().join("link");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let result = canonicalize_safe(link.to_string_lossy().as_ref());
+        assert_eq!(result, fs::canonicalize(&target).unwrap());
+    }
+
+    #[test]
+    fn canonicalize_safe_returns_original_when_dir_missing() {
+        let missing = "/tmp/fun_test_nonexistent_dir_12345";
+        let result = canonicalize_safe(missing);
+        assert_eq!(result, PathBuf::from(missing));
+    }
+
+    #[test]
+    fn canonicalize_safe_handles_regular_path() {
+        let tmp = TempDir::new().unwrap();
+        let result = canonicalize_safe(tmp.path().to_str().unwrap());
+        assert_eq!(result, fs::canonicalize(tmp.path()).unwrap());
+    }
+
+    #[test]
+    fn write_store_read_store_roundtrip() {
+        let tmp = TempDir::new().unwrap();
+        let store_path = tmp.path().join(STORE_FILE);
+
+        let store = RecentStore {
+            projects: vec![
+                RecentProject { path: "/tmp/a".into(), name: "a".into(), last_opened: "1000".into() },
+                RecentProject { path: "/tmp/b".into(), name: "b".into(), last_opened: "2000".into() },
+            ],
+        };
+        write_store(&store_path, &store).unwrap();
+        let loaded = read_store(&store_path);
+
+        assert_eq!(loaded.projects.len(), 2);
+        assert_eq!(loaded.projects[0].path, "/tmp/a");
+        assert_eq!(loaded.projects[1].name, "b");
+    }
+
+    #[test]
+    fn write_store_atomic_preserves_old_data_on_failure() {
+        let tmp = TempDir::new().unwrap();
+        let store_path = tmp.path().join(STORE_FILE);
+
+        let original = RecentStore {
+            projects: vec![RecentProject {
+                path: "/tmp/original".into(),
+                name: "original".into(),
+                last_opened: "1000".into(),
+            }],
+        };
+        write_store(&store_path, &original).unwrap();
+
+        // Make the parent dir read-only so write_store fails before rename
+        let parent = store_path.parent().unwrap();
+        let orig_perms = fs::metadata(parent).unwrap().permissions();
+        fs::set_permissions(parent, fs::Permissions::from_mode(0o555)).unwrap();
+
+        let corrupted = RecentStore {
+            projects: vec![RecentProject {
+                path: "/tmp/corrupted".into(),
+                name: "corrupted".into(),
+                last_opened: "2000".into(),
+            }],
+        };
+        let result = write_store(&store_path, &corrupted);
+        assert!(result.is_err(), "write should fail on read-only dir");
+
+        // Restore permissions and verify original is intact
+        fs::set_permissions(parent, orig_perms).unwrap();
+        let survived = read_store(&store_path);
+        assert_eq!(survived.projects.len(), 1);
+        assert_eq!(survived.projects[0].path, "/tmp/original");
+    }
+
+    #[test]
+    fn dedup_removes_existing_canonical_match() {
+        let canonical = PathBuf::from("/home/user/projet");
+        let mut projects = vec![
+            RecentProject { path: "/home/user/projet".into(), name: "p".into(), last_opened: "1".into() },
+            RecentProject { path: "/home/user/projet".into(), name: "p".into(), last_opened: "2".into() },
+        ];
+        projects.retain(|p| {
+            let existing = PathBuf::from(&p.path);
+            existing != canonical && existing != PathBuf::from("/home/user/projet")
+        });
+        assert!(projects.is_empty());
+    }
+
+    #[test]
+    fn dedup_keeps_non_matching_entries() {
+        let canonical = PathBuf::from("/home/user/projet-a");
+        let mut projects = vec![
+            RecentProject { path: "/home/user/projet-b".into(), name: "b".into(), last_opened: "1".into() },
+        ];
+        projects.retain(|p| {
+            let existing = PathBuf::from(&p.path);
+            existing != canonical && existing != PathBuf::from("/home/user/projet-a")
+        });
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].path, "/home/user/projet-b");
+    }
+
+    #[test]
+    fn read_store_returns_default_on_missing_file() {
+        let tmp = TempDir::new().unwrap();
+        let store_file = tmp.path().join(STORE_FILE);
+        let store = read_store(&store_file);
+        assert!(store.projects.is_empty());
+    }
+
+    #[test]
+    fn read_store_returns_default_on_corrupt_json() {
+        let tmp = TempDir::new().unwrap();
+        let store_file = tmp.path().join(STORE_FILE);
+        fs::write(&store_file, "{invalid json!!!").unwrap();
+        let store = read_store(&store_file);
+        assert!(store.projects.is_empty());
+    }
 }

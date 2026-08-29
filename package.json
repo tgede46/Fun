@@ -18,11 +18,17 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.8.4",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^22.17.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
     "eslint": "^9.33.0",
     "eslint-config-next": "^16.3.3",
-    "typescript": "^5.9.2"
+    "jsdom": "^30.0.1",
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.11"
   }
 }
