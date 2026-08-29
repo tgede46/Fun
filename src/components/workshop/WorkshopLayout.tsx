@@ -8,7 +8,12 @@ import {
   type DiagramListItem,
   type ExcalidrawInitialDataState,
 } from "@/lib/diagram";
-import { getAiStatus, type AiStatus } from "@/lib/ai";
+import {
+  getAiStatus,
+  sendChatMessage,
+  type AiStatus,
+  type ChatTurn,
+} from "@/lib/ai";
 import { getProjectSettings, setProjectTheme } from "@/lib/settings";
 import {
   parseFunTheme,
@@ -39,6 +44,10 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [themeError, setThemeError] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [diagramRawContent, setDiagramRawContent] = useState<string | null>(null);
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -88,6 +97,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         setActiveDiagramPath(result.path);
         setDiagramName(result.name);
         setInitialData(result.initialData);
+        setDiagramRawContent(result.rawContent);
       } catch (err) {
         setDiagramError(
           err instanceof Error ? err.message : "Impossible d'ouvrir ce diagramme.",
@@ -107,6 +117,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setActiveDiagramPath(result.path);
       setDiagramName(result.name);
       setInitialData(result.initialData);
+      setDiagramRawContent(result.rawContent);
       await refreshDiagramList();
     } catch (err) {
       setDiagramError(
@@ -143,6 +154,54 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     }
   }, [projectPath, theme]);
 
+  const handleSendChat = useCallback(
+    async (message: string) => {
+      setChatError(null);
+      setChatLoading(true);
+
+      const userTurn: ChatTurn = { role: "user", content: message };
+      const historyWithUser = [...chatHistory, userTurn];
+      setChatHistory(historyWithUser);
+
+      try {
+        const result = await sendChatMessage(projectPath, {
+          diagramPath: activeDiagramPath,
+          diagramContent: diagramRawContent,
+          history: chatHistory,
+          userMessage: message,
+        });
+
+        const assistantTurn: ChatTurn = {
+          role: "assistant",
+          content: result.assistant_message,
+        };
+        setChatHistory([...historyWithUser, assistantTurn]);
+
+        if (result.diagram_reset && activeDiagramPath) {
+          try {
+            const reloaded = await loadDiagramIntoCanvas(
+              projectPath,
+              activeDiagramPath,
+            );
+            setInitialData(reloaded.initialData);
+            setDiagramRawContent(reloaded.rawContent);
+          } catch {
+            setChatError("Le diagramme a été réinitialisé mais le rechargement a échoué.");
+          }
+        }
+      } catch (err) {
+        setChatError(
+          err instanceof Error
+            ? err.message
+            : "Impossible de joindre l'assistant. Vérifiez votre connexion.",
+        );
+      } finally {
+        setChatLoading(false);
+      }
+    },
+    [projectPath, activeDiagramPath, diagramRawContent, chatHistory],
+  );
+
   return (
     <div className="workshop-shell" data-fun-theme={theme}>
       <Toolbar
@@ -171,7 +230,14 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onSelectDiagram={handleSelectDiagram}
           onSaveError={handleSaveError}
         />
-        <ChatSidebar aiStatus={aiStatus} aiError={aiError} />
+        <ChatSidebar
+          aiStatus={aiStatus}
+          aiError={aiError}
+          history={chatHistory}
+          loading={chatLoading}
+          chatError={chatError}
+          onSend={handleSendChat}
+        />
       </div>
     </div>
   );

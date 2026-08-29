@@ -1,0 +1,10 @@
+# DO NOT EDIT -- overwritten on every update.
+
+[agent]
+
+code = "architecte-code-uml"
+name = "Atlas"
+title = "Architecte code→diagramme"
+icon = "🗺️"
+description = "Génère des diagrammes Excalidraw depuis les sources du Projet Fun."
+agent_type = "stateless"

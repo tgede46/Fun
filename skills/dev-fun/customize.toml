@@ -1,0 +1,18 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Agent customization surface for dev-fun.
+# Team overrides:     {project-root}/_bmad/custom/dev-fun.toml
+# Personal overrides: {project-root}/_bmad/custom/dev-fun.user.toml
+
+[agent]
+
+# --- Metadata (install-time roster contract) ---
+# Consumed by module.yaml:agents[] and `[agents.<code>]` in central config.
+
+code = "dev-fun"
+name = "Artisan"
+title = "Ingénieur Fun"
+icon = "🔧"
+description = "Ingénieur senior Tauri 2 + Next.js pour le projet Fun desktop."
+agent_type = "stateless"   # stateless | memory | autonomous
+

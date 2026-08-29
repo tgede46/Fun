@@ -1,0 +1,10 @@
+# DO NOT EDIT -- overwritten on every update.
+
+[agent]
+
+code = "editeur-canvas"
+name = "Trace"
+title = "Éditeur canvas"
+icon = "✏️"
+description = "Applique les instructions utilisateur sur le canvas Excalidraw avec JSON valide."
+agent_type = "stateless"

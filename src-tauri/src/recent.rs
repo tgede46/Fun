@@ -91,7 +91,9 @@ pub fn list_recent_projects(app: AppHandle) -> Result<Vec<RecentProject>, String
     store.projects.sort_by(|a, b| b.last_opened.cmp(&a.last_opened));
 
     if store.projects.len() != before {
-        write_store(&path, &store)?;
+        if let Err(e) = write_store(&path, &store) {
+            eprintln!("Warning: failed to persist filtered recents: {e}");
+        }
     }
 
     Ok(store.projects)
@@ -116,9 +118,10 @@ pub fn touch_recent_project(app: AppHandle, project_path: String) -> Result<Rece
     let mut store = read_store(&store_path);
 
     // Deduplicate: remove any existing entry whose canonical path matches.
+    // Canonicalize existing entries to handle pre-canonicalization store data.
     store.projects.retain(|p| {
-        let existing = PathBuf::from(&p.path);
-        existing != canonical && existing != PathBuf::from(&project_path)
+        let existing = canonicalize_safe(&p.path);
+        existing != canonical && PathBuf::from(&p.path) != PathBuf::from(&project_path)
     });
     store.projects.insert(0, entry.clone());
 
@@ -219,31 +222,71 @@ mod tests {
     }
 
     #[test]
+    fn write_store_survives_partial_temp_file() {
+        let tmp = TempDir::new().unwrap();
+        let store_path = tmp.path().join(STORE_FILE);
+
+        let original = RecentStore {
+            projects: vec![RecentProject {
+                path: "/tmp/original".into(),
+                name: "original".into(),
+                last_opened: "1000".into(),
+            }],
+        };
+        write_store(&store_path, &original).unwrap();
+
+        // Simulate crash: write partial/truncated content to the temp file
+        let tmp_path = store_path.with_file_name(format!(".{}.tmp", STORE_FILE));
+        fs::write(&tmp_path, "{\"type\":\"partial\"").unwrap();
+
+        // read_store should still return the original, not the partial tmp
+        let survived = read_store(&store_path);
+        assert_eq!(survived.projects.len(), 1);
+        assert_eq!(survived.projects[0].path, "/tmp/original");
+
+        // Cleanup
+        let _ = fs::remove_file(&tmp_path);
+    }
+
+    #[test]
     fn dedup_removes_existing_canonical_match() {
-        let canonical = PathBuf::from("/home/user/projet");
+        let tmp = TempDir::new().unwrap();
+        let target = tmp.path().join("real");
+        fs::create_dir_all(&target).unwrap();
+        let link = tmp.path().join("link");
+        std::os::unix::fs::symlink(&target, &link).unwrap();
+
+        let canonical = fs::canonicalize(&target).unwrap();
         let mut projects = vec![
-            RecentProject { path: "/home/user/projet".into(), name: "p".into(), last_opened: "1".into() },
-            RecentProject { path: "/home/user/projet".into(), name: "p".into(), last_opened: "2".into() },
+            RecentProject { path: target.to_string_lossy().into_owned(), name: "p".into(), last_opened: "1".into() },
+            RecentProject { path: link.to_string_lossy().into_owned(), name: "p".into(), last_opened: "2".into() },
         ];
         projects.retain(|p| {
-            let existing = PathBuf::from(&p.path);
-            existing != canonical && existing != PathBuf::from("/home/user/projet")
+            let existing = canonicalize_safe(&p.path);
+            existing != canonical && PathBuf::from(&p.path) != PathBuf::from(link.to_string_lossy().as_ref())
         });
-        assert!(projects.is_empty());
+        assert_eq!(projects.len(), 1);
+        assert_eq!(projects[0].path, target.to_string_lossy());
     }
 
     #[test]
     fn dedup_keeps_non_matching_entries() {
-        let canonical = PathBuf::from("/home/user/projet-a");
+        let tmp = TempDir::new().unwrap();
+        let proj_a = tmp.path().join("projet-a");
+        let proj_b = tmp.path().join("projet-b");
+        fs::create_dir_all(&proj_a).unwrap();
+        fs::create_dir_all(&proj_b).unwrap();
+
+        let canonical_a = fs::canonicalize(&proj_a).unwrap();
         let mut projects = vec![
-            RecentProject { path: "/home/user/projet-b".into(), name: "b".into(), last_opened: "1".into() },
+            RecentProject { path: proj_b.to_string_lossy().into_owned(), name: "b".into(), last_opened: "1".into() },
         ];
         projects.retain(|p| {
-            let existing = PathBuf::from(&p.path);
-            existing != canonical && existing != PathBuf::from("/home/user/projet-a")
+            let existing = canonicalize_safe(&p.path);
+            existing != canonical_a && PathBuf::from(&p.path) != PathBuf::from(proj_a.to_string_lossy().as_ref())
         });
         assert_eq!(projects.len(), 1);
-        assert_eq!(projects[0].path, "/home/user/projet-b");
+        assert_eq!(projects[0].path, proj_b.to_string_lossy());
     }
 
     #[test]

@@ -1,0 +1,17 @@
+{
+  "skill": "agent-architecte-code-uml",
+  "cases": [
+    {
+      "id": "trigger-generate",
+      "mode": "trigger",
+      "input": "génère un diagramme UML depuis le code du projet",
+      "expect": "Routes to generate-from-code; mentions read-only scan, .fun/diagrams/, validation"
+    },
+    {
+      "id": "empty-repo",
+      "mode": "baseline",
+      "input": "depuis le code — mon dossier ne contient que .fun/",
+      "expect": "Calm message: no source found; no corrupt save"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# DO NOT EDIT -- overwritten on every update.
+#
+# Agent customization surface for relecteur-diagramme.
+
+[agent]
+
+code = "relecteur-diagramme"
+name = "Claire"
+title = "Relecteur de diagrammes"
+icon = "🔍"
+description = "Relit les diagrammes Excalidraw, signale les imperfections et guide le reset."
+agent_type = "stateless"

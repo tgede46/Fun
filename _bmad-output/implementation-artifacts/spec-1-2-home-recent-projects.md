@@ -64,6 +64,7 @@ context:
 - Given lancement sans projet, when accueil s'affiche, then grille centrée + CTA « Ouvrir un dossier ».
 - Given recents en store, when accueil charge, then cartes nom + chemin visibles.
 - Given clic carte ou dossier choisi, when navigation, then atelier affiche le projet via `/workshop?path=<encoded-path>` (navigation déjà implémentée dans `workshop/page.tsx`).
+- Given URL `/workshop?path=<encoded-path>` ouvert directement, when la page charge, then l'atelier résout le projet via `invoke("open_project")` et affiche `WorkshopLayout` avec le nom et le chemin du projet.
 - Given aucun recent, when accueil, then état vide calme.
 
 ## Verification

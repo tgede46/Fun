@@ -134,9 +134,11 @@ describe("HomeScreen — I/O matrix", () => {
 
     ctaButton.click();
 
-    // Vérifier que pick_project_folder a été appelé
+    // Vérifier que pick_project_folder a été appelé exactement une fois
     await waitFor(() => {
-      expect(mockInvoke).toHaveBeenCalledWith("pick_project_folder");
+      expect(mockInvoke).toHaveBeenCalledTimes(2);
+      expect(mockInvoke).toHaveBeenNthCalledWith(1, "get_recent_projects");
+      expect(mockInvoke).toHaveBeenNthCalledWith(2, "pick_project_folder");
     });
 
     // Aucun appel à open_project

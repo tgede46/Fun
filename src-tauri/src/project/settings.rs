@@ -88,6 +88,18 @@ pub fn set_theme(project_root: &Path, theme: FunTheme) -> Result<ProjectSettings
     Ok(settings)
 }
 
+pub fn set_pomodoro_durations(
+    project_root: &Path,
+    work_minutes: u32,
+    break_minutes: u32,
+) -> Result<ProjectSettings, String> {
+    let mut settings = read_settings(project_root)?;
+    settings.pomodoro_work_minutes = work_minutes;
+    settings.pomodoro_break_minutes = break_minutes;
+    write_settings(project_root, &settings)?;
+    Ok(settings)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

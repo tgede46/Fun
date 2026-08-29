@@ -126,6 +126,54 @@ pub fn save_diagram(
     fs::write(diagram_path, content).map_err(|e| e.to_string())
 }
 
+/// Valide qu'une chaîne est un JSON Excalidraw valide (type=="excalidraw", version==2, elements tableau).
+pub fn validate_excalidraw_json(json: &str) -> Result<(), String> {
+    let parsed: serde_json::Value =
+        serde_json::from_str(json).map_err(|_| "JSON Excalidraw invalide.".to_string())?;
+
+    if parsed.get("type").and_then(|v| v.as_str()) != Some("excalidraw") {
+        return Err("JSON Excalidraw invalide : type manquant ou incorrect.".to_string());
+    }
+
+    if parsed.get("version").and_then(|v| v.as_u64()) != Some(2) {
+        return Err("JSON Excalidraw invalide : version doit être 2.".to_string());
+    }
+
+    if !parsed.get("elements").and_then(|v| v.as_array()).is_some() {
+        return Err("JSON Excalidraw invalide : éléments manquants.".to_string());
+    }
+
+    Ok(())
+}
+
+/// Reset du diagramme : écrase le fichier avec un document Excalidraw vide au même chemin (AD-6).
+pub fn reset_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
+    validate_diagram_path(project_root, diagram_path)?;
+
+    let content = empty_excalidraw_json()?;
+    fs::write(diagram_path, &content).map_err(|e| e.to_string())?;
+    Ok(content)
+}
+
+/// Écrit un diagramme UML généré depuis le code dans `.fun/diagrams/uml-<iso8601>.excalidraw` (AD-7).
+pub fn write_uml_diagram(project_root: &Path, json: &str) -> Result<PathBuf, String> {
+    validate_excalidraw_json(json)?;
+
+    if !project_root.is_dir() {
+        return Err("Le dossier projet est introuvable.".to_string());
+    }
+
+    let dir = diagrams_dir(project_root);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let now = chrono::Utc::now();
+    let filename = format!("uml-{}.excalidraw", now.format("%Y%m%dT%H%M%SZ"));
+    let path = dir.join(filename);
+
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
 #[derive(Debug, Serialize)]
 pub struct DiagramEntry {
     pub path: String,
@@ -263,6 +311,88 @@ mod tests {
 
         let list = list_diagrams(&project).expect("list");
         assert_eq!(list.len(), 2);
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn validate_excalidraw_json_accepts_valid() {
+        let json = r#"{ "type": "excalidraw", "version": 2, "elements": [], "appState": {}, "files": {} }"#;
+        assert!(validate_excalidraw_json(json).is_ok());
+    }
+
+    #[test]
+    fn validate_excalidraw_json_rejects_wrong_type() {
+        let json = r#"{ "type": "other", "version": 2, "elements": [] }"#;
+        let err = validate_excalidraw_json(json).expect_err("must reject");
+        assert!(err.contains("type") || err.contains("invalide"));
+    }
+
+    #[test]
+    fn validate_excalidraw_json_rejects_wrong_version() {
+        let json = r#"{ "type": "excalidraw", "version": 3, "elements": [] }"#;
+        let err = validate_excalidraw_json(json).expect_err("must reject");
+        assert!(err.contains("version") || err.contains("invalide"));
+    }
+
+    #[test]
+    fn validate_excalidraw_json_rejects_missing_elements() {
+        let json = r#"{ "type": "excalidraw", "version": 2 }"#;
+        let err = validate_excalidraw_json(json).expect_err("must reject");
+        assert!(err.contains("éléments") || err.contains("invalide"));
+    }
+
+    #[test]
+    fn reset_diagram_overwrites_with_empty() {
+        let project = temp_project();
+        let diagram_path = create_diagram(&project).expect("create");
+        let content = load_diagram(&project, &diagram_path).expect("load");
+        assert!(content.contains("rectangle") || content.contains("type"));
+
+        reset_diagram(&project, &diagram_path).expect("reset");
+
+        let reset_content = load_diagram(&project, &diagram_path).expect("load after reset");
+        let parsed: serde_json::Value = serde_json::from_str(&reset_content).expect("parse");
+        assert_eq!(parsed["type"], "excalidraw");
+        assert!(parsed["elements"].as_array().unwrap().is_empty());
+        assert_eq!(diagram_path.file_stem().unwrap().to_str().unwrap(), diagram_path.file_stem().unwrap().to_str().unwrap());
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn write_uml_diagram_writes_valid_json() {
+        let project = temp_project();
+        let json = r#"{ "type": "excalidraw", "version": 2, "elements": [{"id":"c1","type":"rectangle","x":0,"y":0,"width":200,"height":100}], "appState": {}, "files": {} }"#;
+        let path = write_uml_diagram(&project, json).expect("write");
+
+        assert!(path.exists());
+        assert!(path.to_string_lossy().contains(".fun/diagrams/uml-"));
+        assert!(path.to_string_lossy().ends_with(".excalidraw"));
+
+        let written = fs::read_to_string(&path).expect("read");
+        let parsed: serde_json::Value = serde_json::from_str(&written).expect("parse");
+        assert_eq!(parsed["type"], "excalidraw");
+        assert_eq!(parsed["version"], 2);
+        assert!(!parsed["elements"].as_array().unwrap().is_empty());
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn write_uml_diagram_rejects_invalid_json() {
+        let project = temp_project();
+        let json = r#"{ "type": "other" }"#;
+        let err = write_uml_diagram(&project, json).expect_err("must reject");
+        assert!(err.contains("invalide") || err.contains("type") || err.contains("version"));
+
+        let dir = project.join(".fun").join("diagrams");
+        let count = if dir.exists() {
+            fs::read_dir(&dir).unwrap().count()
+        } else {
+            0
+        };
+        assert_eq!(count, 0, "aucun fichier écrit en cas d'erreur");
 
         let _ = fs::remove_dir_all(project);
     }

@@ -78,6 +78,7 @@ export async function createAndLoadDiagram(
   path: string;
   name: string;
   initialData: ExcalidrawInitialDataState;
+  rawContent: string;
 }> {
   const created = await createDiagram(projectPath);
   const loaded = await loadDiagram(projectPath, created.path);
@@ -86,6 +87,7 @@ export async function createAndLoadDiagram(
     path: loaded.path,
     name: created.name,
     initialData: parseExcalidrawContent(loaded.content),
+    rawContent: loaded.content,
   };
 }
 
@@ -96,6 +98,7 @@ export async function loadDiagramIntoCanvas(
   path: string;
   name: string;
   initialData: ExcalidrawInitialDataState;
+  rawContent: string;
 }> {
   const loaded = await loadDiagram(projectPath, diagramPath);
   const name =
@@ -105,5 +108,6 @@ export async function loadDiagramIntoCanvas(
     path: loaded.path,
     name,
     initialData: parseExcalidrawContent(loaded.content),
+    rawContent: loaded.content,
   };
 }

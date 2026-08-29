@@ -1,0 +1,17 @@
+{
+  "skill": "agent-editeur-canvas",
+  "cases": [
+    {
+      "id": "trigger-edit",
+      "mode": "trigger",
+      "input": "ajoute une flèche entre le bloc Frontend et API",
+      "expect": "Routes to apply-instruction; describes concrete canvas change; valid Excalidraw approach"
+    },
+    {
+      "id": "baseline-separation",
+      "mode": "baseline",
+      "input": "qu'est-ce qui ne va pas dans mon diagramme ?",
+      "expect": "Redirects to relecteur-diagramme / review-only; does not silently edit canvas"
+    }
+  ]
+}

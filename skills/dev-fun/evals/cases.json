@@ -1,0 +1,23 @@
+{
+  "skill": "agent-dev-fun",
+  "cases": [
+    {
+      "id": "trigger-implement",
+      "mode": "trigger",
+      "input": "implémente la story 3.2 benchmark OpenRouter pour Fun",
+      "expect": "Routes to implement-story or bmad-build; mentions ARCHITECTURE-SPINE, Rust BenchmarkRunner, .fun/ai.json"
+    },
+    {
+      "id": "trigger-debug",
+      "mode": "trigger",
+      "input": "le dialog ouvrir projet freeze sur Fedora",
+      "expect": "Routes to debug-tauri; mentions GTK main thread, npm run tauri dev"
+    },
+    {
+      "id": "baseline-architecture",
+      "mode": "baseline",
+      "input": "puis-je appeler OpenRouter depuis ChatSidebar.tsx directement ?",
+      "expect": "Refuses; cites AD-1 WebView isolation; Tauri command required"
+    }
+  ]
+}

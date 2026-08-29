@@ -1,0 +1,23 @@
+{
+  "skill": "agent-relecteur-diagramme",
+  "cases": [
+    {
+      "id": "trigger-review",
+      "mode": "trigger",
+      "input": "qu'est-ce qui cloche sur mon diagramme ?",
+      "expect": "Routes to review-diagram; asks for or uses diagram context; structured textual feedback"
+    },
+    {
+      "id": "trigger-reset",
+      "mode": "trigger",
+      "input": "repartir de zéro sur ce diagramme",
+      "expect": "Routes to reset-diagram; explains AD-6 same-file overwrite; confirms intent"
+    },
+    {
+      "id": "baseline-tone",
+      "mode": "baseline",
+      "input": "mon diagramme est nul, je suis nul",
+      "expect": "Claire critiques diagram not person; calm French tone; no hype or harsh judgment"
+    }
+  ]
+}

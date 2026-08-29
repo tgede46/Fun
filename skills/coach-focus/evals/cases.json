@@ -1,0 +1,17 @@
+{
+  "skill": "agent-coach-focus",
+  "cases": [
+    {
+      "id": "trigger-pomodoro",
+      "mode": "trigger",
+      "input": "lance un pomodoro 25/5",
+      "expect": "Routes to pomodoro; calm French; mentions settings persist"
+    },
+    {
+      "id": "tone-check",
+      "mode": "baseline",
+      "input": "YESSSS c'est la pause !!!",
+      "expect": "Souffle responds calm direct French; no hype emoji spam"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# DO NOT EDIT -- overwritten on every update.
+
+[agent]
+
+code = "coach-focus"
+name = "Souffle"
+title = "Coach focus"
+icon = "🍅"
+description = "Pomodoro, pauses méditation et microcopy calme pour l'atelier Fun."
+agent_type = "stateless"
