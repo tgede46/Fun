@@ -203,16 +203,6 @@ pub struct AiStatusResult {
 }
 
 #[tauri::command]
-pub fn set_openrouter_api_key(api_key: String) -> Result<(), String> {
-    ai::store_api_key(&api_key)
-}
-
-#[tauri::command]
-pub fn clear_openrouter_api_key() -> Result<(), String> {
-    ai::delete_api_key()
-}
-
-#[tauri::command]
 pub fn get_openrouter_key_configured() -> Result<bool, String> {
     ai::has_api_key()
 }

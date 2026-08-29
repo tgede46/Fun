@@ -17,7 +17,7 @@ export function ChatSidebar({ aiStatus, aiError }: ChatSidebarProps) {
           <p className="workshop-chat__hint">
             {aiStatus.key_configured
               ? "Assistant IA — conversation bientôt disponible."
-              : "Configurez votre clé OpenRouter depuis l'accueil pour activer l'IA."}
+              : "Définissez OPENROUTER_API_KEY dans le fichier .env à la racine du projet."}
           </p>
           <p className="workshop-chat__model">
             Modèle actif : <span>{aiStatus.active_model}</span>

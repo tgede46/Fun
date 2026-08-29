@@ -6,8 +6,19 @@ mod state;
 
 use state::AppState;
 
+fn load_dotenv() {
+    if dotenvy::dotenv().is_ok() {
+        return;
+    }
+
+    let project_env = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../.env");
+    let _ = dotenvy::from_path(project_env);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    load_dotenv();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
@@ -24,8 +35,6 @@ pub fn run() {
             commands::list_diagrams,
             commands::get_project_settings,
             commands::set_project_theme,
-            commands::set_openrouter_api_key,
-            commands::clear_openrouter_api_key,
             commands::get_openrouter_key_configured,
             commands::get_ai_status,
         ])

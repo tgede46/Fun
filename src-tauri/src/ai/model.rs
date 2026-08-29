@@ -45,11 +45,9 @@ pub fn resolve_active_model_for_project(
     project_root: &std::path::Path,
 ) -> Result<ActiveModelInfo, String> {
     let config = ai_config::read_ai_config(project_root)?;
-    Ok(resolve_active_model(&config))
-}
-
-pub fn validate_model_for_request(model_id: &str) -> Result<(), String> {
-    assert_free_model(model_id)
+    let info = resolve_active_model(&config);
+    assert_free_model(&info.model_id)?;
+    Ok(info)
 }
 
 #[cfg(test)]

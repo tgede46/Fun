@@ -1,5 +1,4 @@
-const KEYRING_SERVICE: &str = "fun-desktop";
-const KEYRING_USER: &str = "openrouter-api-key";
+const ENV_API_KEY: &str = "OPENROUTER_API_KEY";
 
 pub fn validate_api_key(api_key: &str) -> Result<(), String> {
     let trimmed = api_key.trim();
@@ -12,22 +11,19 @@ pub fn validate_api_key(api_key: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn store_api_key(api_key: &str) -> Result<(), String> {
-    validate_api_key(api_key)?;
-    let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-        .map_err(|e| format!("Stockage sécurisé indisponible: {e}"))?;
-    entry
-        .set_password(api_key.trim())
-        .map_err(|e| format!("Impossible d'enregistrer la clé: {e}"))
-}
-
 pub fn load_api_key() -> Result<Option<String>, String> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-        .map_err(|e| format!("Stockage sécurisé indisponible: {e}"))?;
-    match entry.get_password() {
-        Ok(value) => Ok(Some(value)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(err) => Err(format!("Impossible de lire la clé: {err}")),
+    match std::env::var(ENV_API_KEY) {
+        Ok(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                Ok(None)
+            } else {
+                validate_api_key(trimmed)?;
+                Ok(Some(trimmed.to_string()))
+            }
+        }
+        Err(std::env::VarError::NotPresent) => Ok(None),
+        Err(err) => Err(format!("Impossible de lire {ENV_API_KEY}: {err}")),
     }
 }
 
@@ -35,18 +31,16 @@ pub fn has_api_key() -> Result<bool, String> {
     Ok(load_api_key()?.is_some())
 }
 
-pub fn delete_api_key() -> Result<(), String> {
-    let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
-        .map_err(|e| format!("Stockage sécurisé indisponible: {e}"))?;
-    match entry.delete_credential() {
-        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(err) => Err(format!("Impossible de supprimer la clé: {err}")),
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use super::validate_api_key;
+    use super::{has_api_key, validate_api_key};
+    use std::sync::{Mutex, MutexGuard};
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    fn env_test_guard() -> MutexGuard<'static, ()> {
+        ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
 
     #[test]
     fn validate_api_key_accepts_sk_or_prefix() {
@@ -56,5 +50,13 @@ mod tests {
     #[test]
     fn validate_api_key_rejects_invalid_prefix() {
         validate_api_key("sk-test").expect_err("invalid");
+    }
+
+    #[test]
+    fn load_api_key_reads_env_variable() {
+        let _guard = env_test_guard();
+        std::env::set_var("OPENROUTER_API_KEY", "sk-or-v1-test");
+        assert!(has_api_key().expect("check"));
+        std::env::remove_var("OPENROUTER_API_KEY");
     }
 }

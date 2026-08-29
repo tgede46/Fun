@@ -18,8 +18,6 @@
     "allow-list-diagrams",
     "allow-get-project-settings",
     "allow-set-project-theme",
-    "allow-set-openrouter-api-key",
-    "allow-clear-openrouter-api-key",
     "allow-get-openrouter-key-configured",
     "allow-get-ai-status"
   ]
