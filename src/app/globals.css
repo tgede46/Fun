@@ -1,6 +1,9 @@
 :root {
   --fun-bg: #f5f0e8;
   --fun-fg: #1a1a1a;
+  --fun-muted: #5c5c5c;
+  --fun-border: #e0d8cc;
+  --fun-surface: #ffffff;
 }
 
 * {
@@ -23,21 +26,139 @@ body {
 
 main {
   min-height: 100vh;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1.5rem;
+}
+
+.home__header {
+  max-width: 720px;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.home__header h1 {
+  font-size: 2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.home__header p {
+  color: var(--fun-muted);
+}
+
+.home__panel {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.home__cta {
+  align-self: center;
+  border: 1px solid var(--fun-fg);
+  background: var(--fun-fg);
+  color: var(--fun-bg);
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.home__cta:hover {
+  opacity: 0.9;
+}
+
+.home__empty,
+.home__hint {
+  text-align: center;
+  color: var(--fun-muted);
+}
+
+.home__error {
+  text-align: center;
+  color: #8b2e2e;
+}
+
+.home__grid {
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.project-card {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--fun-border);
+  background: var(--fun-surface);
+  border-radius: 8px;
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.project-card:hover {
+  border-color: var(--fun-fg);
+}
+
+.project-card__name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.project-card__path {
+  font-size: 0.875rem;
+  color: var(--fun-muted);
+  word-break: break-all;
+}
+
+.workshop {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 1rem;
   padding: 2rem;
   text-align: center;
 }
 
-h1 {
-  font-size: 2rem;
-  font-weight: 600;
+.workshop__header h1 {
+  font-size: 1.75rem;
+  margin-top: 0.25rem;
 }
 
-p {
+.workshop__eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  color: var(--fun-muted);
+}
+
+.workshop__path {
+  margin-top: 0.5rem;
+  color: var(--fun-muted);
+  word-break: break-all;
+}
+
+.workshop__hint {
   max-width: 32rem;
-  opacity: 0.85;
+  color: var(--fun-muted);
+}
+
+.workshop__error {
+  color: #8b2e2e;
+}
+
+.workshop__back {
+  color: var(--fun-fg);
+  text-decoration: underline;
 }

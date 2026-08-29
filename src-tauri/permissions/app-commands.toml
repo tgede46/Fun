@@ -1,0 +1,14 @@
+[[permission]]
+identifier = "allow-get-recent-projects"
+description = "Charge la liste des projets récents."
+commands.allow = ["get_recent_projects"]
+
+[[permission]]
+identifier = "allow-open-project"
+description = "Ouvre un dossier projet et initialise `.fun/`."
+commands.allow = ["open_project"]
+
+[[permission]]
+identifier = "allow-pick-project-folder"
+description = "Affiche le sélecteur natif de dossier."
+commands.allow = ["pick_project_folder"]
