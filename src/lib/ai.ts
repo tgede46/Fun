@@ -8,9 +8,19 @@ export type AiStatus = {
 };
 
 export type ChatTurn = {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "system";
   content: string;
+  /** Nom affiché pour les réponses assistant (Claire, Trace, Assistant…). */
+  personaDisplay?: string;
 };
+
+export type BenchmarkUiState =
+  | "idle"
+  | "running"
+  | "fresh"
+  | "updated"
+  | "unavailable"
+  | "failed";
 
 export type SendChatResult = {
   assistant_message: string;

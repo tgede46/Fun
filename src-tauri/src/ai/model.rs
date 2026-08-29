@@ -68,6 +68,7 @@ mod tests {
             active_model: Some("meta-llama/llama-3.2-3b-instruct:free".to_string()),
             last_benchmark_at: Some("2026-08-29T00:00:00Z".to_string()),
             last_scores: None,
+            ..Default::default()
         };
         let info = resolve_active_model(&config);
         assert_eq!(info.source, ModelSource::Benchmark);

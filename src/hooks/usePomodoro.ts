@@ -31,12 +31,8 @@ export function usePomodoro({
   const [saveError, setSaveError] = useState<string | null>(null);
   const phaseEndHandledRef = useRef(false);
 
-  // Sync props → state quand les durées changent (reouverture projet, etc.)
-  useEffect(() => {
-    setWorkMinutes(initialWork);
-    setBreakMinutes(initialBreak);
-  }, [initialBreak, initialWork]);
-
+  // Durées directes depuis les props — le parent (WorkshopLayout) gère les changements
+  
   const startPhase = useCallback((next: "work" | "break") => {
     phaseEndHandledRef.current = false;
     setPhase(next);

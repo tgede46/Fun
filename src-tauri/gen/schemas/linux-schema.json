@@ -501,6 +501,12 @@
           "markdownDescription": "Persiste le thème atelier dans settings.json."
         },
         {
+          "description": "Vérifier l'état de permission de notification.",
+          "type": "string",
+          "const": "notification:allow-is-permission-granted",
+          "markdownDescription": "Vérifier l'état de permission de notification."
+        },
+        {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",
           "type": "string",
           "const": "core:default",

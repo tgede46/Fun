@@ -89,6 +89,11 @@ description = "Notification OS fin de phase Pomodoro."
 commands.allow = ["notify_pomodoro_phase"]
 
 [[permission]]
+identifier = "notification:allow-is-permission-granted"
+description = "Vérifier l'état de permission de notification."
+commands.allow = ["is_permission_granted"]
+
+[[permission]]
 identifier = "allow-run-benchmark"
 description = "Lance le benchmark IA et met à jour le modèle actif."
 commands.allow = ["run_benchmark"]

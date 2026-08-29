@@ -22,6 +22,21 @@ type CanvasAreaProps = {
   canvasRef: RefObject<ExcalidrawCanvasHandle | null>;
 };
 
+function StatusBanner({ message, tone }: { message: string; tone: "error" | "info" }) {
+  return (
+    <p
+      className={
+        tone === "error"
+          ? "text-xs text-destructive bg-destructive/10 border-b border-border px-4 py-2"
+          : "text-xs text-muted-foreground bg-secondary/40 border-b border-border px-4 py-2"
+      }
+      role={tone === "error" ? "alert" : "status"}
+    >
+      {message}
+    </p>
+  );
+}
+
 export function CanvasArea({
   projectPath,
   theme,
@@ -49,26 +64,17 @@ export function CanvasArea({
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
         <div className="p-3 border-b border-border">{list}</div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6 relative">
-          {activeDiagramPath && initialData ? (
-            <div className="absolute inset-0 opacity-30 pointer-events-none">
-              <ExcalidrawCanvas
-                ref={canvasRef}
-                projectPath={projectPath}
-                diagramPath={activeDiagramPath}
-                theme={theme}
-                initialData={initialData}
-                onSaveError={onSaveError}
-              />
-            </div>
-          ) : null}
-          <div className="relative z-10 flex flex-col items-center gap-3 bg-card/90 backdrop-blur-sm rounded-2xl border border-border px-10 py-8 shadow-lg">
-            <p className="text-2xl font-bold text-foreground">◫ UML</p>
-            <p className="text-sm text-muted-foreground text-center">
-              Le mode UML sera disponible prochainement.
+        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
+          <div className="flex flex-col items-center gap-3 bg-card rounded-2xl border border-border px-10 py-8 shadow-sm max-w-md text-center">
+            <p className="text-2xl font-bold text-foreground">◫ UML structuré</p>
+            <p className="text-sm text-muted-foreground">
+              Le mode draw.io (diagrammes UML formels) arrive dans une prochaine version.
             </p>
-            <p className="text-xs text-muted-foreground">
-              En attendant, utilisez le mode Sketch pour dessiner.
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              En attendant, utilisez le mode <strong className="text-foreground">Sketch</strong>{" "}
+              (icône ✎ à gauche) pour dessiner librement, ou{" "}
+              <strong className="text-foreground">Depuis le code</strong> pour générer un diagramme
+              depuis vos sources.
             </p>
           </div>
         </div>
@@ -76,23 +82,12 @@ export function CanvasArea({
     );
   }
 
-  if (error) {
+  if (error && !initialData) {
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
         <div className="p-3 border-b border-border">{list}</div>
         <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-sm text-destructive">{error}</p>
-        </div>
-      </section>
-    );
-  }
-
-  if (codeGenError) {
-    return (
-      <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
-        <div className="p-3 border-b border-border">{list}</div>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <p className="text-sm text-destructive">{codeGenError}</p>
+          <p className="text-sm text-destructive text-center max-w-md">{error}</p>
         </div>
       </section>
     );
@@ -101,13 +96,18 @@ export function CanvasArea({
   if (!initialData || !activeDiagramPath) {
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
+        {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
         <div className="p-3 border-b border-border">{list}</div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-2 p-6">
-          <p className="text-lg font-semibold text-foreground">Nouveau diagramme</p>
-          <p className="text-sm text-muted-foreground text-center max-w-md">
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
+          <p className="text-lg font-semibold text-foreground">Commencer à dessiner</p>
+          <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
             {diagrams.length > 0
-              ? "Sélectionnez un diagramme ci-dessus ou créez-en un nouveau via la barre d'outils."
-              : "Cliquez sur « Nouveau diagramme » dans la barre d'outils pour commencer à dessiner."}
+              ? "Choisissez un diagramme dans la liste ci-dessus, ou créez-en un nouveau."
+              : "Cliquez sur « Nouveau diagramme » dans la barre du haut pour ouvrir un canvas vierge."}
+          </p>
+          <p className="text-xs text-muted-foreground text-center max-w-md">
+            Astuce : « Depuis le code » scanne les fichiers sources du projet et génère un diagramme
+            automatiquement (connexion IA requise).
           </p>
         </div>
       </section>
@@ -116,14 +116,19 @@ export function CanvasArea({
 
   return (
     <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
+      {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
       <div className="flex items-center gap-3 p-3 border-b border-border">
         {list}
         <p className="text-sm font-medium text-foreground truncate">{diagramName}</p>
         {saveError ? (
           <p className="text-xs text-destructive ml-auto" role="status">
-            {saveError}
+            Sauvegarde échouée : {saveError}
           </p>
-        ) : null}
+        ) : (
+          <p className="text-xs text-muted-foreground ml-auto hidden sm:block">
+            Sauvegarde automatique
+          </p>
+        )}
       </div>
       <ExcalidrawCanvas
         ref={canvasRef}

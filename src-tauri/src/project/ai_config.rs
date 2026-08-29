@@ -10,6 +10,12 @@ pub struct AiConfig {
     pub active_model: Option<String>,
     pub last_benchmark_at: Option<String>,
     pub last_scores: Option<serde_json::Value>,
+    /// Modèles `:free` candidats au benchmark (remplace la liste par défaut si présent).
+    #[serde(default)]
+    pub candidate_models: Option<Vec<String>>,
+    /// Intervalle en jours avant re-benchmark (défaut : 3).
+    #[serde(default)]
+    pub benchmark_staleness_days: Option<i64>,
 }
 
 fn ai_path(project_root: &Path) -> PathBuf {
@@ -73,6 +79,7 @@ mod tests {
             active_model: Some("meta-llama/llama-3.2-3b-instruct:free".to_string()),
             last_benchmark_at: Some("2026-08-29T00:00:00Z".to_string()),
             last_scores: Some(serde_json::json!({"model_a": 85.0})),
+            ..Default::default()
         };
         write_ai_config(&root, &config).unwrap();
         let read_back = read_ai_config(&root).unwrap();

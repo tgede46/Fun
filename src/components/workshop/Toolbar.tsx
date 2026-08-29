@@ -63,14 +63,16 @@ export function Toolbar({
               className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
               onClick={onGenerateFromCode}
               disabled={isGeneratingFromCode}
+              title="Scanne les fichiers source du projet et génère un diagramme Excalidraw via l'IA"
             >
-              {isGeneratingFromCode ? "Génération…" : "Depuis le code"}
+              {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
             </button>
             <button
               type="button"
               className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
               onClick={onNewDiagram}
               disabled={isCreatingDiagram}
+              title="Crée un fichier .excalidraw vide dans .fun/diagrams/"
             >
               {isCreatingDiagram ? "Création…" : "Nouveau diagramme"}
             </button>

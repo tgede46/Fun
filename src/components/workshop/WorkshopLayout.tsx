@@ -11,10 +11,13 @@ import {
 import {
   getAiStatus,
   generateDiagramFromCode,
+  runBenchmark,
   sendChatMessage,
   type AiStatus,
+  type BenchmarkUiState,
   type ChatTurn,
 } from "@/lib/ai";
+import { loadChatHistory, saveChatHistory } from "@/lib/chat-storage";
 import { getProjectSettings, setProjectTheme } from "@/lib/settings";
 import {
   parseFunTheme,
@@ -51,7 +54,9 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [themeError, setThemeError] = useState<string | null>(null);
   const [aiStatus, setAiStatus] = useState<AiStatus | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
-  const [chatHistory, setChatHistory] = useState<ChatTurn[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatTurn[]>(() =>
+    loadChatHistory(projectPath),
+  );
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const [diagramRawContent, setDiagramRawContent] = useState<string | null>(null);
@@ -60,8 +65,19 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [mode, setMode] = useState<WorkshopMode>("sketch");
   const [isGeneratingFromCode, setIsGeneratingFromCode] = useState(false);
   const [codeGenError, setCodeGenError] = useState<string | null>(null);
+  const [benchmarkState, setBenchmarkState] = useState<BenchmarkUiState>("idle");
+  const [benchmarkMessage, setBenchmarkMessage] = useState<string | null>(null);
 
   const canvasRef = useRef<ExcalidrawCanvasHandle>(null);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [theme]);
 
   const pomodoro = usePomodoro({
     projectPath,
@@ -112,6 +128,59 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       cancelled = true;
     };
   }, [projectPath]);
+
+  useEffect(() => {
+    saveChatHistory(projectPath, chatHistory);
+  }, [projectPath, chatHistory]);
+
+  useEffect(() => {
+    if (!aiStatus?.key_configured) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      setBenchmarkState("running");
+      setBenchmarkMessage(null);
+      try {
+        const result = await runBenchmark(projectPath);
+        if (cancelled) return;
+
+        const refreshed = await getAiStatus(projectPath);
+        if (cancelled) return;
+
+        setAiStatus(refreshed);
+        const scoreCount = Object.keys(result.scores).length;
+        if (scoreCount > 0) {
+          setBenchmarkState("updated");
+          const short =
+            result.active_model.split("/").pop()?.replace(":free", "") ??
+            result.active_model;
+          setBenchmarkMessage(`Benchmark terminé — modèle actif : ${short}.`);
+        } else if (result.ran_at) {
+          setBenchmarkState("fresh");
+          setBenchmarkMessage("Benchmark à jour — aucune nouvelle évaluation nécessaire.");
+        } else {
+          setBenchmarkState("failed");
+          setBenchmarkMessage(
+            "Benchmark pas encore effectué — le modèle par défaut est utilisé.",
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setBenchmarkState("failed");
+          setBenchmarkMessage(
+            "Benchmark indisponible — le dernier modèle connu reste utilisé.",
+          );
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectPath, aiStatus?.key_configured]);
 
   const openDiagram = useCallback(
     async (path: string) => {
@@ -193,19 +262,24 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         const result = await sendChatMessage(projectPath, {
           diagramPath: activeDiagramPath,
           diagramContent: diagramRawContent,
-          history: chatHistory,
+          history: chatHistory.filter((t) => t.role !== "system"),
           userMessage: message,
         });
 
         const assistantTurn: ChatTurn = {
           role: "assistant",
           content: result.assistant_message,
+          personaDisplay: result.persona_display,
         };
-        setChatHistory([...historyWithUser, assistantTurn]);
+        const nextHistory: ChatTurn[] = [...historyWithUser, assistantTurn];
 
         if (result.diagram_update && activeDiagramPath) {
           canvasRef.current?.applyScene(result.diagram_update);
           setDiagramRawContent(result.diagram_update);
+          nextHistory.push({
+            role: "system",
+            content: "✓ Diagramme mis à jour sur le canvas (Trace).",
+          });
         }
 
         if (result.diagram_reset && activeDiagramPath) {
@@ -216,10 +290,16 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
             );
             setInitialData(reloaded.initialData);
             setDiagramRawContent(reloaded.rawContent);
+            nextHistory.push({
+              role: "system",
+              content: "✓ Canvas réinitialisé — diagramme vide rechargé.",
+            });
           } catch {
             setChatError("Le diagramme a été réinitialisé mais le rechargement a échoué.");
           }
         }
+
+        setChatHistory(nextHistory);
       } catch (err) {
         setChatError(
           err instanceof Error
@@ -241,6 +321,13 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       const result = await generateDiagramFromCode(projectPath);
       await refreshDiagramList();
       await openDiagram(result.path);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: "system",
+          content: `✓ Diagramme « ${result.name} » généré depuis le code du projet.`,
+        },
+      ]);
     } catch (err) {
       setCodeGenError(
         err instanceof Error
@@ -253,7 +340,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   }, [projectPath, refreshDiagramList, openDiagram]);
 
   return (
-    <div className="flex flex-col h-screen bg-background" data-fun-theme={theme}>
+    <div className="workshop-shell flex flex-col h-screen bg-background" data-fun-theme={theme}>
       <Toolbar
         projectName={projectName}
         theme={theme}
@@ -291,6 +378,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         <ChatSidebar
           aiStatus={aiStatus}
           aiError={aiError}
+          benchmarkState={benchmarkState}
+          benchmarkMessage={benchmarkMessage}
           history={chatHistory}
           loading={chatLoading}
           chatError={chatError}

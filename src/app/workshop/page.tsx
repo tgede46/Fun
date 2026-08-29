@@ -35,10 +35,15 @@ function WorkshopContent() {
         if (!cancelled) {
           setProjectName(result.name);
           setError(null);
+          if (result.fun_created) {
+            // .fun/ vient d'être créé — l'utilisateur sait que le projet est initialisé
+          }
         }
       } catch {
         if (!cancelled) {
-          setError("Impossible d'ouvrir ce projet.");
+          setError(
+            "Ce dossier est introuvable ou n'est pas un projet valide. Vérifiez le chemin ou rouvrez-le depuis l'accueil.",
+          );
           router.replace("/");
         }
       } finally {
@@ -69,7 +74,7 @@ function WorkshopContent() {
   if (loading) {
     return (
       <main className="flex items-center justify-center h-screen text-sm text-muted-foreground">
-        Ouverture du projet…
+        Ouverture du projet et initialisation de l&apos;atelier…
       </main>
     );
   }

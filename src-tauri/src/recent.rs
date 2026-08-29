@@ -119,10 +119,7 @@ pub fn touch_recent_project(app: AppHandle, project_path: String) -> Result<Rece
 
     // Deduplicate: remove any existing entry whose canonical path matches.
     // Canonicalize existing entries to handle pre-canonicalization store data.
-    store.projects.retain(|p| {
-        let existing = canonicalize_safe(&p.path);
-        existing != canonical && PathBuf::from(&p.path) != PathBuf::from(&project_path)
-    });
+    store.projects.retain(|p| canonicalize_safe(&p.path) != canonical);
     store.projects.insert(0, entry.clone());
 
     if store.projects.len() > MAX_RECENTS {
@@ -261,12 +258,18 @@ mod tests {
             RecentProject { path: target.to_string_lossy().into_owned(), name: "p".into(), last_opened: "1".into() },
             RecentProject { path: link.to_string_lossy().into_owned(), name: "p".into(), last_opened: "2".into() },
         ];
-        projects.retain(|p| {
-            let existing = canonicalize_safe(&p.path);
-            existing != canonical && PathBuf::from(&p.path) != PathBuf::from(link.to_string_lossy().as_ref())
-        });
+        projects.retain(|p| canonicalize_safe(&p.path) != canonical);
+        assert_eq!(projects.len(), 0);
+
+        projects.insert(
+            0,
+            RecentProject {
+                path: target.to_string_lossy().into_owned(),
+                name: "p".into(),
+                last_opened: "3".into(),
+            },
+        );
         assert_eq!(projects.len(), 1);
-        assert_eq!(projects[0].path, target.to_string_lossy());
     }
 
     #[test]
@@ -281,10 +284,7 @@ mod tests {
         let mut projects = vec![
             RecentProject { path: proj_b.to_string_lossy().into_owned(), name: "b".into(), last_opened: "1".into() },
         ];
-        projects.retain(|p| {
-            let existing = canonicalize_safe(&p.path);
-            existing != canonical_a && PathBuf::from(&p.path) != PathBuf::from(proj_a.to_string_lossy().as_ref())
-        });
+        projects.retain(|p| canonicalize_safe(&p.path) != canonical_a);
         assert_eq!(projects.len(), 1);
         assert_eq!(projects[0].path, proj_b.to_string_lossy());
     }

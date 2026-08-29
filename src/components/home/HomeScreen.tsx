@@ -132,6 +132,12 @@ export function HomeScreen() {
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground">Fun</h1>
           <p className="text-muted-foreground mt-1">Ton atelier desktop — canvas, IA et focus.</p>
+          <p className="text-xs text-muted-foreground mt-3 max-w-md mx-auto leading-relaxed">
+            Un projet = un dossier sur ton disque, avec un sous-dossier{" "}
+            <code className="font-mono bg-secondary px-1 rounded">.fun/</code> pour les diagrammes
+            et les réglages. L&apos;IA nécessite une clé OpenRouter dans{" "}
+            <code className="font-mono bg-secondary px-1 rounded">.env</code>.
+          </p>
         </header>
 
         <section className="bg-card rounded-xl border border-border p-6">

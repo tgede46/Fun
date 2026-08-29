@@ -1,13 +1,16 @@
 use chrono::{Duration, Utc};
+use futures::future::join3;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::sync::{Arc, LazyLock};
+use tokio::sync::{Mutex, Semaphore};
 
 use crate::ai::client::{chat_completion, ChatMessage};
 use crate::ai::model::DEFAULT_FREE_MODEL;
 use crate::project::ai_config;
 
-/// Modèles candidats `:free` évalués par le benchmark.
-const CANDIDATE_MODELS: &[&str] = &[
+/// Modèles candidats `:free` évalués par le benchmark (défaut si absent de ai.json).
+const DEFAULT_CANDIDATE_MODELS: &[&str] = &[
     "google/gemma-2-9b-it:free",
     "meta-llama/llama-3.2-3b-instruct:free",
     "microsoft/phi-3-mini-128k-instruct:free",
@@ -15,13 +18,18 @@ const CANDIDATE_MODELS: &[&str] = &[
     "qwen/qwen-2-7b-instruct:free",
 ];
 
-/// Intervalle en jours entre deux benchmarks.
-const BENCHMARK_STALENESS_DAYS: i64 = 3;
+/// Intervalle en jours entre deux benchmarks (défaut si absent de ai.json).
+const DEFAULT_BENCHMARK_STALENESS_DAYS: i64 = 3;
+
+/// Concurrence max de modèles évalués en parallèle.
+const MAX_MODEL_CONCURRENCY: usize = 2;
 
 /// Poids du score composite (somme = 100).
 const WEIGHT_SUCCESS: f64 = 50.0;
 const WEIGHT_SIZE: f64 = 30.0;
 const WEIGHT_EXCALIDRAW: f64 = 20.0;
+
+static BENCHMARK_MUTEX: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 /// Score détaillé pour un modèle testé.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -89,20 +97,24 @@ fn is_valid_excalidraw_json(text: &str) -> bool {
     };
 
     parsed.get("type").and_then(|v| v.as_str()) == Some("excalidraw")
+        && parsed.get("version").and_then(|v| v.as_u64()) == Some(2)
         && parsed.get("elements").and_then(|v| v.as_array()).is_some()
+}
+
+fn compute_size_score(response_len: usize) -> f64 {
+    if response_len == 0 {
+        return 0.0;
+    }
+    if response_len >= 5000 {
+        return WEIGHT_SIZE * 0.5;
+    }
+    let ratio = ((response_len + 1) as f64).ln() / 5000f64.ln();
+    WEIGHT_SIZE * ratio.min(1.0)
 }
 
 fn compute_score(success: bool, response_len: usize, excalidraw_valid: bool) -> f64 {
     let success_score = if success { WEIGHT_SUCCESS } else { 0.0 };
-
-    let size_score = if response_len > 0 && response_len < 5000 {
-        WEIGHT_SIZE
-    } else if response_len >= 5000 {
-        WEIGHT_SIZE * 0.5
-    } else {
-        0.0
-    };
-
+    let size_score = compute_size_score(response_len);
     let excalidraw_score = if excalidraw_valid {
         WEIGHT_EXCALIDRAW
     } else {
@@ -135,53 +147,111 @@ async fn evaluate_response(api_key: &str, model: &str, messages: Vec<ChatMessage
     }
 }
 
+async fn evaluate_model(api_key: &str, model: &str) -> (String, ModelScore) {
+    let (score_chat, score_json, score_uml) = join3(
+        evaluate_response(api_key, model, prompt_chat_smoke()),
+        evaluate_response(api_key, model, prompt_json_diagram()),
+        evaluate_response(api_key, model, prompt_code_to_uml()),
+    )
+    .await;
+
+    if !score_chat.success {
+        return (
+            model.to_string(),
+            ModelScore {
+                success: false,
+                response_len: 0,
+                excalidraw_valid: false,
+                composite: 0.0,
+            },
+        );
+    }
+
+    let composite = (score_chat.composite + score_json.composite + score_uml.composite) / 3.0;
+
+    (
+        model.to_string(),
+        ModelScore {
+            success: true,
+            response_len: score_chat.response_len + score_json.response_len + score_uml.response_len,
+            excalidraw_valid: score_json.excalidraw_valid || score_uml.excalidraw_valid,
+            composite,
+        },
+    )
+}
+
+fn resolve_candidate_models(config: &ai_config::AiConfig) -> Vec<String> {
+    config
+        .candidate_models
+        .clone()
+        .filter(|models| !models.is_empty())
+        .unwrap_or_else(|| {
+            DEFAULT_CANDIDATE_MODELS
+                .iter()
+                .map(|m| (*m).to_string())
+                .collect()
+        })
+}
+
+fn resolve_staleness_days(config: &ai_config::AiConfig) -> i64 {
+    config
+        .benchmark_staleness_days
+        .filter(|&days| days > 0)
+        .unwrap_or(DEFAULT_BENCHMARK_STALENESS_DAYS)
+}
+
+/// Indique si le benchmark doit être relancé selon la date du dernier run.
+pub fn is_benchmark_stale(last_benchmark_at: Option<&str>, staleness_days: i64) -> bool {
+    let Some(last_at) = last_benchmark_at else {
+        return true;
+    };
+    let Ok(parsed) = chrono::DateTime::parse_from_rfc3339(last_at) else {
+        return true;
+    };
+    let elapsed = Utc::now() - parsed.with_timezone(&Utc);
+    elapsed >= Duration::days(staleness_days)
+}
+
 /// Exécute la suite de benchmark sur tous les modèles candidats.
 pub async fn run_benchmark(
     api_key: &str,
     candidate_models: Option<&[&str]>,
 ) -> Result<BenchmarkResult, String> {
-    let models = candidate_models.unwrap_or(CANDIDATE_MODELS);
+    let _guard = BENCHMARK_MUTEX.lock().await;
+
+    let models: Vec<String> = match candidate_models {
+        Some(slice) => slice.iter().map(|m| (*m).to_string()).collect(),
+        None => DEFAULT_CANDIDATE_MODELS
+            .iter()
+            .map(|m| (*m).to_string())
+            .collect(),
+    };
+
+    let semaphore = Arc::new(Semaphore::new(MAX_MODEL_CONCURRENCY));
+    let mut handles = Vec::with_capacity(models.len());
+
+    for model in models {
+        let api_key = api_key.to_string();
+        let semaphore = Arc::clone(&semaphore);
+        let permit = semaphore
+            .acquire_owned()
+            .await
+            .map_err(|e| e.to_string())?;
+
+        handles.push(tokio::spawn(async move {
+            let _permit = permit;
+            evaluate_model(&api_key, &model).await
+        }));
+    }
 
     let mut scores = std::collections::HashMap::new();
-
-    for &model in models {
-        // Scénario 1 : chat smoke
-        let score_chat = evaluate_response(api_key, model, prompt_chat_smoke()).await;
-
-        // Si le chat échoue, on score à 0 pour ce modèle
-        if !score_chat.success {
-            scores.insert(
-                model.to_string(),
-                ModelScore {
-                    success: false,
-                    response_len: 0,
-                    excalidraw_valid: false,
-                    composite: 0.0,
-                },
-            );
-            continue;
+    for handle in handles {
+        match handle.await {
+            Ok((model, score)) => {
+                scores.insert(model, score);
+            }
+            Err(e) => return Err(format!("Benchmark interrompu : {e}")),
         }
-
-        // Scénario 2 : JSON diagramme valide
-        let score_json = evaluate_response(api_key, model, prompt_json_diagram()).await;
-
-        // Scénario 3 : code→UML smoke
-        let score_uml = evaluate_response(api_key, model, prompt_code_to_uml()).await;
-
-        // Score composite : somme des trois scénarios
-        let composite = (score_chat.composite + score_json.composite + score_uml.composite) / 3.0;
-
-        scores.insert(
-            model.to_string(),
-            ModelScore {
-                success: true,
-                response_len: score_chat.response_len
-                    + score_json.response_len
-                    + score_uml.response_len,
-                excalidraw_valid: score_json.excalidraw_valid || score_uml.excalidraw_valid,
-                composite,
-            },
-        );
     }
 
     let active_model = select_best_model(&scores);
@@ -196,7 +266,7 @@ pub async fn run_benchmark(
 /// Résultat du check de fraîcheur du benchmark.
 #[derive(Debug, Clone, PartialEq)]
 pub enum StalenessCheck {
-    /// Le benchmark est à jour (moins de 3 jours).
+    /// Le benchmark est à jour.
     Fresh,
     /// Le benchmark est périmé et a été exécuté avec succès.
     Ran(BenchmarkResult),
@@ -204,23 +274,22 @@ pub enum StalenessCheck {
     Failed(String),
 }
 
-/// Vérifie si le benchmark est périmé (>3 jours) et l'exécute si nécessaire.
+/// Vérifie si le benchmark est périmé et l'exécute si nécessaire.
 pub async fn check_and_run_if_stale(
     api_key: &str,
     project_root: &std::path::Path,
 ) -> Result<StalenessCheck, String> {
     let config = ai_config::read_ai_config(project_root).unwrap_or_default();
+    let staleness_days = resolve_staleness_days(&config);
 
-    if let Some(ref last_at) = config.last_benchmark_at {
-        if let Ok(parsed) = chrono::DateTime::parse_from_rfc3339(last_at) {
-            let elapsed = Utc::now() - parsed.with_timezone(&Utc);
-            if elapsed < Duration::days(BENCHMARK_STALENESS_DAYS) {
-                return Ok(StalenessCheck::Fresh);
-            }
-        }
+    if !is_benchmark_stale(config.last_benchmark_at.as_deref(), staleness_days) {
+        return Ok(StalenessCheck::Fresh);
     }
 
-    match run_benchmark(api_key, None).await {
+    let models: Vec<String> = resolve_candidate_models(&config);
+    let model_refs: Vec<&str> = models.iter().map(String::as_str).collect();
+
+    match run_benchmark(api_key, Some(&model_refs)).await {
         Ok(result) => {
             let mut new_config = config;
             new_config.active_model = Some(result.active_model.clone());
@@ -258,11 +327,23 @@ pub fn select_best_model(scores: &std::collections::HashMap<String, ModelScore>)
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::TimeZone;
+    use std::fs;
+
+    fn tmp_project() -> std::path::PathBuf {
+        let id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::path::PathBuf::from(format!("/tmp/fun_bench_test_{id}"));
+        fs::create_dir_all(root.join(".fun")).unwrap();
+        root
+    }
 
     #[test]
     fn compute_score_all_success() {
-        let score = compute_score(true, 100, true);
-        assert!((score - 100.0).abs() < f64::EPSILON);
+        let score = compute_score(true, 4999, true);
+        assert!((score - 100.0).abs() < 0.01);
     }
 
     #[test]
@@ -274,7 +355,18 @@ mod tests {
     #[test]
     fn compute_score_success_no_excalidraw() {
         let score = compute_score(true, 100, false);
-        assert!((score - 80.0).abs() < f64::EPSILON);
+        let expected = WEIGHT_SUCCESS + compute_size_score(100);
+        assert!((score - expected).abs() < 0.01);
+    }
+
+    #[test]
+    fn compute_size_score_graduated() {
+        let tiny = compute_size_score(5);
+        let medium = compute_size_score(500);
+        let large = compute_size_score(4999);
+        assert!(tiny < medium);
+        assert!(medium < large);
+        assert!((large - WEIGHT_SIZE).abs() < 0.01);
     }
 
     #[test]
@@ -345,6 +437,9 @@ mod tests {
         assert!(!is_valid_excalidraw_json("ce n'est pas du json"));
         assert!(!is_valid_excalidraw_json(r#"{"type":"not_excalidraw"}"#));
         assert!(!is_valid_excalidraw_json(r#"{"elements":[]}"#));
+        assert!(!is_valid_excalidraw_json(
+            r#"{"type":"excalidraw","version":999,"elements":[]}"#
+        ));
     }
 
     #[test]
@@ -359,4 +454,78 @@ mod tests {
         assert!(is_valid_excalidraw_json(text));
     }
 
+    #[test]
+    fn is_benchmark_stale_without_last_run() {
+        assert!(is_benchmark_stale(None, 3));
+    }
+
+    #[test]
+    fn is_benchmark_stale_when_recent() {
+        let recent = Utc::now().to_rfc3339();
+        assert!(!is_benchmark_stale(Some(&recent), 3));
+    }
+
+    #[test]
+    fn is_benchmark_stale_when_old() {
+        let old = Utc
+            .with_ymd_and_hms(2020, 1, 1, 0, 0, 0)
+            .unwrap()
+            .to_rfc3339();
+        assert!(is_benchmark_stale(Some(&old), 3));
+    }
+
+    #[test]
+    fn resolve_candidate_models_uses_config() {
+        let config = ai_config::AiConfig {
+            candidate_models: Some(vec!["custom/model:free".to_string()]),
+            ..Default::default()
+        };
+        let models = resolve_candidate_models(&config);
+        assert_eq!(models, vec!["custom/model:free".to_string()]);
+    }
+
+    #[test]
+    fn resolve_staleness_days_uses_config() {
+        let config = ai_config::AiConfig {
+            benchmark_staleness_days: Some(7),
+            ..Default::default()
+        };
+        assert_eq!(resolve_staleness_days(&config), 7);
+    }
+
+    fn block_on<F: std::future::Future>(future: F) -> F::Output {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
+
+    #[test]
+    fn check_and_run_if_stale_returns_fresh_when_recent() {
+        block_on(async {
+            let root = tmp_project();
+            let config = ai_config::AiConfig {
+                last_benchmark_at: Some(Utc::now().to_rfc3339()),
+                active_model: Some("google/gemma-2-9b-it:free".to_string()),
+                ..Default::default()
+            };
+            ai_config::write_ai_config(&root, &config).unwrap();
+
+            let result = check_and_run_if_stale("fake-key", &root).await.unwrap();
+            assert_eq!(result, StalenessCheck::Fresh);
+
+            let _ = fs::remove_dir_all(&root);
+        });
+    }
+
+    #[test]
+    fn check_and_run_if_stale_runs_when_no_last_benchmark() {
+        block_on(async {
+            let root = tmp_project();
+            let result = check_and_run_if_stale("invalid-key", &root).await.unwrap();
+            assert!(!matches!(result, StalenessCheck::Fresh));
+            let _ = fs::remove_dir_all(&root);
+        });
+    }
 }
