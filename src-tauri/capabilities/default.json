@@ -9,6 +9,10 @@
     "dialog:default",
     "allow-get-recent-projects",
     "allow-open-project",
-    "allow-pick-project-folder"
+    "allow-pick-project-folder",
+    "allow-pick-project-parent-folder",
+    "allow-create-project",
+    "allow-create-diagram",
+    "allow-load-diagram"
   ]
 }

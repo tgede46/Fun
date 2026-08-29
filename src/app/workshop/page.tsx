@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { invoke } from "@tauri-apps/api/core";
 import { Suspense, useEffect, useState } from "react";
+import { WorkshopLayout } from "@/components/workshop/WorkshopLayout";
 
 type OpenProjectResult = {
   path: string;
@@ -17,11 +18,10 @@ function WorkshopContent() {
   const projectPath = searchParams.get("path")?.trim() ?? null;
   const [projectName, setProjectName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(Boolean(projectPath));
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
     if (!projectPath) {
-      setLoading(false);
       return;
     }
 
@@ -43,7 +43,7 @@ function WorkshopContent() {
         }
       } finally {
         if (!cancelled) {
-          setLoading(false);
+          setResolved(true);
         }
       }
     })();
@@ -64,6 +64,8 @@ function WorkshopContent() {
     );
   }
 
+  const loading = !resolved;
+
   if (loading) {
     return <main className="workshop">Ouverture du projet…</main>;
   }
@@ -82,27 +84,20 @@ function WorkshopContent() {
   const displayName =
     projectName ?? projectPath.split(/[/\\]/).filter(Boolean).pop() ?? "Projet";
 
-  return (
-    <main className="workshop">
-      <header className="workshop__header">
-        <p className="workshop__eyebrow">Atelier</p>
-        <h1>{displayName}</h1>
-        <p className="workshop__path">{projectPath}</p>
-      </header>
-      <p className="workshop__hint">
-        Canvas, chat et Pomodoro arrivent dans les prochaines stories.
-      </p>
-      <Link className="workshop__back" href="/">
-        Retour à l&apos;accueil
-      </Link>
-    </main>
-  );
+  return <WorkshopLayout projectName={displayName} projectPath={projectPath} />;
+}
+
+function WorkshopPageInner() {
+  const searchParams = useSearchParams();
+  const projectPath = searchParams.get("path")?.trim() ?? "none";
+
+  return <WorkshopContent key={projectPath} />;
 }
 
 export default function WorkshopPage() {
   return (
     <Suspense fallback={<main className="workshop">Chargement…</main>}>
-      <WorkshopContent />
+      <WorkshopPageInner />
     </Suspense>
   );
 }

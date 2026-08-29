@@ -387,10 +387,28 @@
       "description": "Permission identifier",
       "oneOf": [
         {
+          "description": "Crée un diagramme Excalidraw vide sous `.fun/diagrams/`.",
+          "type": "string",
+          "const": "allow-create-diagram",
+          "markdownDescription": "Crée un diagramme Excalidraw vide sous `.fun/diagrams/`."
+        },
+        {
+          "description": "Crée un dossier projet et initialise `.fun/`.",
+          "type": "string",
+          "const": "allow-create-project",
+          "markdownDescription": "Crée un dossier projet et initialise `.fun/`."
+        },
+        {
           "description": "Charge la liste des projets récents.",
           "type": "string",
           "const": "allow-get-recent-projects",
           "markdownDescription": "Charge la liste des projets récents."
+        },
+        {
+          "description": "Charge le JSON d'un diagramme Excalidraw.",
+          "type": "string",
+          "const": "allow-load-diagram",
+          "markdownDescription": "Charge le JSON d'un diagramme Excalidraw."
         },
         {
           "description": "Ouvre un dossier projet et initialise `.fun/`.",
@@ -403,6 +421,12 @@
           "type": "string",
           "const": "allow-pick-project-folder",
           "markdownDescription": "Affiche le sélecteur natif de dossier."
+        },
+        {
+          "description": "Choisit l'emplacement d'un nouveau projet.",
+          "type": "string",
+          "const": "allow-pick-project-parent-folder",
+          "markdownDescription": "Choisit l'emplacement d'un nouveau projet."
         },
         {
           "description": "Default core plugins set.\n#### This default permission set includes:\n\n- `core:path:default`\n- `core:event:default`\n- `core:window:default`\n- `core:webview:default`\n- `core:app:default`\n- `core:image:default`\n- `core:resources:default`\n- `core:menu:default`\n- `core:tray:default`",

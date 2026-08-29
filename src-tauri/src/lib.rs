@@ -14,7 +14,11 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_projects,
             commands::open_project,
+            commands::create_project,
             commands::pick_project_folder,
+            commands::pick_project_parent_folder,
+            commands::create_diagram,
+            commands::load_diagram,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

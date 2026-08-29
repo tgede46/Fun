@@ -2,7 +2,7 @@
 title: 'Story 2.1 — Layout atelier et design tokens'
 type: feature
 created: '2026-08-29'
-status: draft
+status: done
 baseline_commit: NO_VCS
 review_loop_iteration: 0
 context:
@@ -62,14 +62,14 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `globals.css` — ajouter variables CSS DESIGN.md complètes (`--fun-canvas-*`, `--fun-surface-*`, `--fun-foreground-*`, `--fun-accent-*`, `--fun-border-*`, `--fun-overlay-*`, `--fun-radius-*`, `--fun-spacing-*`, `--fun-typography-*`) ; migrer font-family vers Excalifont ; garder variables `--fun-*` existantes pour compatibilité accueil
-- [ ] `src/components/workshop/WorkshopLayout.tsx` — CSS grid : `[toolbar 48px] [rail 48px | canvas flex | chat 320px]` ; hauteur 100vh ; fond `--fun-surface-base-light`
-- [ ] `src/components/workshop/Toolbar.tsx` — hauteur 48px, fond `--fun-surface-base-light`, bordure bas `--fun-border-light`, placeholder « Toolbar »
-- [ ] `src/components/workshop/ModeRail.tsx` — largeur 48px, icônes Sketch/UML placeholder, fond `--fun-surface-base-light`
-- [ ] `src/components/workshop/CanvasArea.tsx` — flex-grow, fond `--fun-canvas-light` (#FFFFFF), placeholder « Canvas » centré
-- [ ] `src/components/workshop/ChatSidebar.tsx` — largeur 320px, fond `--fun-surface-raised-light`, bordure gauche `--fun-border-light`, placeholder « Chat »
-- [ ] `src/app/workshop/page.tsx` — remplacer placeholder par `<WorkshopLayout>` ; garder logique `open_project` et états loading/error
-- [ ] `src/lib/theme.ts` — utility `getThemeTokens(theme)` retournant les variables CSS pour clair/sombre
+- [x] `globals.css` — ajouter variables CSS DESIGN.md complètes (`--fun-canvas-*`, `--fun-surface-*`, `--fun-foreground-*`, `--fun-accent-*`, `--fun-border-*`, `--fun-overlay-*`, `--fun-radius-*`, `--fun-spacing-*`, `--fun-typography-*`) ; migrer font-family vers Excalifont ; garder variables `--fun-*` existantes pour compatibilité accueil
+- [x] `src/components/workshop/WorkshopLayout.tsx` — CSS grid : `[toolbar 48px] [rail 48px | canvas flex | chat 320px]` ; hauteur 100vh ; fond `--fun-surface-base-light`
+- [x] `src/components/workshop/Toolbar.tsx` — hauteur 48px, fond `--fun-surface-base-light`, bordure bas `--fun-border-light`, placeholder « Toolbar »
+- [x] `src/components/workshop/ModeRail.tsx` — largeur 48px, icônes Sketch/UML placeholder, fond `--fun-surface-base-light`
+- [x] `src/components/workshop/CanvasArea.tsx` — flex-grow, fond `--fun-canvas-light` (#FFFFFF), placeholder « Canvas » centré
+- [x] `src/components/workshop/ChatSidebar.tsx` — largeur 320px, fond `--fun-surface-raised-light`, bordure gauche `--fun-border-light`, placeholder « Chat »
+- [x] `src/app/workshop/page.tsx` — remplacer placeholder par `<WorkshopLayout>` ; garder logique `open_project` et états loading/error
+- [x] `src/lib/theme.ts` — utility `getThemeTokens(theme)` retournant les variables CSS pour clair/sombre
 
 **Acceptance Criteria:**
 - Given un Projet ouvert, when atelier s'affiche, then toolbar 48px, rail 48px, canvas flex中央, chat 320px visibles.
