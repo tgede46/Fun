@@ -8,31 +8,81 @@
   font-display: swap;
 }
 
+/* Variables runtime — basculées par .dark / [data-fun-theme="dark"] */
+:root {
+  --fun-background: #f5f0e8;
+  --fun-foreground: #1a1a1a;
+  --fun-card: #ffffff;
+  --fun-card-foreground: #1a1a1a;
+  --fun-popover: #ffffff;
+  --fun-popover-foreground: #1a1a1a;
+  --fun-primary: #1a1a1a;
+  --fun-primary-foreground: #f5f0e8;
+  --fun-secondary: #f5f0e8;
+  --fun-secondary-foreground: #1a1a1a;
+  --fun-muted: #f5f0e8;
+  --fun-muted-foreground: #5c5c5c;
+  --fun-accent: #f5f0e8;
+  --fun-accent-foreground: #1a1a1a;
+  --fun-destructive: #8b2e2e;
+  --fun-destructive-foreground: #ffffff;
+  --fun-border: #e0d8cc;
+  --fun-input: #e0d8cc;
+  --fun-ring: #1a1a1a;
+  --fun-canvas: #ffffff;
+  --fun-overlay: rgba(26, 26, 26, 0.35);
+}
+
+.dark,
+[data-fun-theme="dark"] {
+  --fun-background: #0d0d0d;
+  --fun-foreground: #f5f0e8;
+  --fun-card: #1a1a1a;
+  --fun-card-foreground: #f5f0e8;
+  --fun-popover: #1a1a1a;
+  --fun-popover-foreground: #f5f0e8;
+  --fun-primary: #f5f0e8;
+  --fun-primary-foreground: #1a1a1a;
+  --fun-secondary: #1a1a1a;
+  --fun-secondary-foreground: #f5f0e8;
+  --fun-muted: #1a1a1a;
+  --fun-muted-foreground: #a8a096;
+  --fun-accent: #1a1a1a;
+  --fun-accent-foreground: #f5f0e8;
+  --fun-destructive: #8b2e2e;
+  --fun-destructive-foreground: #ffffff;
+  --fun-border: #2e2e2e;
+  --fun-input: #2e2e2e;
+  --fun-ring: #f5f0e8;
+  --fun-canvas: #1e1e1e;
+  --fun-overlay: rgba(0, 0, 0, 0.55);
+}
+
 @theme inline {
   --font-sans: Excalifont, Virgil, "Segoe UI Emoji", sans-serif;
   --font-mono: ui-monospace, monospace;
 
-  --color-background: #f5f0e8;
-  --color-foreground: #1a1a1a;
-  --color-card: #ffffff;
-  --color-card-foreground: #1a1a1a;
-  --color-popover: #ffffff;
-  --color-popover-foreground: #1a1a1a;
-  --color-primary: #1a1a1a;
-  --color-primary-foreground: #f5f0e8;
-  --color-secondary: #f5f0e8;
-  --color-secondary-foreground: #1a1a1a;
-  --color-muted: #f5f0e8;
-  --color-muted-foreground: #5c5c5c;
-  --color-accent: #f5f0e8;
-  --color-accent-foreground: #1a1a1a;
-  --color-destructive: #8b2e2e;
-  --color-destructive-foreground: #ffffff;
-  --color-border: #e0d8cc;
-  --color-input: #e0d8cc;
-  --color-ring: #1a1a1a;
-  --color-canvas: #ffffff;
-  --color-overlay: rgba(26, 26, 26, 0.35);
+  --color-background: var(--fun-background);
+  --color-foreground: var(--fun-foreground);
+  --color-card: var(--fun-card);
+  --color-card-foreground: var(--fun-card-foreground);
+  --color-popover: var(--fun-popover);
+  --color-popover-foreground: var(--fun-popover-foreground);
+  --color-primary: var(--fun-primary);
+  --color-primary-foreground: var(--fun-primary-foreground);
+  --color-secondary: var(--fun-secondary);
+  --color-secondary-foreground: var(--fun-secondary-foreground);
+  --color-muted: var(--fun-muted);
+  --color-muted-foreground: var(--fun-muted-foreground);
+  --color-accent: var(--fun-accent);
+  --color-accent-foreground: var(--fun-accent-foreground);
+  --color-destructive: var(--fun-destructive);
+  --color-destructive-foreground: var(--fun-destructive-foreground);
+  --color-border: var(--fun-border);
+  --color-input: var(--fun-input);
+  --color-ring: var(--fun-ring);
+  --color-canvas: var(--fun-canvas);
+  --color-overlay: var(--fun-overlay);
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -43,28 +93,6 @@
   --spacing-rail: 48px;
   --spacing-sidebar: 320px;
   --spacing-gutter: 12px;
-}
-
-.dark {
-  --color-background: #0d0d0d;
-  --color-foreground: #f5f0e8;
-  --color-card: #1a1a1a;
-  --color-card-foreground: #f5f0e8;
-  --color-popover: #1a1a1a;
-  --color-popover-foreground: #f5f0e8;
-  --color-primary: #f5f0e8;
-  --color-primary-foreground: #1a1a1a;
-  --color-secondary: #1a1a1a;
-  --color-secondary-foreground: #f5f0e8;
-  --color-muted: #1a1a1a;
-  --color-muted-foreground: #a8a096;
-  --color-accent: #1a1a1a;
-  --color-accent-foreground: #f5f0e8;
-  --color-border: #2e2e2e;
-  --color-input: #2e2e2e;
-  --color-ring: #f5f0e8;
-  --color-canvas: #1e1e1e;
-  --color-overlay: rgba(0, 0, 0, 0.55);
 }
 
 @layer base {

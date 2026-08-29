@@ -5,12 +5,14 @@ type DiagramListProps = {
   diagrams: DiagramListItem[];
   activePath: string | null;
   onSelect: (path: string) => void;
+  onDelete?: (path: string) => void;
 };
 
 export function DiagramList({
   diagrams,
   activePath,
   onSelect,
+  onDelete,
 }: DiagramListProps) {
   if (diagrams.length === 0) {
     return null;
@@ -24,7 +26,7 @@ export function DiagramList({
           const isActive = diagram.path === activePath;
 
           return (
-            <li key={diagram.path}>
+            <li key={diagram.path} className="flex items-center">
               <button
                 type="button"
                 className={cn(
@@ -38,6 +40,25 @@ export function DiagramList({
               >
                 {diagram.name}
               </button>
+              {onDelete ? (
+                <button
+                  type="button"
+                  className={cn(
+                    "ml-0.5 px-1.5 py-1 text-xs rounded-md transition-colors",
+                    isActive
+                      ? "text-primary-foreground/80 hover:bg-primary-foreground/20"
+                      : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+                  )}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onDelete(diagram.path);
+                  }}
+                  aria-label={`Supprimer ${diagram.name}`}
+                  title={`Supprimer ${diagram.name}`}
+                >
+                  ×
+                </button>
+              ) : null}
             </li>
           );
         })}

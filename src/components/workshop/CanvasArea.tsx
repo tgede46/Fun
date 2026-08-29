@@ -18,7 +18,9 @@ type CanvasAreaProps = {
   saveError: string | null;
   codeGenError: string | null;
   onSelectDiagram: (path: string) => void;
-  onSaveError: (message: string) => void;
+  onDeleteDiagram?: (path: string) => void;
+  onSaveError: (message: string | null) => void;
+  onDiagramSaved?: (content: string) => void;
   canvasRef: RefObject<ExcalidrawCanvasHandle | null>;
 };
 
@@ -49,7 +51,9 @@ export function CanvasArea({
   saveError,
   codeGenError,
   onSelectDiagram,
+  onDeleteDiagram,
   onSaveError,
+  onDiagramSaved,
   canvasRef,
 }: CanvasAreaProps) {
   const list = (
@@ -57,6 +61,7 @@ export function CanvasArea({
       diagrams={diagrams}
       activePath={activeDiagramPath}
       onSelect={onSelectDiagram}
+      onDelete={onDeleteDiagram}
     />
   );
 
@@ -137,6 +142,7 @@ export function CanvasArea({
         theme={theme}
         initialData={initialData}
         onSaveError={onSaveError}
+        onSaved={onDiagramSaved}
       />
     </section>
   );

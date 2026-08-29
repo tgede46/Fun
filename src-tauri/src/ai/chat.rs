@@ -1,5 +1,5 @@
-use super::client::{chat_completion, ChatMessage};
-use super::intent::{detect_persona, is_reset_request, Persona};
+use super::client::{chat_completion_resolved, ChatMessage};
+use super::intent::{detect_persona, is_diagram_draw_request, is_reset_request, Persona};
 use super::personas::system_prompt;
 use crate::ai::model::resolve_active_model_for_project;
 use crate::ai::secrets::load_api_key;
@@ -20,6 +20,9 @@ pub struct SendChatResult {
     pub persona_display: String,
     pub diagram_update: Option<String>,
     pub diagram_reset: bool,
+    /// Diagramme créé automatiquement car aucun n'était ouvert.
+    pub opened_diagram_path: Option<String>,
+    pub opened_diagram_name: Option<String>,
 }
 
 pub async fn send_chat(
@@ -44,13 +47,42 @@ pub async fn send_chat(
             persona_display: "Claire".to_string(),
             diagram_update: Some(content),
             diagram_reset: true,
+            opened_diagram_path: None,
+            opened_diagram_name: None,
         });
     }
 
     let persona = detect_persona(user_message);
     let active = resolve_active_model_for_project(project_path)?;
 
-    let system = system_prompt(persona, diagram_content);
+    let mut opened_diagram_path: Option<String> = None;
+    let mut opened_diagram_name: Option<String> = None;
+    let mut effective_path: Option<PathBuf> = diagram_path.map(PathBuf::from);
+    let mut effective_content: Option<String> = diagram_content.map(String::from);
+
+    if persona == Persona::Editeur && effective_path.is_none() {
+        if is_diagram_draw_request(user_message) {
+            let path = diagram::create_diagram(project_path)?;
+            let content = diagram::load_diagram(project_path, &path)?;
+            let name = path
+                .file_stem()
+                .and_then(|n| n.to_str())
+                .unwrap_or("diagramme")
+                .to_string();
+            opened_diagram_path = Some(path.to_string_lossy().into_owned());
+            opened_diagram_name = Some(name);
+            effective_path = Some(path);
+            effective_content = Some(content);
+        } else {
+            return Err(
+                "Ouvrez un diagramme (liste en haut) ou demandez par ex. « Crée un diagramme de \
+                 démo… » pour que Trace dessine sur le canvas."
+                    .to_string(),
+            );
+        }
+    }
+
+    let system = system_prompt(persona, effective_content.as_deref());
     let mut messages: Vec<ChatMessage<'_>> = vec![ChatMessage {
         role: "system",
         content: &system,
@@ -73,8 +105,12 @@ pub async fn send_chat(
         content: user_message,
     });
 
-    let raw = chat_completion(&api_key, &active.model_id, messages).await?;
+    let raw = chat_completion_resolved(&api_key, &active.model_id, messages).await?;
     let (text, diagram_update) = parse_assistant_response(persona, &raw);
+
+    if let (Some(json), Some(path)) = (&diagram_update, effective_path.as_ref()) {
+        diagram::save_diagram(project_path, path, json)?;
+    }
 
     Ok(SendChatResult {
         assistant_message: text,
@@ -82,43 +118,69 @@ pub async fn send_chat(
         persona_display: persona.display_name().to_string(),
         diagram_update,
         diagram_reset: false,
+        opened_diagram_path,
+        opened_diagram_name,
     })
 }
 
-fn parse_assistant_response(
-    persona: Persona,
-    raw: &str,
-) -> (String, Option<String>) {
+fn parse_assistant_response(persona: Persona, raw: &str) -> (String, Option<String>) {
     if persona != Persona::Editeur {
         return (raw.trim().to_string(), None);
     }
 
+    if let Some(json) = extract_excalidraw_json(raw) {
+        let text = prose_before_fence(raw);
+        return (text, Some(json));
+    }
+
+    let trimmed = raw.trim();
+    if trimmed.contains("```mermaid") {
+        return (
+            "Trace n'a pas renvoyé de JSON Excalidraw (Mermaid ignoré). Reformulez : « Crée un \
+             diagramme de démo avec un flux Début → Action → Fin »."
+                .to_string(),
+            None,
+        );
+    }
+
+    (trimmed.to_string(), None)
+}
+
+fn prose_before_fence(raw: &str) -> String {
+    let text = raw.split("```").next().unwrap_or(raw).trim().to_string();
+    if text.is_empty() {
+        "Diagramme créé sur le canvas.".to_string()
+    } else {
+        text
+    }
+}
+
+fn extract_excalidraw_json(raw: &str) -> Option<String> {
     if let Some(json) = extract_excalidraw_fence(raw) {
         if diagram::validate_excalidraw_json(&json).is_ok() {
-            let text = raw
-                .split("```")
-                .next()
-                .unwrap_or(raw)
-                .trim()
-                .to_string();
-            let text = if text.is_empty() {
-                "Modification appliquée.".to_string()
-            } else {
-                text
-            };
-            return (text, Some(json));
+            return Some(json);
         }
     }
 
-    (raw.trim().to_string(), None)
+    extract_json_payload(raw)
+        .ok()
+        .filter(|json| diagram::validate_excalidraw_json(json).is_ok())
 }
 
 fn extract_excalidraw_fence(raw: &str) -> Option<String> {
-    let marker = "```excalidraw-json";
-    let start = raw.find(marker)? + marker.len();
-    let rest = &raw[start..];
-    let end = rest.find("```")?;
-    Some(rest[..end].trim().to_string())
+    for marker in ["```excalidraw-json", "```json", "```"] {
+        let Some(start_idx) = raw.find(marker) else {
+            continue;
+        };
+        let start = start_idx + marker.len();
+        let rest = raw[start..].trim_start();
+        let end = rest.find("```")?;
+        let candidate = rest[..end].trim();
+        if candidate.starts_with('{') {
+            return Some(candidate.to_string());
+        }
+    }
+    None
 }
 
 pub async fn generate_diagram_from_code(project_root: &Path) -> Result<PathBuf, String> {
@@ -149,7 +211,7 @@ pub async fn generate_diagram_from_code(project_root: &Path) -> Result<PathBuf, 
         },
     ];
 
-    let raw = chat_completion(&api_key, &active.model_id, messages).await?;
+    let raw = chat_completion_resolved(&api_key, &active.model_id, messages).await?;
     let json = extract_json_payload(&raw)?;
     diagram::validate_excalidraw_json(&json)?;
 
@@ -172,4 +234,35 @@ fn extract_json_payload(raw: &str) -> Result<String, String> {
     }
 
     Err("Génération échouée — JSON invalide.".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ai::intent::Persona;
+
+    const SAMPLE_JSON: &str = r#"{"type":"excalidraw","version":2,"elements":[{"id":"a","type":"rectangle","x":0,"y":0,"width":100,"height":50}],"appState":{},"files":{}}"#;
+
+    #[test]
+    fn parse_editeur_extracts_excalidraw_fence() {
+        let raw = format!("Voici la démo.\n```excalidraw-json\n{SAMPLE_JSON}\n```");
+        let (text, json) = parse_assistant_response(Persona::Editeur, &raw);
+        assert!(json.is_some());
+        assert!(text.contains("démo"));
+    }
+
+    #[test]
+    fn parse_assistant_ignores_json() {
+        let raw = format!("```excalidraw-json\n{SAMPLE_JSON}\n```");
+        let (_, json) = parse_assistant_response(Persona::Assistant, &raw);
+        assert!(json.is_none());
+    }
+
+    #[test]
+    fn parse_editeur_rejects_mermaid() {
+        let raw = "```mermaid\nflowchart TD\n  A-->B\n```";
+        let (text, json) = parse_assistant_response(Persona::Editeur, raw);
+        assert!(json.is_none());
+        assert!(text.contains("Mermaid"));
+    }
 }

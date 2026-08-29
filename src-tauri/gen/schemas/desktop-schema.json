@@ -399,6 +399,12 @@
           "markdownDescription": "Crée un dossier projet et initialise `.fun/`."
         },
         {
+          "description": "Supprime un fichier diagramme Excalidraw.",
+          "type": "string",
+          "const": "allow-delete-diagram",
+          "markdownDescription": "Supprime un fichier diagramme Excalidraw."
+        },
+        {
           "description": "Génère un diagramme UML depuis le code.",
           "type": "string",
           "const": "allow-generate-diagram-from-code",

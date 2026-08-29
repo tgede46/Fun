@@ -15,6 +15,35 @@ pub fn is_reset_request(message: &str) -> bool {
         || lower.contains("diagramme vide")
 }
 
+/// Demande de création ou dessin sur le canvas Excalidraw (pas une question textuelle).
+pub fn is_diagram_draw_request(message: &str) -> bool {
+    let lower = message.to_lowercase();
+
+    if lower.contains("diagramme")
+        || lower.contains("digramme")
+        || lower.contains("diagra")
+        || lower.contains("dessine")
+        || lower.contains("dessiner")
+        || lower.contains("flowchart")
+        || lower.contains("excalidraw")
+        || lower.contains("sur le canvas")
+        || lower.contains("dans le canvas")
+        || lower.contains("sur le canevas")
+    {
+        return true;
+    }
+
+    let demo = lower.contains("demo") || lower.contains("démo") || lower.contains("demonstration");
+    let visual = lower.contains("schema")
+        || lower.contains("schéma")
+        || lower.contains("flux")
+        || lower.contains("flow")
+        || lower.contains("boîte")
+        || lower.contains("boite");
+
+    demo && (visual || lower.contains("diagram") || lower.contains("digr"))
+}
+
 pub fn detect_persona(message: &str) -> Persona {
     let lower = message.to_lowercase();
 
@@ -24,6 +53,7 @@ pub fn detect_persona(message: &str) -> Persona {
         || lower.contains("imperfection")
         || lower.contains("revois")
         || lower.contains("qu'est-ce qui ne va pas")
+        || lower.contains("qu est-ce qui ne va pas")
     {
         return Persona::Relecteur;
     }
@@ -37,6 +67,11 @@ pub fn detect_persona(message: &str) -> Persona {
         || lower.contains("connecte")
         || lower.contains("rename")
         || lower.contains("renomme")
+        || lower.contains("crée")
+        || lower.contains("cree")
+        || lower.contains("génère")
+        || lower.contains("genere")
+        || is_diagram_draw_request(message)
     {
         return Persona::Editeur;
     }
@@ -64,7 +99,7 @@ impl Persona {
 
 #[cfg(test)]
 mod tests {
-    use super::{detect_persona, is_reset_request, Persona};
+    use super::{detect_persona, is_diagram_draw_request, is_reset_request, Persona};
 
     #[test]
     fn detects_reset_phrases() {
@@ -80,5 +115,16 @@ mod tests {
     #[test]
     fn routes_edit_intent() {
         assert_eq!(detect_persona("ajoute une boîte API"), Persona::Editeur);
+    }
+
+    #[test]
+    fn routes_diagram_demo_to_editeur() {
+        assert!(is_diagram_draw_request(
+            "oui oui un digramme pour me faire une demo"
+        ));
+        assert_eq!(
+            detect_persona("oui oui un digramme pour me faire une demo"),
+            Persona::Editeur
+        );
     }
 }

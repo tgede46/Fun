@@ -86,11 +86,12 @@ function ChatGuide() {
           penses-tu de ce diagramme ? »
         </li>
         <li>
-          <span className="font-semibold text-foreground">Trace</span> — modification : « Ajoute une
-          boîte pour… »
+          <span className="font-semibold text-foreground">Trace</span> — dessin canvas : « Crée un
+          diagramme de démo avec… » ou « Ajoute une boîte pour… »
         </li>
         <li>
           <span className="font-semibold text-foreground">Assistant</span> — questions générales
+          (texte seulement, pas de dessin)
         </li>
         <li>
           <span className="font-semibold text-foreground">Reset</span> — « Repartir de zéro » vide
@@ -98,7 +99,8 @@ function ChatGuide() {
         </li>
       </ul>
       <p className="text-xs text-center text-muted-foreground">
-        Ouvrez un diagramme pour que l&apos;IA le voie.
+        Fun dessine en Excalidraw sur le canvas — pas Mermaid. Ouvrez un diagramme ou demandez à Trace
+        d&apos;en créer un.
       </p>
     </div>
   );

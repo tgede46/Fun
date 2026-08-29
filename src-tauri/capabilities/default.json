@@ -7,6 +7,7 @@
     "core:default",
     "shell:allow-open",
     "dialog:default",
+    "notification:default",
     "allow-get-recent-projects",
     "allow-open-project",
     "allow-pick-project-folder",
@@ -16,9 +17,16 @@
     "allow-load-diagram",
     "allow-save-diagram",
     "allow-list-diagrams",
+    "allow-delete-diagram",
     "allow-get-project-settings",
     "allow-set-project-theme",
     "allow-get-openrouter-key-configured",
-    "allow-get-ai-status"
+    "allow-get-ai-status",
+    "allow-send-chat-message",
+    "allow-reset-diagram",
+    "allow-generate-diagram-from-code",
+    "allow-set-pomodoro-durations",
+    "allow-notify-pomodoro-phase",
+    "allow-run-benchmark"
   ]
 }

@@ -44,6 +44,11 @@ description = "Liste les diagrammes du projet."
 commands.allow = ["list_diagrams"]
 
 [[permission]]
+identifier = "allow-delete-diagram"
+description = "Supprime un fichier diagramme Excalidraw."
+commands.allow = ["delete_diagram"]
+
+[[permission]]
 identifier = "allow-get-project-settings"
 description = "Lit les paramètres du projet."
 commands.allow = ["get_project_settings"]

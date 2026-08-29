@@ -1,7 +1,8 @@
 pub const OPENROUTER_API_BASE: &str = "https://openrouter.ai/api/v1";
 
 pub fn is_free_model(model_id: &str) -> bool {
-    model_id.trim().ends_with(":free")
+    let trimmed = model_id.trim();
+    trimmed.ends_with(":free") || trimmed == "openrouter/free"
 }
 
 pub fn assert_free_model(model_id: &str) -> Result<(), String> {
@@ -18,7 +19,8 @@ mod tests {
 
     #[test]
     fn is_free_model_checks_suffix() {
-        assert!(is_free_model("google/gemma-2-9b-it:free"));
+        assert!(is_free_model("google/gemma-4-31b-it:free"));
+        assert!(is_free_model("openrouter/free"));
         assert!(!is_free_model("openai/gpt-4o"));
     }
 

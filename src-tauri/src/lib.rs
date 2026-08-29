@@ -35,6 +35,7 @@ pub fn run() {
             commands::load_diagram,
             commands::save_diagram,
             commands::list_diagrams,
+            commands::delete_diagram,
             commands::get_project_settings,
             commands::set_project_theme,
             commands::get_openrouter_key_configured,

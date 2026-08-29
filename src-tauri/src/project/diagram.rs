@@ -225,6 +225,12 @@ pub fn list_diagrams(project_root: &Path) -> Result<Vec<DiagramEntry>, String> {
     Ok(entries.into_iter().map(|(_, entry)| entry).collect())
 }
 
+/// Supprime un fichier diagramme sous `.fun/diagrams/` (validation chemin AD-4).
+pub fn delete_diagram(project_root: &Path, diagram_path: &Path) -> Result<(), String> {
+    validate_diagram_path(project_root, diagram_path)?;
+    fs::remove_file(diagram_path).map_err(|e| format!("Impossible de supprimer le fichier : {e}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -299,6 +305,30 @@ mod tests {
         let err = save_diagram(&project, &diagram_path, r#"{"type":"other"}"#)
             .expect_err("must reject");
         assert!(err.contains("invalide"));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn delete_diagram_removes_file() {
+        let project = temp_project();
+        let diagram_path = create_diagram(&project).expect("create");
+        assert!(diagram_path.exists());
+
+        delete_diagram(&project, &diagram_path).expect("delete");
+        assert!(!diagram_path.exists());
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn delete_diagram_rejects_path_outside_diagrams_dir() {
+        let project = temp_project();
+        let outside = project.join("outside.excalidraw");
+        fs::write(&outside, "{}").expect("write");
+
+        let err = delete_diagram(&project, &outside).expect_err("must reject");
+        assert!(err.contains("non autorisé") || err.contains("introuvable"));
 
         let _ = fs::remove_dir_all(project);
     }

@@ -6,16 +6,16 @@ use std::sync::{Arc, LazyLock};
 use tokio::sync::{Mutex, Semaphore};
 
 use crate::ai::client::{chat_completion, ChatMessage};
-use crate::ai::model::DEFAULT_FREE_MODEL;
+use crate::ai::model::{is_deprecated_free_model, DEFAULT_FREE_MODEL};
 use crate::project::ai_config;
 
 /// Modèles candidats `:free` évalués par le benchmark (défaut si absent de ai.json).
 const DEFAULT_CANDIDATE_MODELS: &[&str] = &[
-    "google/gemma-2-9b-it:free",
     "meta-llama/llama-3.2-3b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "qwen/qwen-2-7b-instruct:free",
+    "google/gemma-4-31b-it:free",
+    "nvidia/nemotron-3.5-lightning:free",
+    "z-ai/glm-5.2:free",
+    "minimax/minimax-m3:free",
 ];
 
 /// Intervalle en jours entre deux benchmarks (défaut si absent de ai.json).
@@ -281,8 +281,14 @@ pub async fn check_and_run_if_stale(
 ) -> Result<StalenessCheck, String> {
     let config = ai_config::read_ai_config(project_root).unwrap_or_default();
     let staleness_days = resolve_staleness_days(&config);
+    let active_deprecated = config
+        .active_model
+        .as_deref()
+        .is_some_and(is_deprecated_free_model);
 
-    if !is_benchmark_stale(config.last_benchmark_at.as_deref(), staleness_days) {
+    if !active_deprecated
+        && !is_benchmark_stale(config.last_benchmark_at.as_deref(), staleness_days)
+    {
         return Ok(StalenessCheck::Fresh);
     }
 
@@ -507,7 +513,7 @@ mod tests {
             let root = tmp_project();
             let config = ai_config::AiConfig {
                 last_benchmark_at: Some(Utc::now().to_rfc3339()),
-                active_model: Some("google/gemma-2-9b-it:free".to_string()),
+                active_model: Some("meta-llama/llama-3.2-3b-instruct:free".to_string()),
                 ..Default::default()
             };
             ai_config::write_ai_config(&root, &config).unwrap();

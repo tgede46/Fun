@@ -13,6 +13,9 @@ type ToolbarProps = {
   onGenerateFromCode: () => void;
   isCreatingDiagram: boolean;
   isGeneratingFromCode: boolean;
+  canDeleteDiagram?: boolean;
+  isDeletingDiagram?: boolean;
+  onDeleteDiagram?: () => void;
 };
 
 export function Toolbar({
@@ -25,6 +28,9 @@ export function Toolbar({
   onGenerateFromCode,
   isCreatingDiagram,
   isGeneratingFromCode,
+  canDeleteDiagram = false,
+  isDeletingDiagram = false,
+  onDeleteDiagram,
 }: ToolbarProps) {
   return (
     <header className="flex items-center justify-between h-12 px-4 border-b border-border bg-card">
@@ -66,6 +72,15 @@ export function Toolbar({
               title="Scanne les fichiers source du projet et génère un diagramme Excalidraw via l'IA"
             >
               {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
+            </button>
+            <button
+              type="button"
+              className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+              onClick={onDeleteDiagram}
+              disabled={!canDeleteDiagram || isDeletingDiagram}
+              title="Supprime le diagramme ouvert (.fun/diagrams/)"
+            >
+              {isDeletingDiagram ? "Suppression…" : "Supprimer"}
             </button>
             <button
               type="button"

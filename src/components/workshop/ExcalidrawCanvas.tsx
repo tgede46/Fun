@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
 import type { ExcalidrawProps } from "@excalidraw/excalidraw/types";
 import { saveDiagram, type ExcalidrawInitialDataState } from "@/lib/diagram";
+import { formatInvokeError } from "@/lib/invoke-error";
 import type { FunTheme } from "@/lib/theme";
 
 import "@excalidraw/excalidraw/index.css";
@@ -34,12 +35,13 @@ type ExcalidrawCanvasProps = {
   diagramPath: string;
   theme: FunTheme;
   initialData: ExcalidrawInitialDataState;
-  onSaveError?: (message: string) => void;
+  onSaveError?: (message: string | null) => void;
+  onSaved?: (content: string) => void;
 };
 
 export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCanvasProps>(
   function ExcalidrawCanvas(
-    { projectPath, diagramPath, theme, initialData, onSaveError },
+    { projectPath, diagramPath, theme, initialData, onSaveError, onSaved },
     ref,
   ) {
     const skipSaveRef = useRef(true);
@@ -86,10 +88,14 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
           pending.diagramPath,
           pending.content,
         );
-      } catch {
-        onSaveError?.("Impossible de sauvegarder le diagramme.");
+        onSaveError?.(null);
+        onSaved?.(pending.content);
+      } catch (err) {
+        onSaveError?.(
+          formatInvokeError(err, "Impossible de sauvegarder le diagramme."),
+        );
       }
-    }, [onSaveError]);
+    }, [onSaveError, onSaved]);
 
     useEffect(() => {
       return () => {

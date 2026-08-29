@@ -28,6 +28,8 @@ export type SendChatResult = {
   persona_display: string;
   diagram_update: string | null;
   diagram_reset: boolean;
+  opened_diagram_path: string | null;
+  opened_diagram_name: string | null;
 };
 
 export type GenerateDiagramResult = {

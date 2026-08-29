@@ -177,6 +177,13 @@ pub fn list_diagrams(project_path: String) -> Result<Vec<DiagramListItem>, Strin
 }
 
 #[tauri::command]
+pub fn delete_diagram(project_path: String, diagram_path: String) -> Result<(), String> {
+    let project_root = PathBuf::from(&project_path);
+    let path = PathBuf::from(&diagram_path);
+    diagram::delete_diagram(project_root.as_path(), path.as_path())
+}
+
+#[tauri::command]
 pub fn get_project_settings(project_path: String) -> Result<ProjectSettingsResult, String> {
     let project_root = PathBuf::from(&project_path);
     let loaded = settings::read_settings(project_root.as_path())?;

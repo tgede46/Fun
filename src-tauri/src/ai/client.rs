@@ -95,6 +95,30 @@ fn is_rate_limited(err: &str) -> bool {
     err.contains("429") || err.to_lowercase().contains("rate limit")
 }
 
+pub fn is_model_not_found(err: &str) -> bool {
+    let lower = err.to_lowercase();
+    lower.contains("404")
+        && (lower.contains("no endpoints found") || lower.contains("not found"))
+}
+
+/// Appelle OpenRouter avec repli sur [`DEFAULT_FREE_MODEL`] si le modèle est introuvable.
+pub async fn chat_completion_resolved(
+    api_key: &str,
+    model: &str,
+    messages: Vec<ChatMessage<'_>>,
+) -> Result<String, String> {
+    use crate::ai::model::{normalize_free_model, DEFAULT_FREE_MODEL};
+
+    let primary = normalize_free_model(model);
+    match chat_completion(api_key, &primary, messages.clone()).await {
+        Ok(response) => Ok(response),
+        Err(err) if is_model_not_found(&err) && primary != DEFAULT_FREE_MODEL => {
+            chat_completion(api_key, DEFAULT_FREE_MODEL, messages).await
+        }
+        Err(err) => Err(err),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -104,5 +128,13 @@ mod tests {
         assert!(is_rate_limited("OpenRouter 429 Too Many Requests"));
         assert!(is_rate_limited("rate limit exceeded"));
         assert!(!is_rate_limited("OpenRouter 500: internal error"));
+    }
+
+    #[test]
+    fn is_model_not_found_detects_404() {
+        assert!(is_model_not_found(
+            r#"OpenRouter 404 Not Found: {"error":{"message":"No endpoints found for google/gemma-2-9b-it:free"}}"#
+        ));
+        assert!(!is_model_not_found("OpenRouter 500: internal error"));
     }
 }

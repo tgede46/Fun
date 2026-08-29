@@ -52,6 +52,13 @@ export async function listDiagrams(
   return invoke<DiagramListItem[]>("list_diagrams", { projectPath });
 }
 
+export async function deleteDiagram(
+  projectPath: string,
+  diagramPath: string,
+): Promise<void> {
+  await invoke("delete_diagram", { projectPath, diagramPath });
+}
+
 export function parseExcalidrawContent(content: string): ExcalidrawInitialDataState {
   let parsed: ExcalidrawInitialDataState & {
     app_state?: ExcalidrawInitialDataState["appState"];
