@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fun — Session brainstorm 28 août 2026</title>
+<style>
+:root {
+  --desk: #1a2332;
+  --desk-deep: #0f1620;
+  --screen: #e8eef4;
+  --screen-dim: #d4dde8;
+  --ink: #1c2838;
+  --ink-soft: #3d4f66;
+  --chalk: #f0f4f8;
+  --marker: #0d9488;
+  --marker-deep: #0f766e;
+  --amber: #f59e0b;
+  --amber-soft: #fbbf24;
+  --coral: #e11d48;
+  --sky: #38bdf8;
+  --lime: #84cc16;
+  --window: #243044;
+  --titlebar: #2a3a52;
+  --grid: rgba(13, 148, 136, 0.08);
+  --shadow: 0 24px 60px rgba(0,0,0,.45);
+  --font-ui: 'Trebuchet MS', 'Segoe UI', 'Gill Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'Consolas', 'Cascadia Code', 'Lucida Console', 'Courier New', monospace;
+  --font-hand: 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', 'Chalkboard SE', cursive;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-ui);
+  background: var(--desk-deep);
+  color: var(--chalk);
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(13,148,136,.12), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 80%, rgba(245,158,11,.08), transparent 45%),
+    repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,.015) 40px),
+    repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,.015) 40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.hand { font-family: var(--font-hand); }
+.mono { font-family: var(--font-mono); }
+
+/* ── TASKBAR ── */
+.taskbar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 44px;
+  background: linear-gradient(180deg, #2c3e56, #1e2a3c);
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  z-index: 100;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.4);
+}
+
+.taskbar .start {
+  background: var(--marker);
+  color: #fff;
+  border: none;
+  font-family: var(--font-ui);
+  font-weight: 600;
+  font-size: .8rem;
+  padding: .35rem .85rem;
+  border-radius: 4px;
+  cursor: pointer;
+  letter-spacing: .02em;
+}
+
+.taskbar .pill {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  color: var(--chalk);
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  padding: .3rem .65rem;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background .2s;
+}
+
+.taskbar .pill:hover { background: rgba(13,148,136,.35); }
+
+.taskbar .clock {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: rgba(255,255,255,.6);
+}
+
+/* ── HERO DESKTOP ── */
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 1.5rem 5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.hero-window {
+  background: var(--window);
+  border-radius: 10px 10px 6px 6px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.06);
+  animation: windowIn .8s cubic-bezier(.22,1,.36,1) both;
+}
+
+@keyframes windowIn {
+  from { opacity: 0; transform: translateY(28px) scale(.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.titlebar {
+  background: var(--titlebar);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: .55rem 1rem;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.dots { display: flex; gap: 6px; }
+.dots span {
+  width: 11px; height: 11px; border-radius: 50%;
+}
+.dots .r { background: #ff5f57; }
+.dots .y { background: #febc2e; }
+.dots .g { background: #28c840; }
+
+.titlebar .path {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: rgba(255,255,255,.45);
+  margin-left: .5rem;
+}
+
+.hero-canvas {
+  position: relative;
+  background:
+    linear-gradient(135deg, #dfe8f0 0%, #c8d5e3 40%, #b8c9db 100%);
+  min-height: 62vh;
+  padding: 2.5rem 2rem 3rem;
+  overflow: hidden;
+}
+
+.hero-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(13,148,136,.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(13,148,136,.07) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+}
+
+.brand {
+  position: relative;
+  font-size: clamp(4.5rem, 14vw, 8rem);
+  font-weight: 700;
+  letter-spacing: -.04em;
+  color: var(--ink);
+  line-height: .9;
+  z-index: 2;
+  animation: brandPulse 4s ease-in-out infinite;
+}
+
+@keyframes brandPulse {
+  0%, 100% { text-shadow: 3px 3px 0 rgba(13,148,136,.25); }
+  50% { text-shadow: 5px 5px 0 rgba(245,158,11,.3); }
+}
+
+.brand .tilde {
+  color: var(--marker);
+  font-weight: 500;
+}
+
+.hero-tag {
+  position: relative;
+  z-index: 2;
+  margin-top: 1.25rem;
+  font-size: clamp(1.15rem, 2.5vw, 1.45rem);
+  color: var(--ink-soft);
+  max-width: 28ch;
+  font-weight: 500;
+}
+
+.hero-sub {
+  position: relative;
+  z-index: 2;
+  margin-top: .75rem;
+  font-size: .95rem;
+  color: var(--ink-soft);
+  opacity: .85;
+  max-width: 42ch;
+}
+
+.hero-cta {
+  position: relative;
+  z-index: 2;
+  margin-top: 2rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.hero-cta a {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .7rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: .9rem;
+  text-decoration: none;
+  transition: transform .2s, box-shadow .2s;
+}
+
+.hero-cta a:hover { transform: translateY(-2px); }
+
+.cta-primary {
+  background: var(--ink);
+  color: var(--chalk);
+  box-shadow: 4px 4px 0 var(--marker);
+}
+
+.cta-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+}
+
+/* floating desktop icons on hero */
+.desk-icon {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--ink-soft);
+  opacity: .7;
+  animation: floatY 5s ease-in-out infinite;
+}
+
+.desk-icon .ico {
+  width: 42px; height: 42px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  border: 1.5px solid rgba(28,40,56,.2);
+  background: rgba(255,255,255,.55);
+}
+
+.desk-icon.i1 { top: 18%; right: 8%; animation-delay: 0s; }
+.desk-icon.i2 { bottom: 22%; right: 18%; animation-delay: 1.2s; }
+.desk-icon.i3 { top: 38%; right: 28%; animation-delay: .6s; opacity: .5; }
+
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.sketch-stroke {
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  opacity: .35;
+}
+
+.meta-bar {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-top: 1.5rem;
+  padding: 0 .25rem;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: rgba(255,255,255,.4);
+}
+
+.meta-bar strong { color: var(--amber-soft); font-weight: 500; }
+
+/* ── MAIN FLOW ── */
+main {
+  position: relative;
+  z-index: 1;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 6rem;
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--marker);
+  margin-bottom: .5rem;
+}
+
+/* technique shells */
+.tech {
+  margin: 3.5rem 0;
+  position: relative;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity .6s ease, transform .6s ease;
+}
+
+.tech.visible {
+  opacity: 1;
+  transform: none;
+}
+
+.tech h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin-bottom: .35rem;
+}
+
+.tech .lede {
+  color: rgba(255,255,255,.55);
+  font-size: .95rem;
+  margin-bottom: 1.5rem;
+  max-width: 50ch;
+}
+
+/* ═══ 1 YES AND — cascading sticky chain ═══ */
+.yesand .chain {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.yesand .chain::before {
+  content: '';
+  position: absolute;
+  left: 6px; top: 12px; bottom: 12px;
+  width: 2px;
+  background: linear-gradient(var(--marker), var(--amber));
+}
+
+.sticky {
+  position: relative;
+  background: #fef3c7;
+  color: var(--ink);
+  padding: 1rem 1.15rem;
+  margin: .4rem 0;
+  margin-left: calc(var(--i, 0) * 1.2rem);
+  max-width: 420px;
+  box-shadow: 2px 3px 0 rgba(0,0,0,.15);
+  transform: rotate(var(--rot, -1deg));
+  font-size: .92rem;
+  transition: transform .25s;
+}
+
+.sticky:hover { transform: rotate(0deg) scale(1.02); z-index: 2; }
+
+.sticky::before {
+  content: '+';
+  position: absolute;
+  left: -1.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px; height: 18px;
+  background: var(--marker);
+  color: #fff;
+  border-radius: 50%;
+  font-size: .7rem;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.sticky .and {
+  font-family: var(--font-hand);
+  font-size: 1.1rem;
+  color: var(--marker-deep);
+  display: block;
+  margin-bottom: .2rem;
+}
+
+/* ═══ 2 BRAIN WRITING — rotating cards carousel ═══ */
+.bw-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: .75rem;
+}
+
+.bw-card {
+  background: var(--desk);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+  min-height: 130px;
+  transition: border-color .3s;
+}
+
+.bw-card:hover { border-color: var(--sky); }
+
+.bw-card .round {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: var(--sky);
+  letter-spacing: .08em;
+  margin-bottom: .5rem;
+}
+
+.bw-card p { font-size: .85rem; color: rgba(255,255,255,.8); }
+
+.bw-card::after {
+  content: '↻';
+  position: absolute;
+  bottom: .5rem; right: .65rem;
+  opacity: .2;
+  font-size: 1.2rem;
+}
+
+/* ═══ 3 SIX HATS — colored hat panels ═══ */
+.hats {
+  display: grid;
+  gap: .65rem;
+}
+
+.hat {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 1rem;
+  align-items: start;
+  padding: 1rem 1.15rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,.03);
+  border-left: 4px solid;
+}
+
+.hat .hat-ico {
+  width: 48px; height: 40px;
+  border-radius: 50% 50% 8px 8px;
+  display: grid;
+  place-items: center;
+  font-size: .7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: #fff;
+}
+
+.hat h3 { font-size: .95rem; margin-bottom: .35rem; }
+.hat ul { list-style: none; }
+.hat li {
+  font-size: .82rem;
+  color: rgba(255,255,255,.7);
+  padding: .15rem 0;
+  padding-left: .85rem;
+  position: relative;
+}
+.hat li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  opacity: .5;
+}
+
+.hat.white { border-color: #e2e8f0; }
+.hat.white .hat-ico { background: #94a3b8; }
+.hat.red { border-color: #f43f5e; }
+.hat.red .hat-ico { background: #e11d48; }
+.hat.yellow { border-color: #fbbf24; }
+.hat.yellow .hat-ico { background: #d97706; }
+.hat.black { border-color: #64748b; }
+.hat.black .hat-ico { background: #334155; }
+.hat.green { border-color: #4ade80; }
+.hat.green .hat-ico { background: #16a34a; }
+.hat.blue { border-color: #38bdf8; }
+.hat.blue .hat-ico { background: #0284c7; }
+
+/* ═══ 4 CRAZY 8s — sketchboard octants ═══ */
+.crazy8 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 2px;
+  background: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 4px;
+  overflow: hidden;
+  aspect-ratio: 2 / 1.05;
+}
+
+@media (max-width: 700px) {
+  .crazy8 {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(4, auto);
+    aspect-ratio: auto;
+  }
+}
+
+.c8-cell {
+  background: #f4f0e8;
+  color: var(--ink);
+  padding: .85rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 110px;
+  transition: background .25s;
+}
+
+.c8-cell:hover { background: #fffbeb; }
+
+.c8-cell .num {
+  font-family: var(--font-hand);
+  font-size: 1.6rem;
+  color: var(--coral);
+  line-height: 1;
+}
+
+.c8-cell p {
+  font-size: .78rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.c8-cell .doodle {
+  position: absolute;
+  bottom: 6px; right: 8px;
+  font-size: 1.1rem;
+  opacity: .25;
+}
+
+/* ═══ 5 DECISION TREE — branching SVG path ═══ */
+.tree-wrap {
+  background: var(--desk);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  padding: 1.5rem 1rem 1.25rem;
+  overflow-x: auto;
+}
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  min-width: 280px;
+}
+
+.tree-node {
+  background: rgba(13,148,136,.15);
+  border: 1.5px solid var(--marker);
+  color: var(--chalk);
+  padding: .65rem 1.1rem;
+  border-radius: 6px;
+  font-size: .85rem;
+  text-align: center;
+  max-width: 340px;
+  position: relative;
+}
+
+.tree-node.root {
+  background: rgba(245,158,11,.15);
+  border-color: var(--amber);
+  font-weight: 600;
+}
+
+.tree-node.chosen {
+  background: rgba(132,204,22,.18);
+  border-color: var(--lime);
+  box-shadow: 0 0 0 3px rgba(132,204,22,.15);
+}
+
+.tree-node.fallback {
+  background: rgba(56,189,248,.1);
+  border-color: var(--sky);
+  font-size: .8rem;
+}
+
+.tree-branch {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: .25rem;
+}
+
+.tree-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 140px;
+  max-width: 220px;
+}
+
+.tree-stem {
+  width: 2px;
+  height: 28px;
+  background: rgba(255,255,255,.2);
+}
+
+.tree-label {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  color: rgba(255,255,255,.4);
+  margin: .25rem 0;
+  letter-spacing: .05em;
+}
+
+/* ═══ 6 SOLUTION MATRIX — scoreboard ═══ */
+.matrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .88rem;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.matrix th, .matrix td {
+  padding: .85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+
+.matrix th {
+  background: rgba(255,255,255,.04);
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.5);
+  font-weight: 500;
+}
+
+.matrix td { background: rgba(0,0,0,.2); }
+
+.matrix tr:last-child td { border-bottom: none; }
+
+.score-bar {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.score-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,.08);
+  border-radius: 4px;
+  overflow: hidden;
+  max-width: 140px;
+}
+
+.score-fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--marker), var(--lime));
+  transition: width 1.2s cubic-bezier(.22,1,.36,1);
+  width: 0;
+}
+
+.score-num {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--lime);
+  min-width: 1.5ch;
+}
+
+.matrix .approach {
+  font-size: .78rem;
+  color: rgba(255,255,255,.5);
+  font-family: var(--font-mono);
+}
+
+/* ═══ 7 FIVE WHYS — descending well ═══ */
+.whys {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.whys::before {
+  content: '';
+  position: absolute;
+  left: 10px; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(var(--coral), var(--amber), transparent);
+  border-radius: 2px;
+}
+
+.why {
+  position: relative;
+  margin-bottom: 1.1rem;
+  padding: .9rem 1.1rem;
+  background: rgba(225,29,72, calc(0.04 + var(--d, 0) * 0.04));
+  border: 1px solid rgba(225,29,72, calc(0.15 + var(--d, 0) * 0.1));
+  border-radius: 6px;
+  margin-left: calc(var(--d, 0) * 0.6rem);
+}
+
+.why::before {
+  content: attr(data-n);
+  position: absolute;
+  left: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px; height: 22px;
+  background: var(--coral);
+  color: #fff;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  font-weight: 600;
+  display: grid;
+  place-items: center;
+}
+
+.why .q {
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  color: var(--amber-soft);
+  margin-bottom: .25rem;
+}
+
+.why p { font-size: .88rem; color: rgba(255,255,255,.8); }
+
+.why.root {
+  background: rgba(245,158,11,.12);
+  border-color: var(--amber);
+}
+
+.why.root::before { background: var(--amber); color: var(--ink); }
+
+/* ═══ 8 ASSUMPTION REVERSAL — flip cards ═══ */
+.flips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.flip {
+  perspective: 800px;
+  height: 180px;
+  cursor: pointer;
+}
+
+.flip-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transition: transform .6s cubic-bezier(.22,1,.36,1);
+  transform-style: preserve-3d;
+}
+
+.flip:hover .flip-inner,
+.flip.flipped .flip-inner { transform: rotateY(180deg); }
+
+.flip-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.flip-front {
+  background: rgba(255,255,255,.05);
+  border: 1px dashed rgba(255,255,255,.2);
+}
+
+.flip-back {
+  background: linear-gradient(145deg, rgba(13,148,136,.3), rgba(13,148,136,.1));
+  border: 1.5px solid var(--marker);
+  transform: rotateY(180deg);
+}
+
+.flip-face .tag {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: .6rem;
+}
+
+.flip-front .tag { color: rgba(255,255,255,.4); }
+.flip-back .tag { color: var(--lime); }
+
+.flip-face p { font-size: .95rem; font-weight: 500; }
+
+/* ═══ 9 WHAT IF — portal doors ═══ */
+.scenarios {
+  display: grid;
+  gap: 1rem;
+}
+
+.portal {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  transition: border-color .3s, transform .3s;
+}
+
+.portal:hover {
+  border-color: var(--amber);
+  transform: translateX(4px);
+}
+
+.portal-door {
+  background: linear-gradient(180deg, #334155, #1e293b);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  padding: 1rem .5rem;
+  position: relative;
+}
+
+.portal-door::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 15%; bottom: 15%;
+  width: 3px;
+  background: var(--amber);
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 0 12px rgba(245,158,11,.5);
+}
+
+.portal-door .if {
+  font-family: var(--font-hand);
+  font-size: 1.4rem;
+  color: var(--amber);
+}
+
+.portal-door .cond {
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  text-align: center;
+  color: rgba(255,255,255,.5);
+  letter-spacing: .04em;
+  line-height: 1.3;
+}
+
+.portal-body {
+  background: rgba(0,0,0,.25);
+  padding: 1.1rem 1.25rem;
+}
+
+.portal-body h3 {
+  font-size: .95rem;
+  margin-bottom: .4rem;
+  color: var(--amber-soft);
+}
+
+.portal-body p {
+  font-size: .85rem;
+  color: rgba(255,255,255,.7);
+}
+
+@media (max-width: 520px) {
+  .portal { grid-template-columns: 1fr; }
+  .portal-door { flex-direction: row; gap: .75rem; padding: .75rem 1rem; }
+  .portal-door::after {
+    right: 15%; left: 15%; top: auto; bottom: 0;
+    width: auto; height: 3px;
+    border-radius: 2px 2px 0 0;
+  }
+}
+
+/* ═══ MOSCOW ═══ */
+.moscow {
+  margin: 4rem 0 3rem;
+}
+
+.moscow-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .65rem;
+}
+
+@media (max-width: 720px) {
+  .moscow-board { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 400px) {
+  .moscow-board { grid-template-columns: 1fr; }
+}
+
+.msk {
+  border-radius: 10px;
+  padding: 1.15rem;
+  min-height: 160px;
+}
+
+.msk h3 {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: .85rem;
+}
+
+.msk .letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.msk .letter {
+  width: 36px; height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: var(--font-mono);
+}
+
+.msk.must {
+  background: linear-gradient(160deg, rgba(225,29,72,.25), rgba(225,29,72,.08));
+  border: 1.5px solid rgba(225,29,72,.5);
+}
+.msk.must h3 { color: #fb7185; }
+.msk.must .letter { background: var(--coral); color: #fff; }
+
+.msk.should {
+  background: linear-gradient(160deg, rgba(245,158,11,.2), rgba(245,158,11,.06));
+  border: 1.5px solid rgba(245,158,11,.4);
+}
+.msk.should h3 { color: var(--amber-soft); }
+.msk.should .letter { background: var(--amber); color: var(--ink); }
+
+.msk.could {
+  background: linear-gradient(160deg, rgba(56,189,248,.15), rgba(56,189,248,.05));
+  border: 1.5px solid rgba(56,189,248,.35);
+}
+.msk.could h3 { color: var(--sky); }
+.msk.could .letter { background: #0284c7; color: #fff; }
+
+.msk.wont {
+  background: linear-gradient(160deg, rgba(100,116,139,.2), rgba(100,116,139,.06));
+  border: 1.5px solid rgba(100,116,139,.35);
+}
+.msk.wont h3 { color: #94a3b8; }
+.msk.wont .letter { background: #475569; color: #cbd5e1; }
+
+.moscow-note {
+  margin-top: 1rem;
+  font-size: .85rem;
+  color: rgba(255,255,255,.5);
+  font-style: italic;
+}
+
+/* ═══ SYNTHESIS CLIMAX ═══ */
+.climax {
+  margin: 5rem 0 2rem;
+  position: relative;
+}
+
+.climax-screen {
+  background: linear-gradient(165deg, #0c1220 0%, #152033 50%, #0a1628 100%);
+  border: 2px solid rgba(13,148,136,.4);
+  border-radius: 12px;
+  padding: 2.5rem 2rem 2.25rem;
+  box-shadow:
+    0 0 0 1px rgba(13,148,136,.15),
+    0 0 60px rgba(13,148,136,.12),
+    var(--shadow);
+  position: relative;
+  overflow: hidden;
+}
+
+.climax-screen::before {
+  content: '';
+  position: absolute;
+  top: -40%; right: -20%;
+  width: 60%; height: 80%;
+  background: radial-gradient(circle, rgba(13,148,136,.15), transparent 70%);
+  pointer-events: none;
+}
+
+.climax .boot {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--marker);
+  margin-bottom: 1.25rem;
+  letter-spacing: .06em;
+}
+
+.climax h2 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.climax h2 .hl { color: var(--marker); }
+
+.climax .manifesto {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,.7);
+  max-width: 48ch;
+  margin-bottom: 2rem;
+  position: relative;
+}
+
+.stack-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-bottom: 1.75rem;
+  position: relative;
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  font-weight: 500;
+  padding: .45rem .85rem;
+  border-radius: 4px;
+  background: rgba(13,148,136,.2);
+  border: 1px solid rgba(13,148,136,.45);
+  color: #5eead4;
+}
+
+.chip.amber {
+  background: rgba(245,158,11,.15);
+  border-color: rgba(245,158,11,.4);
+  color: var(--amber-soft);
+}
+
+.chip.sky {
+  background: rgba(56,189,248,.12);
+  border-color: rgba(56,189,248,.35);
+  color: var(--sky);
+}
+
+.pillars {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .75rem;
+  position: relative;
+}
+
+.pillar {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.pillar .k {
+  font-family: var(--font-mono);
+  font-size: .65rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.4);
+  margin-bottom: .4rem;
+}
+
+.pillar .v {
+  font-size: .9rem;
+  font-weight: 600;
+  color: var(--chalk);
+}
+
+.pillar .v.hand {
+  font-size: 1.15rem;
+  color: var(--amber-soft);
+}
+
+.finale-line {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,.08);
+  font-family: var(--font-hand);
+  font-size: 1.55rem;
+  color: var(--chalk);
+  text-align: center;
+  position: relative;
+}
+
+.finale-line span { color: var(--marker); }
+
+footer {
+  text-align: center;
+  padding: 2rem 1rem 5rem;
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  color: rgba(255,255,255,.3);
+}
+
+footer a { color: var(--marker); text-decoration: none; }
+
+/* cursor blink */
+.blink::after {
+  content: '▋';
+  animation: blink 1s step-end infinite;
+  color: var(--marker);
+  margin-left: 2px;
+}
+@keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<nav class="taskbar" aria-label="Navigation session">
+  <button class="start" type="button" onclick="window.scrollTo({top:0,behavior:'smooth'})">Fun</button>
+  <a class="pill" href="#techniques">9 techniques</a>
+  <a class="pill" href="#moscow">MoSCoW</a>
+  <a class="pill" href="#synthese">Synthèse</a>
+  <span class="clock" id="clock">28 août 2026</span>
+</nav>
+
+<header class="hero">
+  <div class="hero-window">
+    <div class="titlebar">
+      <div class="dots" aria-hidden="true"><span class="r"></span><span class="y"></span><span class="g"></span></div>
+      <span class="path">~/Fun/brainstorm/2026-08-28 — explorateur de directions</span>
+    </div>
+    <div class="hero-canvas">
+      <svg class="sketch-stroke" style="top:12%;left:55%;width:180px;height:80px" viewBox="0 0 180 80" fill="none" aria-hidden="true">
+        <path d="M10 40 Q50 5 90 40 T170 35" stroke="#0d9488" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="30" y="50" width="40" height="22" rx="3" stroke="#1c2838" stroke-width="1.5" fill="none" opacity=".4"/>
+        <circle cx="120" cy="58" r="12" stroke="#e11d48" stroke-width="1.5" fill="none" opacity=".35"/>
+      </svg>
+      <div class="desk-icon i1"><div class="ico">▣</div>canvas</div>
+      <div class="desk-icon i2"><div class="ico">⏱</div>pomo</div>
+      <div class="desk-icon i3"><div class="ico">✦</div>ia</div>
+
+      <h1 class="brand">Fun<span class="tilde">~</span></h1>
+      <p class="hero-tag">Le bureau tout-en-un où le whiteboard rencontre le code.</p>
+      <p class="hero-sub">Excalidraw × draw.io × IA × Pomodoro × collab — une session pour figer la direction avant le brief.</p>
+      <div class="hero-cta">
+        <a class="cta-primary" href="#synthese">Voir la synthèse →</a>
+        <a class="cta-ghost" href="#techniques">Parcourir les 9 techniques</a>
+      </div>
+    </div>
+  </div>
+  <div class="meta-bar">
+    <span>mode <strong>facilitateur</strong></span>
+    <span>objectif <strong>directions produit</strong></span>
+    <span>statut <strong>complete</strong></span>
+    <span>stack cible <strong>Next · Tauri · GCP</strong></span>
+  </div>
+</header>
+
+<main id="techniques">
+
+  <!-- 1 YES AND -->
+  <section class="tech yesand" id="yes-and">
+    <p class="section-label">01 — Yes And Building</p>
+    <h2>Oui, et… empiler le rêve</h2>
+    <p class="lede">Chaque idée accroche la suivante. Pas de frein — seulement de l’élan.</p>
+    <div class="chain">
+      <div class="sticky" style="--i:0;--rot:-2deg"><span class="and">oui, et…</span>Plateforme mix Excalidraw + draw.io : l’IA génère des diagrammes modifiables</div>
+      <div class="sticky" style="--i:1;--rot:1.5deg"><span class="and">oui, et…</span>Pomodoro intégré dans la plateforme</div>
+      <div class="sticky" style="--i:2;--rot:-1deg"><span class="and">oui, et…</span>IA open source — pas de boîte noire propriétaire</div>
+      <div class="sticky" style="--i:3;--rot:2deg"><span class="and">oui, et…</span>Benchmark automatique sur ce que le système produit</div>
+      <div class="sticky" style="--i:4;--rot:-1.5deg"><span class="and">oui, et…</span>Automatisations vers l’extérieur (Google Calendar &amp; plus)</div>
+    </div>
+  </section>
+
+  <!-- 2 BRAIN WRITING -->
+  <section class="tech" id="brain-writing">
+    <p class="section-label">02 — Brain Writing Round Robin</p>
+    <h2>Tours de table, idées qui circulent</h2>
+    <p class="lede">Rounds qui se croisent : canvas, timer, chat live, collab, code → UML.</p>
+    <div class="bw-grid">
+      <article class="bw-card"><div class="round">ROUND · A</div><p>Diagrammes Excalidraw par projet — espaces privés + partage collaborateurs</p></article>
+      <article class="bw-card"><div class="round">ROUND · B</div><p>Pomodoro perso : durée travail &amp; pause au choix ; pause = mini-jeux (échecs…)</p></article>
+      <article class="bw-card"><div class="round">ROUND · C</div><p>IA = générateur de diagrammes + chat dédié qui modifie le canvas en direct</p></article>
+      <article class="bw-card"><div class="round">ROUND · D</div><p>Collab : notif + calendrier + résumé mail quand quelqu’un touche un diagramme partagé</p></article>
+      <article class="bw-card"><div class="round">ROUND · E</div><p>Chat séparé du canvas — navigation vers projet en cours et son code source</p></article>
+      <article class="bw-card"><div class="round">ROUND · F</div><p>Depuis le code : génération auto UML &amp; autres types selon le contexte</p></article>
+      <article class="bw-card"><div class="round">ROUND · G</div><p>Automatisations déclenchées par l’IA ou par un collaborateur</p></article>
+      <article class="bw-card"><div class="round">ROUND · H</div><p>Pomodoro = timer simple + notif PC — pas de suggestions « intelligentes »</p></article>
+    </div>
+  </section>
+
+  <!-- 3 SIX HATS -->
+  <section class="tech" id="six-hats">
+    <p class="section-label">03 — Six Thinking Hats</p>
+    <h2>Six angles, une tête claire</h2>
+    <p class="lede">Faits, ressenti, opportunités, risques, décisions vertes, plan bleu.</p>
+    <div class="hats">
+      <div class="hat white">
+        <div class="hat-ico">W</div>
+        <div>
+          <h3>Blanc — faits</h3>
+          <ul>
+            <li>Cible initiale web + mobile ; profil back (Spring/Node) + front Next/Angular</li>
+            <li>Cloud GCP · ~11 semaines total · MVP visé ~3 jours · solo, puis amis</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hat red">
+        <div class="hat-ico">R</div>
+        <div>
+          <h3>Rouge — ressenti</h3>
+          <ul>
+            <li>État d’esprit chill ; envie de tester (mention Tori)</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hat yellow">
+        <div class="hat-ico">Y</div>
+        <div>
+          <h3>Jaune — soleil</h3>
+          <ul>
+            <li>Intégrations pour cadrer un projet (prix, temps, plan)</li>
+            <li>Travail collectif entre amis, chacun sur son PC, pauses/jeux puis retour</li>
+            <li>Sentir qu’on avance ensemble même à distance</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hat black">
+        <div class="hat-ico">B</div>
+        <div>
+          <h3>Noir — garde-fous</h3>
+          <ul>
+            <li>Features MVP qui cassent · mauvaise structure · trop de scope d’un coup</li>
+            <li>3 jours = web seulement · K8s/Docker comme piège · benchmark IA difficile</li>
+            <li>Il faut un modèle qui marche vite pour ne pas bloquer le build</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hat green">
+        <div class="hat-ico">G</div>
+        <div>
+          <h3>Vert — décisions</h3>
+          <ul>
+            <li>Ordre MVP : 1 canvas · 2 IA · 3 Pomodoro · puis le reste (jeux plus tard)</li>
+            <li>Repousser déploiement et jeux</li>
+          </ul>
+        </div>
+      </div>
+      <div class="hat blue">
+        <div class="hat-ico">Bl</div>
+        <div>
+          <h3>Bleu — conduite</h3>
+          <ul>
+            <li>J1–2 : canvas · J2 aussi éducation/IA · ensuite Pomodoro</li>
+            <li>Jeux + intégrations : plus tard</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 CRAZY 8s -->
+  <section class="tech" id="crazy8">
+    <p class="section-label">04 — Crazy 8s</p>
+    <h2>Huit cases, une feuille, zéro filtre</h2>
+    <p class="lede">Le sketchboard mental — huit coups de feutre pour le produit.</p>
+    <div class="crazy8" role="list">
+      <div class="c8-cell" role="listitem"><span class="num">1</span><p>Crayon / dessin libre rapide style Excalidraw</p><span class="doodle">✎</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">2</span><p>Panneau diagramme structuré à côté du sketch</p><span class="doodle">⊞</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">3</span><p>Dire à l’IA le domaine &amp; comment structurer</p><span class="doodle">◈</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">4</span><p>Créer / modifier par écriture ou petites commandes</p><span class="doodle">⌘</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">5</span><p>Montrer en live ce qu’on est en train de dessiner</p><span class="doodle">◉</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">6</span><p>Espace partagé — inviter des personnes sur le canvas</p><span class="doodle">⚭</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">7</span><p>Voir les mods de l’autre en temps réel + commenter</p><span class="doodle">💬</span></div>
+      <div class="c8-cell" role="listitem"><span class="num">8</span><p>Même boîte à outils qu’Excalidraw sur le canvas</p><span class="doodle">⬡</span></div>
+    </div>
+  </section>
+
+  <!-- 5 DECISION TREE -->
+  <section class="tech" id="decision-tree">
+    <p class="section-label">05 — Decision Tree Mapping</p>
+    <h2>Arbre de choix : lib, pas from scratch</h2>
+    <p class="lede">Intégrer l’existant. Branche C retenue. Plan A en filet.</p>
+    <div class="tree-wrap">
+      <div class="tree">
+        <div class="tree-node root">Intégrer une lib existante<br><span class="mono" style="font-size:.7rem;opacity:.6">Excalidraw · draw.io · autre</span></div>
+        <div class="tree-stem"></div>
+        <div class="tree-label">BRANCHE CANVAS</div>
+        <div class="tree-node chosen">C — Mix Excalidraw (sketch) + draw.io (UML / technique)</div>
+        <div class="tree-stem"></div>
+        <div class="tree-label">NAVIGATION</div>
+        <div class="tree-node">Onglets Sketch | UML</div>
+        <div class="tree-stem"></div>
+        <div class="tree-label">FILET DE SÉCURITÉ</div>
+        <div class="tree-node fallback">Plan A — si draw.io bloque : MVP Excalidraw seul, onglet draw.io « bientôt »</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 SOLUTION MATRIX -->
+  <section class="tech" id="matrix">
+    <p class="section-label">06 — Solution Matrix</p>
+    <h2>Scores globaux de difficulté</h2>
+    <p class="lede">Échelle 1–5 (5 = facile). Approches verrouillées pour chaque pilier.</p>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,.08)">
+      <table class="matrix">
+        <thead>
+          <tr><th>Pilier</th><th>Difficulté</th><th>Approche</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Canvas sketch</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill" data-w="60%"></div></div>
+                <span class="score-num">3</span>
+              </div>
+            </td>
+            <td class="approach">embed lib</td>
+          </tr>
+          <tr>
+            <td>IA diagramme</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill" data-w="60%"></div></div>
+                <span class="score-num">3</span>
+              </div>
+            </td>
+            <td class="approach">open-source</td>
+          </tr>
+          <tr>
+            <td>Pomodoro timer</td>
+            <td>
+              <div class="score-bar">
+                <div class="score-track"><div class="score-fill" data-w="100%"></div></div>
+                <span class="score-num">5</span>
+              </div>
+            </td>
+            <td class="approach">timer simple</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 7 FIVE WHYS -->
+  <section class="tech" id="five-whys">
+    <p class="section-label">07 — Five Whys</p>
+    <h2>Descendre jusqu’à la racine</h2>
+    <p class="lede">Pourquoi Fun ? Parce que le temps manque — et les outils aussi.</p>
+    <div class="whys">
+      <div class="why" style="--d:0" data-n="1">
+        <div class="q">Pourquoi ?</div>
+        <p>Trop d’outils dispersés, fatigué d’utiliser les produits des autres — envie de réaliser Fun soi-même.</p>
+      </div>
+      <div class="why" style="--d:1" data-n="2">
+        <div class="q">Pourquoi ?</div>
+        <p>Outils trop lents / fragmentés — vouloir démarrer vite, savoir quoi faire, voir le résultat rapidement.</p>
+      </div>
+      <div class="why" style="--d:2" data-n="3">
+        <div class="q">Pourquoi ?</div>
+        <p>Peu de temps au quotidien — fenêtres = vacances (~5 jours) : MVP en 3 jours + 2 jours de repos.</p>
+      </div>
+      <div class="why" style="--d:3" data-n="4">
+        <div class="q">Pourquoi ?</div>
+        <p>Pas le temps au quotidien.</p>
+      </div>
+      <div class="why root" style="--d:4" data-n="5">
+        <div class="q">Racine</div>
+        <p>Il y a un travail — d’où peu de temps hors vacances.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 ASSUMPTION REVERSAL -->
+  <section class="tech" id="reversal">
+    <p class="section-label">08 — Assumption Reversal</p>
+    <h2>Retourner les présupposés</h2>
+    <p class="lede">Survole une carte : l’hypothèse tombe, la décision se révèle.</p>
+    <div class="flips">
+      <div class="flip" tabindex="0" role="button" aria-label="Retourner : mobile">
+        <div class="flip-inner">
+          <div class="flip-face flip-front">
+            <span class="tag">hypothèse</span>
+            <p>« Il faut absolument le mobile dès le MVP. »</p>
+          </div>
+          <div class="flip-face flip-back">
+            <span class="tag">renversé</span>
+            <p>Abandon mobile MVP — cible PC / web desktop d’abord. Vision outil tout-en-un sur PC.</p>
+          </div>
+        </div>
+      </div>
+      <div class="flip" tabindex="0" role="button" aria-label="Retourner : draw.io d'abord">
+        <div class="flip-inner">
+          <div class="flip-face flip-front">
+            <span class="tag">hypothèse</span>
+            <p>« draw.io doit être là dès le jour 1. »</p>
+          </div>
+          <div class="flip-face flip-back">
+            <span class="tag">renversé</span>
+            <p>MVP commence Excalidraw d’abord — draw.io reste dans le plan, pas abandonné.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 WHAT IF -->
+  <section class="tech" id="what-if">
+    <p class="section-label">09 — What If Scenarios</p>
+    <h2>Portails « et si… »</h2>
+    <p class="lede">Trois portes sur le possible — et le différenciateur qui reste.</p>
+    <div class="scenarios">
+      <article class="portal">
+        <div class="portal-door"><span class="if">et si</span><span class="cond">temps<br>illimité</span></div>
+        <div class="portal-body">
+          <h3>L’escalier d’abord</h3>
+          <p>Les 3 priorités déjà dites, puis une réplication plus large (détail encore flou). Améliorer en cours de route.</p>
+        </div>
+      </article>
+      <article class="portal">
+        <div class="portal-door"><span class="if">et si</span><span class="cond">1 jour<br>seulement</span></div>
+        <div class="portal-body">
+          <h3>Canvas first</h3>
+          <p>Focus canvas pour être à l’aise, puis la partie diagrammes — l’IA qui génère.</p>
+        </div>
+      </article>
+      <article class="portal">
+        <div class="portal-door"><span class="if">et si</span><span class="cond">vrai<br>diff.</span></div>
+        <div class="portal-body">
+          <h3>Unifier le fragmenté</h3>
+          <p>Une plateforme tout-en-un qui assemble les outils séparés, les fait travailler ensemble, et s’étend — sync Trello ↔ canvas en vision.</p>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- MOSCOW -->
+  <section class="tech moscow" id="moscow">
+    <p class="section-label">Convergence</p>
+    <h2>MoSCoW — le triage MVP</h2>
+    <p class="lede">Must dense confirmé malgré la contrainte 3 jours. Risque accepté.</p>
+    <div class="moscow-board">
+      <div class="msk must">
+        <h3>Must</h3>
+        <div class="letters">
+          <span class="letter">A</span>
+          <span class="letter">B</span>
+          <span class="letter">C</span>
+          <span class="letter">I</span>
+          <span class="letter">D</span>
+        </div>
+      </div>
+      <div class="msk should">
+        <h3>Should</h3>
+        <div class="letters">
+          <span class="letter">H</span>
+          <span class="letter">G</span>
+          <span class="letter">E</span>
+          <span class="letter">F</span>
+          <span class="letter">L</span>
+        </div>
+      </div>
+      <div class="msk could">
+        <h3>Could</h3>
+        <div class="letters">
+          <span class="letter">J</span>
+        </div>
+      </div>
+      <div class="msk wont">
+        <h3>Won’t</h3>
+        <div class="letters">
+          <span class="letter">K</span>
+        </div>
+      </div>
+    </div>
+    <p class="moscow-note">Confirmation explicite : Must A, B, C, I, D gardé tel quel malgré la densité du sprint de 3 jours.</p>
+  </section>
+
+  <!-- SYNTHESIS -->
+  <section class="climax tech" id="synthese">
+    <div class="climax-screen">
+      <p class="boot blink">FUN.SYS — boot synthèse · session 2026-08-28</p>
+      <h2>Le fil rouge : <span class="hl">un bureau natif</span> qui unifie le fragmenté</h2>
+      <p class="manifesto">
+        Fun n’est pas une autre app web générique. C’est l’outil PC tout-en-un —
+        vibe cloud / Claude Code — qui recolle Excalidraw, draw.io, IA et focus
+        dans une seule fenêtre de travail.
+      </p>
+      <div class="stack-row">
+        <span class="chip">Next.js</span>
+        <span class="chip">Tauri</span>
+        <span class="chip">GCP</span>
+        <span class="chip amber">PC-only</span>
+        <span class="chip sky">Ollama local</span>
+        <span class="chip">solo → amis</span>
+      </div>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="k">Cœur MVP</div>
+          <div class="v">Excalidraw embed · IA Ollama · Pomodoro timer</div>
+        </div>
+        <div class="pillar">
+          <div class="k">Must</div>
+          <div class="v hand">A · B · C · I · D</div>
+        </div>
+        <div class="pillar">
+          <div class="k">Filet</div>
+          <div class="v">Plan A draw.io — onglet « bientôt » si blocage</div>
+        </div>
+        <div class="pillar">
+          <div class="k">Job-to-be-done</div>
+          <div class="v">Unifier les outils fragmentés</div>
+        </div>
+      </div>
+      <p class="finale-line">
+        Trois jours. Un PC. <span>Fun~</span> à construire.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Garde-mémoire brainstorm · Fun · 28 août 2026 · source .memlog.md · artefact autonome
+</footer>
+
+<script>
+(function () {
+  /* reveal on scroll */
+  const techs = document.querySelectorAll('.tech');
+  const io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        if (e.target.id === 'matrix') {
+          e.target.querySelectorAll('.score-fill').forEach(function (bar) {
+            bar.style.width = bar.getAttribute('data-w');
+          });
+        }
+      }
+    });
+  }, { threshold: 0.12 });
+  techs.forEach(function (t) { io.observe(t); });
+
+  /* flip cards keyboard */
+  document.querySelectorAll('.flip').forEach(function (el) {
+    el.addEventListener('click', function () { el.classList.toggle('flipped'); });
+    el.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        el.classList.toggle('flipped');
+      }
+    });
+  });
+
+  /* clock */
+  function tick() {
+    var d = new Date();
+    var el = document.getElementById('clock');
+    if (!el) return;
+    el.textContent = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) + ' · 28 août';
+  }
+  tick();
+  setInterval(tick, 30000);
+})();
+</script>
+</body>
+</html>

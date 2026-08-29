@@ -1,0 +1,6 @@
+{
+  "identifier": "default",
+  "description": "Capabilities for Fun desktop shell",
+  "windows": ["main"],
+  "permissions": ["core:default", "shell:allow-open"]
+}
