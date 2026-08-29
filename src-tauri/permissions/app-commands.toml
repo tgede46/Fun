@@ -62,3 +62,33 @@ commands.allow = ["get_openrouter_key_configured"]
 identifier = "allow-get-ai-status"
 description = "Lit le statut IA (clé configurée, modèle actif)."
 commands.allow = ["get_ai_status"]
+
+[[permission]]
+identifier = "allow-send-chat-message"
+description = "Envoie un message au Chat IA."
+commands.allow = ["send_chat_message"]
+
+[[permission]]
+identifier = "allow-reset-diagram"
+description = "Réinitialise le diagramme courant."
+commands.allow = ["reset_diagram"]
+
+[[permission]]
+identifier = "allow-generate-diagram-from-code"
+description = "Génère un diagramme UML depuis le code."
+commands.allow = ["generate_diagram_from_code"]
+
+[[permission]]
+identifier = "allow-set-pomodoro-durations"
+description = "Persiste les durées Pomodoro."
+commands.allow = ["set_pomodoro_durations"]
+
+[[permission]]
+identifier = "allow-notify-pomodoro-phase"
+description = "Notification OS fin de phase Pomodoro."
+commands.allow = ["notify_pomodoro_phase"]
+
+[[permission]]
+identifier = "allow-run-benchmark"
+description = "Lance le benchmark IA et met à jour le modèle actif."
+commands.allow = ["run_benchmark"]

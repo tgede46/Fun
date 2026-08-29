@@ -1,5 +1,6 @@
 mod ai;
 mod commands;
+mod notify;
 mod project;
 mod recent;
 mod state;
@@ -22,6 +23,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_notification::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_projects,
@@ -37,6 +39,12 @@ pub fn run() {
             commands::set_project_theme,
             commands::get_openrouter_key_configured,
             commands::get_ai_status,
+            commands::send_chat_message,
+            commands::reset_diagram,
+            commands::generate_diagram_from_code,
+            commands::run_benchmark,
+            notify::notify_pomodoro_phase,
+            notify::set_pomodoro_durations,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
