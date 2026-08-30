@@ -7,6 +7,8 @@ import {
   listDiagrams,
   loadDiagramIntoCanvas,
   parseExcalidrawContent,
+  prepareExcalidrawScene,
+  saveDiagram,
   type DiagramListItem,
   type ExcalidrawInitialDataState,
 } from "@/lib/diagram";
@@ -349,12 +351,22 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         }
 
         if (result.diagram_update && targetPath) {
-          if (result.opened_diagram_path) {
-            setInitialData(parseExcalidrawContent(result.diagram_update));
-          } else {
-            canvasRef.current?.applyScene(result.diagram_update);
+          const { initialData: sanitized, sanitizedJson } =
+            await prepareExcalidrawScene(result.diagram_update);
+
+          setInitialData(sanitized);
+          setDiagramRawContent(sanitizedJson);
+
+          if (targetPath) {
+            try {
+              await saveDiagram(projectPath, targetPath, sanitizedJson);
+            } catch (err) {
+              setSaveError(
+                formatInvokeError(err, "Diagramme affiché mais sauvegarde échouée."),
+              );
+            }
           }
-          setDiagramRawContent(result.diagram_update);
+
           nextHistory.push({
             role: "system",
             content: result.opened_diagram_path

@@ -13,8 +13,10 @@ pub fn system_prompt(persona: Persona, diagram_context: Option<&str>) -> String 
              pas PlantUML, pas d'ASCII). Applique l'instruction sur le diagramme. Réponds brièvement en \
              français ce que tu changes. Tu DOIS terminer par un bloc ```excalidraw-json contenant \
              UNIQUEMENT le JSON Excalidraw complet valide (type excalidraw, version 2, elements, \
-             appState, files). Chaque élément doit avoir id, type, x, y, width, height. Si le canvas \
-             est vide, crée un diagramme complet from scratch."
+             appState, files). Chaque élément doit avoir id, type, x, y, width, height. Types autorisés \
+             uniquement : rectangle, ellipse (pas circle), diamond, arrow, line, text. Les arrow/line \
+             DOIVENT avoir points: [[0,0],[dx,dy]]. Si le canvas est vide, crée un diagramme complet \
+             from scratch."
         }
         Persona::Assistant => {
             "Tu es l'Assistant IA de Fun (atelier desktop Excalidraw). Français, calme, direct. \

@@ -2,8 +2,15 @@
 
 import dynamic from "next/dynamic";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from "react";
-import type { ExcalidrawProps } from "@excalidraw/excalidraw/types";
-import { saveDiagram, type ExcalidrawInitialDataState } from "@/lib/diagram";
+import type {
+  ExcalidrawImperativeAPI,
+  ExcalidrawProps,
+} from "@excalidraw/excalidraw/types";
+import {
+  saveDiagram,
+  parseExcalidrawContent,
+  type ExcalidrawInitialDataState,
+} from "@/lib/diagram";
 import { formatInvokeError } from "@/lib/invoke-error";
 import type { FunTheme } from "@/lib/theme";
 
@@ -51,8 +58,70 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
       diagramPath: string;
       content: string;
     } | null>(null);
-    const sceneUpdateRef = useRef<string | null>(null);
-    const sceneKeyRef = useRef(0);
+    const apiRef = useRef<ExcalidrawImperativeAPI | null>(null);
+    const pendingSceneRef = useRef<string | null>(null);
+    const pushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mountedRef = useRef(false);
+
+    const pushScene = useCallback((data: ExcalidrawInitialDataState) => {
+      if (!apiRef.current || !mountedRef.current) {
+        return;
+      }
+
+      if (pushTimerRef.current) {
+        clearTimeout(pushTimerRef.current);
+      }
+
+      // Différer après le mount Excalidraw (évite setState sur App non monté).
+      pushTimerRef.current = setTimeout(() => {
+        pushTimerRef.current = null;
+        const api = apiRef.current;
+        if (!api || !mountedRef.current) {
+          return;
+        }
+
+        skipSaveRef.current = true;
+        try {
+          api.updateScene({
+            elements: data.elements ?? [],
+            captureUpdate: "NEVER",
+          });
+          if ((data.elements?.length ?? 0) > 0) {
+            api.scrollToContent(undefined, { fitToContent: true });
+          }
+        } catch {
+          // Scène invalide — laisser le canvas tel quel.
+        }
+
+        window.setTimeout(() => {
+          skipSaveRef.current = false;
+        }, 200);
+      }, 0);
+    }, []);
+
+    const pushSceneJson = useCallback(
+      (json: string) => {
+        void (async () => {
+          try {
+            pushScene(await parseExcalidrawContent(json));
+          } catch {
+            onSaveError?.("Le diagramme généré est illisible.");
+          }
+        })();
+      },
+      [onSaveError, pushScene],
+    );
+
+    useEffect(() => {
+      mountedRef.current = true;
+      return () => {
+        mountedRef.current = false;
+        if (pushTimerRef.current) {
+          clearTimeout(pushTimerRef.current);
+          pushTimerRef.current = null;
+        }
+      };
+    }, []);
 
     useEffect(() => {
       skipSaveRef.current = true;
@@ -63,9 +132,14 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
         saveTimeoutRef.current = null;
       }
 
-      const readyTimer = setTimeout(() => {
+      // initialData charge déjà la scène au mount ; pushScene seulement pour mises à jour IA.
+      if (apiRef.current && mountedRef.current) {
+        pushScene(initialData);
+      }
+
+      const readyTimer = window.setTimeout(() => {
         skipSaveRef.current = false;
-      }, 100);
+      }, 300);
 
       return () => {
         clearTimeout(readyTimer);
@@ -73,7 +147,7 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
           clearTimeout(saveTimeoutRef.current);
         }
       };
-    }, [diagramPath, initialData]);
+    }, [diagramPath, initialData, pushScene]);
 
     const flushSave = useCallback(async () => {
       const pending = pendingSaveRef.current;
@@ -129,34 +203,44 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
       [diagramPath, flushSave, projectPath],
     );
 
+    const handleExcalidrawApi = useCallback((api: ExcalidrawImperativeAPI) => {
+      apiRef.current = api;
+
+      // Ne pas appeler updateScene ici : App n'est pas encore monté.
+      // Appliquer une scène en attente après le prochain tick.
+      if (pendingSceneRef.current) {
+        const pending = pendingSceneRef.current;
+        pendingSceneRef.current = null;
+        window.setTimeout(() => {
+          if (mountedRef.current) {
+            pushSceneJson(pending);
+          }
+        }, 50);
+      }
+    }, [pushSceneJson]);
+
     useImperativeHandle(
       ref,
       () => ({
         applyScene(json: string) {
-          sceneUpdateRef.current = json;
-          sceneKeyRef.current += 1;
+          if (apiRef.current && mountedRef.current) {
+            pushSceneJson(json);
+          } else {
+            pendingSceneRef.current = json;
+          }
         },
       }),
-      [],
+      [pushSceneJson],
     );
 
-    const resolvedInitialData = sceneUpdateRef.current
-      ? (() => {
-          try {
-            const parsed = JSON.parse(sceneUpdateRef.current) as ExcalidrawInitialDataState;
-            return parsed;
-          } catch {
-            return initialData;
-          }
-        })()
-      : initialData;
-
     return (
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         <Excalidraw
-          key={`${diagramPath}-${theme}-${sceneKeyRef.current}`}
-          initialData={resolvedInitialData}
+          key={diagramPath}
+          excalidrawAPI={handleExcalidrawApi}
+          initialData={initialData}
           theme={theme}
+          langCode="fr-FR"
           onChange={handleChange}
         />
       </div>

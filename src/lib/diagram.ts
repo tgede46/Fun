@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
+import {
+  parseExcalidrawContent,
+  prepareExcalidrawScene,
+} from "@/lib/excalidraw-sanitize";
 
 export type CreateDiagramResult = {
   path: string;
@@ -17,6 +21,7 @@ export type DiagramListItem = {
 };
 
 export type { ExcalidrawInitialDataState };
+export { parseExcalidrawContent, prepareExcalidrawScene };
 
 export async function createDiagram(
   projectPath: string,
@@ -59,26 +64,6 @@ export async function deleteDiagram(
   await invoke("delete_diagram", { projectPath, diagramPath });
 }
 
-export function parseExcalidrawContent(content: string): ExcalidrawInitialDataState {
-  let parsed: ExcalidrawInitialDataState & {
-    app_state?: ExcalidrawInitialDataState["appState"];
-  };
-
-  try {
-    parsed = JSON.parse(content) as ExcalidrawInitialDataState & {
-      app_state?: ExcalidrawInitialDataState["appState"];
-    };
-  } catch {
-    throw new Error("Le fichier diagramme est illisible.");
-  }
-
-  return {
-    elements: parsed.elements ?? [],
-    appState: parsed.appState ?? parsed.app_state ?? {},
-    files: parsed.files ?? {},
-  };
-}
-
 export async function createAndLoadDiagram(
   projectPath: string,
 ): Promise<{
@@ -93,7 +78,7 @@ export async function createAndLoadDiagram(
   return {
     path: loaded.path,
     name: created.name,
-    initialData: parseExcalidrawContent(loaded.content),
+    initialData: await parseExcalidrawContent(loaded.content),
     rawContent: loaded.content,
   };
 }
@@ -114,7 +99,7 @@ export async function loadDiagramIntoCanvas(
   return {
     path: loaded.path,
     name,
-    initialData: parseExcalidrawContent(loaded.content),
+    initialData: await parseExcalidrawContent(loaded.content),
     rawContent: loaded.content,
   };
 }
