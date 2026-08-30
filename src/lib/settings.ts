@@ -5,6 +5,7 @@ export type ProjectSettings = {
   pomodoro_work_minutes: number;
   pomodoro_break_minutes: number;
   theme: string;
+  electro_theme: boolean;
 };
 
 export async function getProjectSettings(

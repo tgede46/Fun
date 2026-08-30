@@ -8,7 +8,7 @@
   font-display: swap;
 }
 
-/* Variables runtime — basculées par .dark / [data-fun-theme="dark"] */
+/* Variables runtime — basculées par .dark / [data-fun-theme="dark"] / [data-fun-theme="electro"] */
 :root {
   --fun-background: #f5f0e8;
   --fun-foreground: #1a1a1a;
@@ -56,6 +56,30 @@
   --fun-ring: #f5f0e8;
   --fun-canvas: #1e1e1e;
   --fun-overlay: rgba(0, 0, 0, 0.55);
+}
+
+[data-fun-theme="electro"] {
+  --fun-background: #0a0a1a;
+  --fun-foreground: #e0f0ff;
+  --fun-card: #12122a;
+  --fun-card-foreground: #e0f0ff;
+  --fun-popover: #12122a;
+  --fun-popover-foreground: #e0f0ff;
+  --fun-primary: #00d4ff;
+  --fun-primary-foreground: #0a0a1a;
+  --fun-secondary: #1a1a2e;
+  --fun-secondary-foreground: #e0f0ff;
+  --fun-muted: #7a9bbf;
+  --fun-muted-foreground: #c0d8f0;
+  --fun-accent: #00d4ff;
+  --fun-accent-foreground: #0a0a1a;
+  --fun-destructive: #ff4d6d;
+  --fun-destructive-foreground: #ffffff;
+  --fun-border: #1e3a5f;
+  --fun-input: #1e3a5f;
+  --fun-ring: #00d4ff;
+  --fun-canvas: #0b0b1e;
+  --fun-overlay: rgba(0, 20, 40, 0.75);
 }
 
 @theme inline {

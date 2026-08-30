@@ -83,11 +83,12 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   useEffect(() => {
     const root = document.documentElement;
-    if (theme === "dark") {
+    if (theme === "dark" || theme === "electro") {
       root.classList.add("dark");
     } else {
       root.classList.remove("dark");
     }
+    root.setAttribute("data-fun-theme", theme);
   }, [theme]);
 
   const pomodoro = usePomodoro({

@@ -1,11 +1,14 @@
-export type FunTheme = "light" | "dark";
+export type FunTheme = "light" | "dark" | "electro";
 
 export function parseFunTheme(value: string): FunTheme {
+  if (value === "electro") return "electro";
   return value === "dark" ? "dark" : "light";
 }
 
 export function toggleFunTheme(theme: FunTheme): FunTheme {
-  return theme === "light" ? "dark" : "light";
+  if (theme === "light") return "dark";
+  if (theme === "dark") return "electro";
+  return "light";
 }
 
 export type ThemeTokens = {
@@ -44,6 +47,23 @@ const darkTokens: ThemeTokens = {
   meditationGlow: "#2A2824",
 };
 
+const electroTokens: ThemeTokens = {
+  canvas: "#0B0B1E",
+  surfaceBase: "#0A0A1A",
+  surfaceRaised: "#12122A",
+  foreground: "#E0F0FF",
+  foregroundMuted: "#7A9BBF",
+  accent: "#00D4FF",
+  border: "#1E3A5F",
+  overlayScrim: "rgba(0, 20, 40, 0.75)",
+  meditationGlow: "#00D4FF",
+};
+
 export function getThemeTokens(theme: FunTheme): ThemeTokens {
+  if (theme === "electro") return electroTokens;
   return theme === "dark" ? darkTokens : lightTokens;
+}
+
+export function isElectro(theme: FunTheme): boolean {
+  return theme === "electro";
 }

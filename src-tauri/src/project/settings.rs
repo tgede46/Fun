@@ -10,6 +10,7 @@ const SETTINGS_FILE: &str = "settings.json";
 pub enum FunTheme {
     Light,
     Dark,
+    Electro,
 }
 
 impl FunTheme {
@@ -17,6 +18,7 @@ impl FunTheme {
         match value {
             "light" => Ok(FunTheme::Light),
             "dark" => Ok(FunTheme::Dark),
+            "electro" => Ok(FunTheme::Electro),
             _ => Err("Thème invalide.".to_string()),
         }
     }
@@ -25,6 +27,7 @@ impl FunTheme {
         match self {
             FunTheme::Light => "light",
             FunTheme::Dark => "dark",
+            FunTheme::Electro => "electro",
         }
     }
 }
