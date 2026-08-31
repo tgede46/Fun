@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DiagramListItem } from "@/lib/diagram";
 import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
+import { formatDiagramName } from "@/lib/format-diagram-name";
 import { DiagramList } from "./DiagramList";
 import { FunCanvas } from "@/canvas/FunCanvas";
 import dynamic from "next/dynamic";
@@ -17,6 +18,7 @@ type CanvasAreaProps = {
   projectPath: string;
   theme: FunTheme;
   mode: WorkshopMode;
+  focusMode: boolean;
   diagrams: DiagramListItem[];
   activeDiagramPath: string | null;
   diagramName: string | null;
@@ -47,6 +49,7 @@ function StatusBanner({ message, tone }: { message: string; tone: "error" | "inf
 
 export function CanvasArea({
   mode,
+  focusMode,
   diagrams,
   activeDiagramPath,
   diagramName,
@@ -128,7 +131,9 @@ export function CanvasArea({
       {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
       <div className="flex items-center gap-3 p-3 border-b border-border">
         {list}
-        <p className="text-sm font-medium text-foreground truncate">{diagramName}</p>
+        <p className="text-sm font-medium text-foreground truncate">
+          {diagramName ? formatDiagramName(diagramName) : null}
+        </p>
         <div className="flex items-center gap-1 ml-auto">
           <button
             type="button"
@@ -164,7 +169,10 @@ export function CanvasArea({
         )}
       </div>
       {viewMode === "2d" ? (
-        <FunCanvas initialScene={scene} onSceneChange={onSceneChange} />
+        <FunCanvas
+          initialScene={scene}
+          onSceneChange={onSceneChange}
+        />
       ) : (
         <Canvas3D scene={scene} onSceneChange={onSceneChange} />
       )}

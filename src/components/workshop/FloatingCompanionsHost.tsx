@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
-import { defaultCompanionPosition } from "@/lib/companion-defaults";
+import {
+  clampCompanionPosition,
+  defaultCompanionPosition,
+  type CompanionLayoutOptions,
+} from "@/lib/companion-layout";
 import { useLofiAmbient } from "@/hooks/useLofiAmbient";
 import {
   getProjectSettings,
@@ -18,6 +22,7 @@ import { SoufflePanel } from "./SoufflePanel";
 
 type FloatingCompanionsHostProps = {
   projectPath: string;
+  focusMode: boolean;
   pomodoro: {
     timerLabel: string;
     timerDisplay: string;
@@ -49,14 +54,17 @@ type FloatingCompanionsHostProps = {
 
 export function FloatingCompanionsHost({
   projectPath,
+  focusMode,
   pomodoro,
   chat,
 }: FloatingCompanionsHostProps) {
+  const layoutOptions: CompanionLayoutOptions = { focusMode };
+
   const [chatPos, setChatPos] = useState<CompanionPosition>(() =>
-    defaultCompanionPosition("chat"),
+    defaultCompanionPosition("chat", layoutOptions),
   );
   const [pomoPos, setPomoPos] = useState<CompanionPosition>(() =>
-    defaultCompanionPosition("pomo"),
+    defaultCompanionPosition("pomo", layoutOptions),
   );
   const [chatOpen, setChatOpen] = useState(false);
   const [chatUnread, setChatUnread] = useState(false);
@@ -85,8 +93,13 @@ export function FloatingCompanionsHost({
           return;
         }
 
-        setChatPos(settings.companion_chat ?? defaultCompanionPosition("chat"));
-        setPomoPos(settings.companion_pomo ?? defaultCompanionPosition("pomo"));
+        const loadLayout = { focusMode: false as boolean };
+        const chat =
+          settings.companion_chat ?? defaultCompanionPosition("chat", loadLayout);
+        const pomo =
+          settings.companion_pomo ?? defaultCompanionPosition("pomo", loadLayout);
+        setChatPos(clampCompanionPosition(chat.x, chat.y, 44, loadLayout));
+        setPomoPos(clampCompanionPosition(pomo.x, pomo.y, 116, loadLayout));
         setLofiMuted(settings.lofi_muted ?? false);
         setLofiVolume(settings.lofi_volume ?? 40);
       } catch {
@@ -165,6 +178,7 @@ export function FloatingCompanionsHost({
         }
         pulsing={chatThinking}
         badge={chatBadge}
+        layoutOptions={layoutOptions}
         onPositionChange={(next) => {
           setChatPos(next);
           void persistPosition("chat", next);
@@ -183,6 +197,7 @@ export function FloatingCompanionsHost({
         }
         liveLabel={pomodoro.isRunning ? pomodoro.timerDisplay : undefined}
         pulsing={pomodoro.isRunning}
+        layoutOptions={layoutOptions}
         onPositionChange={(next) => {
           setPomoPos(next);
           void persistPosition("pomo", next);

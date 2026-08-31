@@ -50,7 +50,7 @@ export function useSelectionTool({
       const handle = hitResizeHandle(e.clientX, e.clientY);
       if (handle && selectedIds.size === 1) {
         const selectedObj = objects.find((o) => selectedIds.has(o.id));
-        if (selectedObj && selectedObj.type !== "freehand") {
+        if (selectedObj && !selectedObj.locked && selectedObj.type !== "freehand") {
           setIsResizing(true);
           resizeHandleRef.current = handle;
           resizeStartRef.current = world;
@@ -76,7 +76,11 @@ export function useSelectionTool({
         const ids = selectedIds.has(clickedObj.id) ? selectedIds : new Set([clickedObj.id]);
         for (const id of ids) {
           const obj = objects.find((o) => o.id === id);
-          if (obj) starts.set(id, { x: obj.x, y: obj.y });
+          if (obj && !obj.locked) starts.set(id, { x: obj.x, y: obj.y });
+        }
+        if (starts.size === 0) {
+          setIsDragging(false);
+          return;
         }
         dragObjStartsRef.current = starts;
       } else {
@@ -103,7 +107,7 @@ export function useSelectionTool({
 
         for (const [id, start] of dragObjStartsRef.current) {
           const obj = objects.find((o) => o.id === id);
-          if (!obj) continue;
+          if (!obj || obj.locked) continue;
 
           const newX = start.x + dx;
           const newY = start.y + dy;
@@ -131,7 +135,7 @@ export function useSelectionTool({
         const dy = world.y - resizeStartRef.current.y;
         const bbox = resizeBBox(resizeObjStartRef.current, resizeHandleRef.current, dx, dy);
         const selectedObj = objects.find((o) => selectedIds.has(o.id));
-        if (selectedObj) {
+        if (selectedObj && !selectedObj.locked) {
           onUpdate(selectedObj.id, {
             x: bbox.x,
             y: bbox.y,

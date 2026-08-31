@@ -10,6 +10,8 @@ type ToolbarProps = {
   theme: FunTheme;
   themeError: string | null;
   mode: WorkshopMode;
+  focusMode: boolean;
+  onToggleFocusMode: () => void;
   onToggleTheme: () => void;
   onNewDiagram: () => void;
   onGenerateFromCode: () => void;
@@ -26,6 +28,8 @@ export function Toolbar({
   theme,
   themeError,
   mode,
+  focusMode,
+  onToggleFocusMode,
   onToggleTheme,
   onNewDiagram,
   onGenerateFromCode,
@@ -51,6 +55,21 @@ export function Toolbar({
         </span>
       </div>
       <div className="flex items-center gap-2">
+        {mode === "sketch" ? (
+          <button
+            type="button"
+            className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
+              focusMode
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+            }`}
+            onClick={onToggleFocusMode}
+            title="Masquer calques et propriétés pour se concentrer sur le dessin"
+            aria-pressed={focusMode}
+          >
+            {focusMode ? "Focus actif" : "Focus"}
+          </button>
+        ) : null}
         {themeError ? (
           <span className="text-xs text-destructive" role="status">
             {themeError}

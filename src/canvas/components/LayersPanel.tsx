@@ -1,4 +1,5 @@
 import type { FunObject } from "../types";
+import { displayObjectLabel } from "../utils/object-label";
 
 interface LayersPanelProps {
   objects: FunObject[];
@@ -6,6 +7,7 @@ interface LayersPanelProps {
   onSelect: (id: string, additive: boolean) => void;
   onUpdate: (id: string, patch: Partial<FunObject>) => void;
   onDelete: (ids: string[]) => void;
+  onClose?: () => void;
 }
 
 export function LayersPanel({
@@ -14,13 +16,23 @@ export function LayersPanel({
   onSelect,
   onUpdate,
   onDelete,
+  onClose,
 }: LayersPanelProps) {
   const sorted = [...objects].sort((a, b) => b.zIndex - a.zIndex);
 
   return (
     <div className="absolute left-3 top-3 w-56 bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-      <div className="p-2 border-b border-border">
+      <div className="p-2 border-b border-border flex items-center justify-between">
         <h3 className="text-sm font-medium">Calques</h3>
+        {onClose && (
+          <button
+            type="button"
+            className="text-xs text-muted-foreground hover:text-foreground"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        )}
       </div>
       <div className="max-h-64 overflow-y-auto">
         {sorted.length === 0 ? (
@@ -31,7 +43,7 @@ export function LayersPanel({
               key={obj.id}
               className={`flex items-center gap-2 px-2 py-1 cursor-pointer hover:bg-accent/50 ${
                 selectedIds.has(obj.id) ? "bg-accent/30" : ""
-              }`}
+              } ${obj.locked ? "opacity-70" : ""}`}
               onClick={(e) => onSelect(obj.id, e.ctrlKey || e.metaKey)}
             >
               <span className="text-xs text-muted-foreground w-4">
@@ -41,13 +53,20 @@ export function LayersPanel({
                 {obj.type === "diamond" && "◇"}
                 {obj.type === "text" && "T"}
                 {obj.type === "arrow" && "→"}
+                {obj.type === "image" && "🖼"}
               </span>
-              <span className="flex-1 text-xs truncate">
-                {obj.type === "text" ? (obj as any).text : obj.type}
+              <span className="flex-1 text-xs truncate" title={displayObjectLabel(obj)}>
+                {displayObjectLabel(obj)}
               </span>
               <button
                 type="button"
-                className="text-xs text-muted-foreground hover:text-foreground"
+                className={`text-xs px-1 rounded ${
+                  obj.locked
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                aria-label={obj.locked ? "Déverrouiller" : "Verrouiller"}
+                aria-pressed={obj.locked}
                 onClick={(e) => {
                   e.stopPropagation();
                   onUpdate(obj.id, { locked: !obj.locked });
@@ -58,6 +77,7 @@ export function LayersPanel({
               <button
                 type="button"
                 className="text-xs text-muted-foreground hover:text-destructive"
+                aria-label="Supprimer"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete([obj.id]);

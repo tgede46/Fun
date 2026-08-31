@@ -32,6 +32,7 @@ export function useSelection() {
 
   const selectInRect = useCallback((rect: BBox, objects: FunObject[]) => {
     const matches = objects.filter((obj) => {
+      if (obj.locked) return false;
       const bbox = objectBBox(obj);
       return bboxesOverlap(rect, bbox);
     });

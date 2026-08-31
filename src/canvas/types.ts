@@ -37,6 +37,8 @@ export interface BaseObject {
   opacity: number;
   locked: boolean;
   zIndex: number;
+  /** Nom affiché dans le panneau Calques. */
+  label?: string;
 }
 
 export interface FreehandPath extends BaseObject {

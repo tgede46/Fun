@@ -1,3 +1,4 @@
+import { formatDiagramName } from "@/lib/format-diagram-name";
 import { cn } from "@/lib/utils";
 import type { DiagramListItem } from "@/lib/diagram";
 
@@ -24,6 +25,7 @@ export function DiagramList({
       <ul className="flex gap-1">
         {diagrams.map((diagram) => {
           const isActive = diagram.path === activePath;
+          const label = formatDiagramName(diagram.name);
 
           return (
             <li key={diagram.path} className="flex items-center">
@@ -37,8 +39,9 @@ export function DiagramList({
                 )}
                 onClick={() => onSelect(diagram.path)}
                 aria-current={isActive ? "true" : undefined}
+                title={diagram.name}
               >
-                {diagram.name}
+                {label}
               </button>
               {onDelete ? (
                 <button
@@ -53,8 +56,8 @@ export function DiagramList({
                     event.stopPropagation();
                     onDelete(diagram.path);
                   }}
-                  aria-label={`Supprimer ${diagram.name}`}
-                  title={`Supprimer ${diagram.name}`}
+                  aria-label={`Supprimer ${label}`}
+                  title={`Supprimer ${label}`}
                 >
                   ×
                 </button>

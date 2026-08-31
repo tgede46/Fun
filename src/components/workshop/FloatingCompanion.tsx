@@ -2,15 +2,16 @@
 
 import {
   useCallback,
+  useLayoutEffect,
   useRef,
   useState,
   type PointerEvent,
-  type ReactNode,
 } from "react";
 import {
   clampCompanionPosition,
   COMPANION_BUBBLE_SIZE,
-} from "@/lib/companion-defaults";
+} from "@/lib/companion-layout";
+import type { CompanionLayoutOptions } from "@/lib/companion-layout";
 import type { CompanionPosition } from "@/lib/settings";
 
 const DRAG_THRESHOLD_PX = 5;
@@ -26,7 +27,7 @@ type FloatingCompanionProps = {
   liveLabel?: string;
   badge?: boolean;
   pulsing?: boolean;
-  children?: ReactNode;
+  layoutOptions: CompanionLayoutOptions;
 };
 
 export function FloatingCompanion({
@@ -39,6 +40,7 @@ export function FloatingCompanion({
   liveLabel,
   badge = false,
   pulsing = false,
+  layoutOptions,
 }: FloatingCompanionProps) {
   const [dragPos, setDragPos] = useState<CompanionPosition | null>(null);
   const pos = dragPos ?? position;
@@ -52,6 +54,18 @@ export function FloatingCompanion({
   } | null>(null);
 
   const width = liveLabel ? COMPANION_BUBBLE_SIZE + 72 : COMPANION_BUBBLE_SIZE;
+  const prevFocusMode = useRef(layoutOptions.focusMode);
+
+  useLayoutEffect(() => {
+    if (prevFocusMode.current === layoutOptions.focusMode) {
+      return;
+    }
+    prevFocusMode.current = layoutOptions.focusMode;
+    const next = clampCompanionPosition(position.x, position.y, width, layoutOptions);
+    if (next.x !== position.x || next.y !== position.y) {
+      onPositionChange(next);
+    }
+  }, [layoutOptions, layoutOptions.focusMode, onPositionChange, position, width]);
 
   const finishDrag = useCallback(
     (next: CompanionPosition, moved: boolean) => {
@@ -100,6 +114,7 @@ export function FloatingCompanion({
           drag.originX + deltaX,
           drag.originY + deltaY,
           width,
+          layoutOptions,
         ),
       );
     }
@@ -121,6 +136,7 @@ export function FloatingCompanion({
         drag.originX + deltaX,
         drag.originY + deltaY,
         width,
+        layoutOptions,
       );
     }
 

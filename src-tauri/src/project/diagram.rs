@@ -1,4 +1,3 @@
-use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -69,17 +68,28 @@ fn validate_diagram_path(project_root: &Path, diagram_path: &Path) -> Result<(),
     Ok(())
 }
 
-fn sketch_filename() -> String {
-    let now = Local::now();
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.subsec_nanos())
-        .unwrap_or(0);
-    format!(
-        "sketch-{}-{}.excalidraw",
-        now.format("%Y%m%d-%H%M%S"),
-        nanos
-    )
+fn next_croquis_filename(dir: &Path) -> String {
+    let mut max = 0u32;
+
+    if dir.exists() {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if path.extension().and_then(|e| e.to_str()) != Some("excalidraw") {
+                    continue;
+                }
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if let Some(num_str) = stem.strip_prefix("croquis-") {
+                        if let Ok(num) = num_str.parse::<u32>() {
+                            max = max.max(num);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    format!("croquis-{}.excalidraw", max + 1)
 }
 
 pub fn create_diagram(project_root: &Path) -> Result<PathBuf, String> {
@@ -93,7 +103,7 @@ pub fn create_diagram(project_root: &Path) -> Result<PathBuf, String> {
     let content = empty_excalidraw_json()?;
 
     for _ in 0..10 {
-        let path = dir.join(sketch_filename());
+        let path = dir.join(next_croquis_filename(&dir));
         if path.exists() {
             continue;
         }
@@ -262,7 +272,7 @@ mod tests {
         let project = temp_project();
         let diagram_path = create_diagram(&project).expect("create");
         assert!(diagram_path.exists());
-        assert!(diagram_path.to_string_lossy().contains(".fun/diagrams/sketch-"));
+        assert!(diagram_path.to_string_lossy().contains(".fun/diagrams/croquis-"));
 
         let content = load_diagram(&project, &diagram_path).expect("load");
         assert!(content.contains("\"type\": \"excalidraw\""));
