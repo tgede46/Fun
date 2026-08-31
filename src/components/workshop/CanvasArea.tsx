@@ -1,10 +1,17 @@
+import { useState } from "react";
 import type { DiagramListItem } from "@/lib/diagram";
 import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
 import { DiagramList } from "./DiagramList";
 import { FunCanvas } from "@/canvas/FunCanvas";
+import dynamic from "next/dynamic";
 
-type WorkshopMode = "sketch" | "uml";
+const Canvas3D = dynamic(
+  () => import("@/canvas3d/Canvas3D").then((mod) => mod.Canvas3D),
+  { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center">Chargement 3D...</div> },
+);
+
+type WorkshopMode = "sketch" | "uml" | "3d";
 
 type CanvasAreaProps = {
   projectPath: string;
@@ -51,6 +58,8 @@ export function CanvasArea({
   onDeleteDiagram,
   onSceneChange,
 }: CanvasAreaProps) {
+  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
+
   const list = (
     <DiagramList
       diagrams={diagrams}
@@ -120,17 +129,45 @@ export function CanvasArea({
       <div className="flex items-center gap-3 p-3 border-b border-border">
         {list}
         <p className="text-sm font-medium text-foreground truncate">{diagramName}</p>
+        <div className="flex items-center gap-1 ml-auto">
+          <button
+            type="button"
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              viewMode === "2d"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent/50"
+            }`}
+            onClick={() => setViewMode("2d")}
+          >
+            2D
+          </button>
+          <button
+            type="button"
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              viewMode === "3d"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent/50"
+            }`}
+            onClick={() => setViewMode("3d")}
+          >
+            3D
+          </button>
+        </div>
         {saveError ? (
-          <p className="text-xs text-destructive ml-auto" role="status">
+          <p className="text-xs text-destructive ml-2" role="status">
             Sauvegarde echouee : {saveError}
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground ml-auto hidden sm:block">
+          <p className="text-xs text-muted-foreground ml-2 hidden sm:block">
             Sauvegarde automatique
           </p>
         )}
       </div>
-      <FunCanvas initialScene={scene} onSceneChange={onSceneChange} />
+      {viewMode === "2d" ? (
+        <FunCanvas initialScene={scene} onSceneChange={onSceneChange} />
+      ) : (
+        <Canvas3D scene={scene} onSceneChange={onSceneChange} />
+      )}
     </section>
   );
 }

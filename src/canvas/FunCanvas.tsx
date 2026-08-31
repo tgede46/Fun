@@ -1,19 +1,19 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { FunObject, FunScene, ResizeHandle } from "../types";
-import { DEFAULT_STROKE } from "../types";
-import { useScene } from "../hooks/useScene";
-import { useTool } from "../hooks/useTool";
-import { useSelection } from "../hooks/useSelection";
-import { useHistory } from "../hooks/useHistory";
-import { useZoomPan } from "../hooks/useZoomPan";
-import { useFreehandTool } from "../tools/FreehandTool";
-import { useShapeTool } from "../tools/ShapeTool";
-import { useSelectionTool } from "../tools/SelectionTool";
-import { useTextTool } from "../tools/TextTool";
+import type { FunObject, FunScene, ResizeHandle } from "./types";
+import { DEFAULT_STROKE } from "./types";
+import { useScene } from "./hooks/useScene";
+import { useTool } from "./hooks/useTool";
+import { useSelection } from "./hooks/useSelection";
+import { useHistory } from "./hooks/useHistory";
+import { useZoomPan } from "./hooks/useZoomPan";
+import { useFreehandTool } from "./tools/FreehandTool";
+import { useShapeTool } from "./tools/ShapeTool";
+import { useSelectionTool } from "./tools/SelectionTool";
+import { useTextTool } from "./tools/TextTool";
 import { CanvasRenderer } from "./CanvasRenderer";
-import { objectBBox } from "../utils/geometry";
+import { objectBBox } from "./utils/geometry";
 
 interface FunCanvasProps {
   initialScene?: FunScene;

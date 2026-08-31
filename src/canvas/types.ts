@@ -51,9 +51,29 @@ export interface TextObject extends BaseObject {
   fontSize: number;
 }
 
-export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject;
+export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | Mesh3DObject;
 
-export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text";
+export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "3d";
+
+export type Mesh3DGeometry = "box" | "sphere" | "cylinder" | "cone" | "torus" | "extrude";
+
+export interface Material3D {
+  color: string;
+  metalness: number;
+  roughness: number;
+  opacity: number;
+  wireframe: boolean;
+}
+
+export interface Mesh3DObject extends BaseObject {
+  type: "mesh3d";
+  geometry: Mesh3DGeometry;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+  material: Material3D;
+  extrudeShape?: { points: { x: number; y: number }[]; depth: number };
+}
 
 export interface BBox {
   x: number;
@@ -75,3 +95,7 @@ export const DEFAULT_FONT_SIZE = 20;
 export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 5;
 export const GRID_SIZE = 20;
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}

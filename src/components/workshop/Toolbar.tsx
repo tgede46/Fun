@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { FunTheme } from "@/lib/theme";
 
-type WorkshopMode = "sketch" | "uml";
+type WorkshopMode = "sketch" | "uml" | "3d";
 
 import { ThemeToggle } from "./ThemeToggle";
 

@@ -36,7 +36,7 @@ import type { FunScene } from "@/canvas/types";
 import { createEmptyScene } from "@/canvas/utils/serialization";
 import { invoke } from "@tauri-apps/api/core";
 
-type WorkshopMode = "sketch" | "uml";
+type WorkshopMode = "sketch" | "uml" | "3d";
 
 type WorkshopLayoutProps = {
   projectName: string;
@@ -457,6 +457,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       <div className="flex flex-1 min-h-0">
         <ModeRail activeMode={mode} onModeChange={setMode} />
         <CanvasArea
+          projectPath={projectPath}
+          theme={theme}
           mode={mode}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
@@ -469,6 +471,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onDeleteDiagram={(diagramPath) => {
             void handleDeleteDiagram(diagramPath);
           }}
+          onSaveError={setSaveError}
           onSceneChange={handleSceneChange}
         />
       </div>

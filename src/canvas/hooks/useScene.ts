@@ -24,7 +24,7 @@ export function useScene(initial?: FunScene) {
   const updateObject = useCallback((id: string, patch: Partial<FunObject>) => {
     setScene((prev) => ({
       ...prev,
-      objects: prev.objects.map((o) => (o.id === id ? { ...o, ...patch } : o)),
+      objects: prev.objects.map((o) => (o.id === id ? { ...o, ...patch } as FunObject : o)),
     }));
   }, []);
 

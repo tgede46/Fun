@@ -1,5 +1,5 @@
-import type { FunObject, Camera } from "../types";
-import { GRID_SIZE } from "../types";
+import type { FunObject, Camera } from "./types";
+import { GRID_SIZE } from "./types";
 import { FreehandRenderer } from "./renderers/FreehandRenderer";
 import { ShapeRenderer } from "./renderers/ShapeRenderer";
 import { TextRenderer } from "./renderers/TextRenderer";

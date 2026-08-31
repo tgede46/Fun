@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { FunObject, BBox } from "../types";
 import { bboxesOverlap, objectBBox } from "../utils/geometry";
 
 export function useSelection() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const lastSelectedRef = useRef<string | null>(null);
 
   const select = useCallback((id: string, additive = false) => {
     if (additive) {
