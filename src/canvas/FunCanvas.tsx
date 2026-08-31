@@ -10,9 +10,14 @@ import { useHistory } from "./hooks/useHistory";
 import { useZoomPan } from "./hooks/useZoomPan";
 import { useFreehandTool } from "./tools/FreehandTool";
 import { useShapeTool } from "./tools/ShapeTool";
+import { useArrowTool } from "./tools/ArrowTool";
 import { useSelectionTool } from "./tools/SelectionTool";
 import { useTextTool } from "./tools/TextTool";
+import { useImageTool } from "./tools/ImageTool";
+import { useClipboard } from "./hooks/useClipboard";
 import { CanvasRenderer } from "./CanvasRenderer";
+import { Inspector } from "./components/Inspector";
+import { LayersPanel } from "./components/LayersPanel";
 import { objectBBox } from "./utils/geometry";
 
 interface FunCanvasProps {
@@ -25,10 +30,11 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo } = useHistory(scene);
-  const { camera, zoom, panStart, panMove, panEnd, screenToWorld } = useZoomPan();
+  const { camera, zoom, panStart, panMove, panEnd, screenToWorld, zoomToFit, centerView } = useZoomPan();
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeColor] = useState(DEFAULT_STROKE);
   const [gridEnabled] = useState(true);
+  const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
 
   const handleAddObject = useCallback((obj: FunObject) => {
     addObject(obj);
@@ -43,6 +49,7 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
   const rectTool = useShapeTool({ camera, onAdd: handleAddObject, kind: "rect", activeColor });
   const ellipseTool = useShapeTool({ camera, onAdd: handleAddObject, kind: "ellipse", activeColor });
   const diamondTool = useShapeTool({ camera, onAdd: handleAddObject, kind: "diamond", activeColor });
+  const arrowTool = useArrowTool({ camera, onAdd: handleAddObject, activeColor });
   const selectionTool = useSelectionTool({
     camera,
     objects,
@@ -52,8 +59,11 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
     selectInRect,
     clearSelection,
     onUpdate: handleUpdateObject,
+    onSnapLines: setSnapLines,
   });
   const textTool = useTextTool({ onAdd: handleAddObject, activeColor });
+  const imageTool = useImageTool({ onAdd: handleAddObject });
+  const clipboard = useClipboard();
 
   const hitResizeHandle = useCallback(
     (clientX: number, clientY: number): ResizeHandle | null => {
@@ -105,9 +115,11 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         diamondTool.handlePointerDown(e, screenToWorld);
       } else if (tool === "text") {
         textTool.handlePointerDown(e, screenToWorld);
+      } else if (tool === "arrow") {
+        arrowTool.handlePointerDown(e, screenToWorld);
       }
     },
-    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, hitResizeHandle],
+    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, arrowTool, hitResizeHandle],
   );
 
   const handlePointerMove = useCallback(
@@ -128,9 +140,11 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         ellipseTool.handlePointerMove(e, screenToWorld);
       } else if (tool === "diamond") {
         diamondTool.handlePointerMove(e, screenToWorld);
+      } else if (tool === "arrow") {
+        arrowTool.handlePointerMove(e, screenToWorld);
       }
     },
-    [tool, screenToWorld, panMove, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
+    [tool, screenToWorld, panMove, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool],
   );
 
   const handlePointerUp = useCallback(
@@ -146,9 +160,11 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         ellipseTool.handlePointerUp();
       } else if (tool === "diamond") {
         diamondTool.handlePointerUp();
+      } else if (tool === "arrow") {
+        arrowTool.handlePointerUp();
       }
     },
-    [tool, panEnd, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
+    [tool, panEnd, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool],
   );
 
   const handleWheel = useCallback(
@@ -181,8 +197,54 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         clearSelection();
         selectTool("select");
       }
+      if (!e.ctrlKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        selectTool("arrow");
+      }
+      if (e.ctrlKey && e.key === "c") {
+        e.preventDefault();
+        const selectedObjs = objects.filter((o) => selectedIds.has(o.id));
+        if (selectedObjs.length > 0) {
+          clipboard.copy(selectedObjs);
+        }
+      }
+      if (e.ctrlKey && e.key === "v") {
+        e.preventDefault();
+        const newObjs = clipboard.paste();
+        newObjs.forEach((obj) => {
+          addObject(obj);
+          push({ ...scene, objects: [...scene.objects, obj] });
+        });
+        clearSelection();
+        newObjs.forEach((obj) => select(obj.id, true));
+      }
+      if (e.ctrlKey && e.key === "d") {
+        e.preventDefault();
+        const selectedObjs = objects.filter((o) => selectedIds.has(o.id));
+        const newObjs = clipboard.duplicate(selectedObjs);
+        newObjs.forEach((obj) => {
+          addObject(obj);
+          push({ ...scene, objects: [...scene.objects, obj] });
+        });
+        clearSelection();
+        newObjs.forEach((obj) => select(obj.id, true));
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === "F") {
+        e.preventDefault();
+        const svg = svgRef.current;
+        if (svg) {
+          zoomToFit(objects, svg.clientWidth, svg.clientHeight);
+        }
+      }
+      if (e.ctrlKey && e.shiftKey && e.key === "C") {
+        e.preventDefault();
+        const svg = svgRef.current;
+        if (svg) {
+          centerView(svg.clientWidth, svg.clientHeight);
+        }
+      }
     },
-    [selectedIds, selectedCount, deleteObjects, clearSelection, undo, redo, setSceneDirect, selectTool],
+    [selectedIds, selectedCount, objects, deleteObjects, clearSelection, undo, redo, setSceneDirect, selectTool, clipboard, addObject, push, scene, select, zoomToFit, centerView],
   );
 
   return (
@@ -199,22 +261,38 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onWheel={handleWheel}
+        onDrop={imageTool.handleDrop}
+        onDragOver={imageTool.handleDragOver}
       >
         <CanvasRenderer
           objects={objects}
           selectedIds={selectedIds}
           camera={camera}
           grid={gridEnabled}
+          snapLines={snapLines}
         />
       </svg>
       <div className="absolute bottom-3 left-3 flex gap-1 bg-card border border-border rounded-lg p-1 shadow-sm">
-        <ToolButton tool="select" label="Slection" active={tool === "select"} onClick={() => selectTool("select")} shortcut="V" />
+        <ToolButton tool="select" label="Sélection" active={tool === "select"} onClick={() => selectTool("select")} shortcut="V" />
         <ToolButton tool="freehand" label="Crayon" active={tool === "freehand"} onClick={() => selectTool("freehand")} shortcut="P" />
         <ToolButton tool="rect" label="Rectangle" active={tool === "rect"} onClick={() => selectTool("rect")} shortcut="R" />
         <ToolButton tool="ellipse" label="Ellipse" active={tool === "ellipse"} onClick={() => selectTool("ellipse")} shortcut="O" />
         <ToolButton tool="diamond" label="Losange" active={tool === "diamond"} onClick={() => selectTool("diamond")} shortcut="D" />
         <ToolButton tool="text" label="Texte" active={tool === "text"} onClick={() => selectTool("text")} shortcut="T" />
+        <ToolButton tool="arrow" label="Flèche" active={tool === "arrow"} onClick={() => selectTool("arrow")} shortcut="A" />
+        <ToolButton tool="image" label="Image" active={tool === "image"} onClick={imageTool.handleFileInput} shortcut="I" />
       </div>
+      <Inspector
+        selectedObjects={objects.filter((o) => selectedIds.has(o.id))}
+        onUpdate={handleUpdateObject}
+      />
+      <LayersPanel
+        objects={objects}
+        selectedIds={selectedIds}
+        onSelect={select}
+        onUpdate={handleUpdateObject}
+        onDelete={deleteObjects}
+      />
     </div>
   );
 }
@@ -249,6 +327,8 @@ function ToolButton({
       {tool === "ellipse" && "○"}
       {tool === "diamond" && "◇"}
       {tool === "text" && "T"}
+      {tool === "arrow" && "→"}
+      {tool === "image" && "🖼"}
     </button>
   );
 }

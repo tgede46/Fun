@@ -1,9 +1,13 @@
-export interface FunScene {
-  id: string;
-  objects: FunObject[];
-  camera: Camera;
-  grid: boolean;
-  version: 1;
+export const GRID_SIZE = 20;
+export const DEFAULT_FILL = "transparent";
+export const DEFAULT_STROKE = "#1e1e1e";
+export const DEFAULT_STROKE_WIDTH = 2;
+export const DEFAULT_FONT_SIZE = 20;
+export const MIN_ZOOM = 0.1;
+export const MAX_ZOOM = 10;
+
+export function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
 }
 
 export interface Camera {
@@ -12,9 +16,17 @@ export interface Camera {
   zoom: number;
 }
 
+export type ResizeHandle = "nw" | "n" | "ne" | "e" | "se" | "s" | "sw" | "w";
+
+export interface BBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface BaseObject {
   id: string;
-  type: string;
   x: number;
   y: number;
   width: number;
@@ -51,9 +63,22 @@ export interface TextObject extends BaseObject {
   fontSize: number;
 }
 
-export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | Mesh3DObject;
+export interface ArrowObject extends BaseObject {
+  type: "arrow";
+  points: { x: number; y: number }[];
+  arrowHead: "triangle" | "circle" | "diamond";
+}
 
-export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "3d";
+export interface ImageObject extends BaseObject {
+  type: "image";
+  src: string;
+  naturalWidth: number;
+  naturalHeight: number;
+}
+
+export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | ArrowObject | ImageObject | Mesh3DObject;
+
+export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "image" | "3d";
 
 export type Mesh3DGeometry = "box" | "sphere" | "cylinder" | "cone" | "torus" | "extrude";
 
@@ -68,34 +93,17 @@ export interface Material3D {
 export interface Mesh3DObject extends BaseObject {
   type: "mesh3d";
   geometry: Mesh3DGeometry;
+  material: Material3D;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
-  material: Material3D;
-  extrudeShape?: { points: { x: number; y: number }[]; depth: number };
+  extrudeShape?: { points: { x: number; y: number }[]; depth?: number };
 }
 
-export interface BBox {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export type ResizeHandle =
-  | "nw" | "n" | "ne"
-  | "e"
-  | "se" | "s" | "sw"
-  | "w";
-
-export const DEFAULT_FILL = "transparent";
-export const DEFAULT_STROKE = "#1a1a1a";
-export const DEFAULT_STROKE_WIDTH = 2;
-export const DEFAULT_FONT_SIZE = 20;
-export const MIN_ZOOM = 0.1;
-export const MAX_ZOOM = 5;
-export const GRID_SIZE = 20;
-
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
+export interface FunScene {
+  id?: string;
+  objects: FunObject[];
+  camera?: Camera;
+  grid?: boolean;
+  version?: number;
 }

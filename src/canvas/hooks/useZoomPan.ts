@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { clamp, MIN_ZOOM, MAX_ZOOM } from "../types";
-import type { Camera } from "../types";
+import type { Camera, FunObject } from "../types";
 
 export function useZoomPan(initial?: Partial<Camera>) {
   const [camera, setCamera] = useState<Camera>({
@@ -63,6 +63,46 @@ export function useZoomPan(initial?: Partial<Camera>) {
     [camera],
   );
 
+  const zoomToFit = useCallback((objects: FunObject[], containerWidth: number, containerHeight: number) => {
+    if (objects.length === 0) {
+      setCamera({ x: 0, y: 0, zoom: 1 });
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const obj of objects) {
+      minX = Math.min(minX, obj.x);
+      minY = Math.min(minY, obj.y);
+      maxX = Math.max(maxX, obj.x + obj.width);
+      maxY = Math.max(maxY, obj.y + obj.height);
+    }
+
+    const contentWidth = maxX - minX;
+    const contentHeight = maxY - minY;
+    const padding = 50;
+
+    const scaleX = (containerWidth - padding * 2) / contentWidth;
+    const scaleY = (containerHeight - padding * 2) / contentHeight;
+    const newZoom = clamp(Math.min(scaleX, scaleY), MIN_ZOOM, MAX_ZOOM);
+
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    setCamera({
+      x: containerWidth / 2 - centerX * newZoom,
+      y: containerHeight / 2 - centerY * newZoom,
+      zoom: newZoom,
+    });
+  }, []);
+
+  const centerView = useCallback((containerWidth: number, containerHeight: number) => {
+    setCamera({
+      x: containerWidth / 2,
+      y: containerHeight / 2,
+      zoom: 1,
+    });
+  }, []);
+
   return {
     camera,
     setCamera,
@@ -73,5 +113,7 @@ export function useZoomPan(initial?: Partial<Camera>) {
     resetCamera,
     screenToWorld,
     worldToScreen,
+    zoomToFit,
+    centerView,
   };
 }

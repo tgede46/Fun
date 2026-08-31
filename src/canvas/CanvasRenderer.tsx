@@ -3,6 +3,9 @@ import { GRID_SIZE } from "./types";
 import { FreehandRenderer } from "./renderers/FreehandRenderer";
 import { ShapeRenderer } from "./renderers/ShapeRenderer";
 import { TextRenderer } from "./renderers/TextRenderer";
+import { ArrowRenderer } from "./renderers/ArrowRenderer";
+import { ImageRenderer } from "./renderers/ImageRenderer";
+import { SnapLines } from "./components/SnapLines";
 
 interface CanvasRendererProps {
   objects: FunObject[];
@@ -10,6 +13,7 @@ interface CanvasRendererProps {
   camera: Camera;
   grid: boolean;
   onTextDoubleClick?: (id: string) => void;
+  snapLines?: { x: number[]; y: number[] };
 }
 
 function GridPattern({ camera }: { camera: Camera }) {
@@ -84,6 +88,7 @@ export function CanvasRenderer({
   camera,
   grid,
   onTextDoubleClick,
+  snapLines,
 }: CanvasRendererProps) {
   const sorted = [...objects].sort((a, b) => a.zIndex - b.zIndex);
 
@@ -91,6 +96,7 @@ export function CanvasRenderer({
     <>
       {grid && <GridPattern camera={camera} />}
       <g transform={`translate(${camera.x}, ${camera.y}) scale(${camera.zoom})`}>
+        {snapLines && <SnapLines xLines={snapLines.x} yLines={snapLines.y} camera={camera} />}
         {sorted.map((obj) => {
           const selected = selectedIds.has(obj.id);
           switch (obj.type) {
@@ -109,6 +115,10 @@ export function CanvasRenderer({
                   onDoubleClick={onTextDoubleClick}
                 />
               );
+            case "arrow":
+              return <ArrowRenderer key={obj.id} obj={obj} selected={selected} />;
+            case "image":
+              return <ImageRenderer key={obj.id} obj={obj} selected={selected} />;
             default:
               return null;
           }

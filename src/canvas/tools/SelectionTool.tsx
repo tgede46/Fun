@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { Camera, FunObject, BBox } from "../types";
 import { pointInObject, objectBBox, resizeBBox } from "../utils/geometry";
+import { snapObject } from "../utils/snap";
 import type { ResizeHandle } from "../types";
 
 interface UseSelectionToolProps {
@@ -12,9 +13,11 @@ interface UseSelectionToolProps {
   selectInRect: (rect: BBox, objects: FunObject[]) => void;
   clearSelection: () => void;
   onUpdate: (id: string, patch: Partial<FunObject>) => void;
+  onSnapLines?: (lines: { x: number[]; y: number[] }) => void;
 }
 
 export function useSelectionTool({
+  camera,
   objects,
   selectedIds,
   onSelect,
@@ -22,6 +25,7 @@ export function useSelectionTool({
   selectInRect,
   clearSelection,
   onUpdate,
+  onSnapLines,
 }: UseSelectionToolProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
@@ -93,9 +97,33 @@ export function useSelectionTool({
       if (isDragging) {
         const dx = world.x - dragStartRef.current.x;
         const dy = world.y - dragStartRef.current.y;
+        
+        let allSnapX: number[] = [];
+        let allSnapY: number[] = [];
+
         for (const [id, start] of dragObjStartsRef.current) {
-          onUpdate(id, { x: start.x + dx, y: start.y + dy });
+          const obj = objects.find((o) => o.id === id);
+          if (!obj) continue;
+
+          const newX = start.x + dx;
+          const newY = start.y + dy;
+          
+          const snapResult = snapObject(
+            { ...obj, x: newX, y: newY },
+            objects.filter((o) => !selectedIds.has(o.id)),
+            camera,
+          );
+
+          if (snapResult.snapLineX !== undefined) allSnapX.push(snapResult.snapLineX);
+          if (snapResult.snapLineY !== undefined) allSnapY.push(snapResult.snapLineY);
+
+          onUpdate(id, {
+            x: snapResult.x !== null ? snapResult.x : newX,
+            y: snapResult.y !== null ? snapResult.y : newY,
+          });
         }
+
+        onSnapLines?.({ x: [...new Set(allSnapX)], y: [...new Set(allSnapY)] });
       }
 
       if (isResizing && resizeHandleRef.current && resizeObjStartRef.current) {
@@ -133,7 +161,8 @@ export function useSelectionTool({
     setIsMarquee(false);
     setMarqueeRect(null);
     dragObjStartsRef.current.clear();
-  }, [isMarquee, marqueeRect, selectInRect, objects]);
+    onSnapLines?.({ x: [], y: [] });
+  }, [isMarquee, marqueeRect, selectInRect, objects, onSnapLines]);
 
   return {
     isDragging,
