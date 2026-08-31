@@ -495,6 +495,12 @@
           "markdownDescription": "Envoie un message au Chat IA."
         },
         {
+          "description": "Persiste la position d'un compagnon flottant.",
+          "type": "string",
+          "const": "allow-set-companion-position",
+          "markdownDescription": "Persiste la position d'un compagnon flottant."
+        },
+        {
           "description": "Persiste les durées Pomodoro.",
           "type": "string",
           "const": "allow-set-pomodoro-durations",

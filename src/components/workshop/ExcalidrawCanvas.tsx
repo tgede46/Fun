@@ -16,6 +16,12 @@ import type { FunTheme } from "@/lib/theme";
 
 import "@excalidraw/excalidraw/index.css";
 
+const EXCALIDRAW_THEME: Record<FunTheme, "light" | "dark"> = {
+  light: "light",
+  dark: "dark",
+  electro: "dark",
+};
+
 const SAVE_DEBOUNCE_MS = 800;
 
 const Excalidraw = dynamic(
@@ -239,7 +245,7 @@ export const ExcalidrawCanvas = forwardRef<ExcalidrawCanvasHandle, ExcalidrawCan
           key={diagramPath}
           excalidrawAPI={handleExcalidrawApi}
           initialData={initialData}
-          theme={theme}
+          theme={EXCALIDRAW_THEME[theme]}
           langCode="fr-FR"
           onChange={handleChange}
         />

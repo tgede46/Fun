@@ -39,11 +39,21 @@ impl Default for FunTheme {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CompanionPosition {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProjectSettings {
     pub pomodoro_work_minutes: u32,
     pub pomodoro_break_minutes: u32,
     #[serde(default)]
     pub theme: FunTheme,
+    #[serde(default)]
+    pub companion_chat: Option<CompanionPosition>,
+    #[serde(default)]
+    pub companion_pomo: Option<CompanionPosition>,
 }
 
 impl Default for ProjectSettings {
@@ -103,6 +113,23 @@ pub fn set_pomodoro_durations(
     Ok(settings)
 }
 
+pub fn set_companion_position(
+    project_root: &Path,
+    companion: &str,
+    x: i32,
+    y: i32,
+) -> Result<ProjectSettings, String> {
+    let mut settings = read_settings(project_root)?;
+    let position = CompanionPosition { x, y };
+    match companion {
+        "chat" => settings.companion_chat = Some(position),
+        "pomo" => settings.companion_pomo = Some(position),
+        _ => return Err("Compagnon inconnu.".to_string()),
+    }
+    write_settings(project_root, &settings)?;
+    Ok(settings)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,6 +161,25 @@ mod tests {
 
         let reloaded = read_settings(&project).expect("reload");
         assert_eq!(reloaded.theme, FunTheme::Dark);
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn set_companion_position_persists() {
+        let project = temp_project();
+        let updated =
+            set_companion_position(&project, "chat", 120, 340).expect("set chat");
+        assert_eq!(
+            updated.companion_chat,
+            Some(CompanionPosition { x: 120, y: 340 })
+        );
+
+        let reloaded = read_settings(&project).expect("reload");
+        assert_eq!(
+            reloaded.companion_chat,
+            Some(CompanionPosition { x: 120, y: 340 })
+        );
 
         let _ = fs::remove_dir_all(project);
     }

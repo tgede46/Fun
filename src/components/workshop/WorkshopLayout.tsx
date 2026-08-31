@@ -34,7 +34,7 @@ import { ChatSidebar } from "./ChatSidebar";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { MeditationOverlay } from "./MeditationOverlay";
 import { ModeRail } from "./ModeRail";
-import { PomodoroChip } from "./PomodoroChip";
+import { FloatingCompanionsHost } from "./FloatingCompanionsHost";
 import { Toolbar } from "./Toolbar";
 import { usePomodoro } from "@/hooks/usePomodoro";
 import type { ExcalidrawCanvasHandle } from "./ExcalidrawCanvas";
@@ -450,6 +450,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     <div className="workshop-shell flex flex-col h-screen bg-background" data-fun-theme={theme}>
       <Toolbar
         projectName={projectName}
+        projectPath={projectPath}
         theme={theme}
         themeError={themeError}
         mode={mode}
@@ -502,20 +503,23 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onSend={handleSendChat}
         />
       </div>
-      <PomodoroChip
-        timerLabel={pomodoro.timerLabel}
-        timerDisplay={pomodoro.timerDisplay}
-        isRunning={pomodoro.isRunning}
-        configOpen={pomodoro.configOpen}
-        workMinutes={pomodoro.workMinutes}
-        breakMinutes={pomodoro.breakMinutes}
-        saveError={pomodoro.saveError}
-        onToggleConfig={() => pomodoro.setConfigOpen(!pomodoro.configOpen)}
-        onWorkChange={pomodoro.setWorkMinutes}
-        onBreakChange={pomodoro.setBreakMinutes}
-        onSaveConfig={() => void pomodoro.saveConfig()}
-        onStart={pomodoro.handleStart}
-        onStop={pomodoro.handleStop}
+      <FloatingCompanionsHost
+        projectPath={projectPath}
+        pomodoro={{
+          timerLabel: pomodoro.timerLabel,
+          timerDisplay: pomodoro.timerDisplay,
+          isRunning: pomodoro.isRunning,
+          configOpen: pomodoro.configOpen,
+          workMinutes: pomodoro.workMinutes,
+          breakMinutes: pomodoro.breakMinutes,
+          saveError: pomodoro.saveError,
+          setConfigOpen: pomodoro.setConfigOpen,
+          setWorkMinutes: pomodoro.setWorkMinutes,
+          setBreakMinutes: pomodoro.setBreakMinutes,
+          saveConfig: pomodoro.saveConfig,
+          handleStart: pomodoro.handleStart,
+          handleStop: pomodoro.handleStop,
+        }}
       />
       <MeditationOverlay
         open={pomodoro.showMeditation}

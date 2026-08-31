@@ -30,10 +30,18 @@ pub struct LoadDiagramResult {
 }
 
 #[derive(Debug, Serialize)]
+pub struct CompanionPositionResult {
+    pub x: i32,
+    pub y: i32,
+}
+
+#[derive(Debug, Serialize)]
 pub struct ProjectSettingsResult {
     pub pomodoro_work_minutes: u32,
     pub pomodoro_break_minutes: u32,
     pub theme: String,
+    pub companion_chat: Option<CompanionPositionResult>,
+    pub companion_pomo: Option<CompanionPositionResult>,
 }
 
 #[derive(Debug, Serialize)]
@@ -42,11 +50,19 @@ pub struct DiagramListItem {
     pub name: String,
 }
 
+fn companion_to_result(
+    position: Option<settings::CompanionPosition>,
+) -> Option<CompanionPositionResult> {
+    position.map(|p| CompanionPositionResult { x: p.x, y: p.y })
+}
+
 pub fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
     ProjectSettingsResult {
         pomodoro_work_minutes: settings.pomodoro_work_minutes,
         pomodoro_break_minutes: settings.pomodoro_break_minutes,
         theme: settings.theme.as_str().to_string(),
+        companion_chat: companion_to_result(settings.companion_chat),
+        companion_pomo: companion_to_result(settings.companion_pomo),
     }
 }
 
@@ -198,6 +214,18 @@ pub fn set_project_theme(
     let parsed = FunTheme::parse(&theme)?;
     let project_root = PathBuf::from(&project_path);
     let updated = settings::set_theme(project_root.as_path(), parsed)?;
+    Ok(settings_to_result(updated))
+}
+
+#[tauri::command]
+pub fn set_companion_position(
+    project_path: String,
+    companion: String,
+    x: i32,
+    y: i32,
+) -> Result<ProjectSettingsResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let updated = settings::set_companion_position(project_root.as_path(), &companion, x, y)?;
     Ok(settings_to_result(updated))
 }
 

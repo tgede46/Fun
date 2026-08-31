@@ -3,6 +3,8 @@ import type { FunTheme } from "@/lib/theme";
 
 type WorkshopMode = "sketch" | "uml";
 
+import { ThemeToggle } from "./ThemeToggle";
+
 type ToolbarProps = {
   projectName: string;
   theme: FunTheme;
@@ -16,6 +18,7 @@ type ToolbarProps = {
   canDeleteDiagram?: boolean;
   isDeletingDiagram?: boolean;
   onDeleteDiagram?: () => void;
+  projectPath: string;
 };
 
 export function Toolbar({
@@ -31,6 +34,7 @@ export function Toolbar({
   canDeleteDiagram = false,
   isDeletingDiagram = false,
   onDeleteDiagram,
+  projectPath,
 }: ToolbarProps) {
   return (
     <header className="flex items-center justify-between h-12 px-4 border-b border-border bg-card">
@@ -52,16 +56,11 @@ export function Toolbar({
             {themeError}
           </span>
         ) : null}
-        <button
-          type="button"
-          className="px-3 py-1.5 text-sm rounded-md text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-          onClick={onToggleTheme}
-          aria-label={
-            theme === "light" ? "Activer le thème sombre" : "Activer le thème clair"
-          }
-        >
-          {theme === "light" ? "Thème sombre" : "Thème clair"}
-        </button>
+        <ThemeToggle
+          theme={theme}
+          onToggle={onToggleTheme}
+          projectPath={projectPath}
+        />
         {mode === "sketch" ? (
           <>
             <button

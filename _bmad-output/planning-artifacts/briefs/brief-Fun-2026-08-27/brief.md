@@ -2,69 +2,75 @@
 title: "Product Brief: Fun"
 status: ready
 created: 2026-08-27
-updated: 2026-08-28
+updated: 2026-08-31
 ---
 
 # Product Brief: Fun
 
 ## Executive Summary
 
-**Fun** est une application **desktop PC** (Next.js + Tauri) qui regroupe, dans un seul outil, ce que Gedeonkp fait aujourd’hui en jonglant entre plusieurs apps : dessiner des schémas, discuter avec une IA pour générer ou corriger des diagrammes, rester concentré avec un Pomodoro, et travailler sur un **dossier projet** ouvert localement.
+**Fun** est un atelier de travail desktop pour un créateur solo qui veut garder un projet cohérent dans un seul environnement : ouvrir un dossier local, dessiner sur un canvas, converser avec une IA pour modifier ou générer des diagrammes, puis rester concentré avec un Pomodoro. L’objectif n’est pas de lancer une plateforme géante, mais de fournir un espace calme et utile pour avancer sur une idée sans perdre la piste entre plusieurs outils.
 
-Le problème n’est pas seulement « trop d’outils » : c’est un parcours de travail **fragmenté**. Avancer vite, puis montrer, expliquer ou faire valider (amis ; un jour équipe ou chef) devient lent et manuel. Fun vise d’abord un **MVP solo en ~3 jours** (fenêtre vacances), simple, utilisable sur le poste — sans ambition business ni scale.
+Le problème du terrain est simple : le travail de conception passe par des fragments dispersés (canvas, chat, timer, notes, fichier projet, validation manuelle). Le cerveau se disperse et le contexte réel du projet se fragmente. Fun vise à regrouper ces étapes dans un périmètre restreint, connu, et sécurisé : un dossier projet local, son histoire visuelle, son assistant IA, et sa cadence de travail.
 
 ## The Problem
 
-Quand on développe un produit, il faut aller vite : concevoir, schématiser, expliquer ce qui a été fait, parfois en rapport ou en démo. Aujourd’hui, ça passe par **plusieurs logiciels séparés** (whiteboard, timer, chat IA, mail…). Le suivi est flou ; les demandes d’ajouts arrivent en urgence ; pour dire « c’est fini », il faut encore **aller voir quelqu’un** (collègue, chef) plutôt que de soumettre et vérifier dans le même flux.
+Quand un projet avance, il faut souvent passer de l’idée à la structure, du schéma à l’explication, puis de la validation au travail de concentration. Aujourd’hui, cela implique de basculer entre plusieurs logiciels et de recopier le contexte à chaque étape. Le risque n’est pas seulement le temps perdu ; c’est la dilution du sens du projet : le travail est fragmenté, les décisions se perdent, et le fait de montrer ou de faire valider une idée demande un effort manuel supplémentaire.
 
-Coût : perte de temps, friction, fatigue d’assembler les produits des autres. Gedeonkp a peu de temps hors travail — seulement des fenêtres courtes (vacances, soirs). Il veut un outil **à lui**, tout-en-un, pour stopper cette dispersion.
+Pour un utilisateur solo, cela devient particulièrement pénible. Les fenêtres de travail sont courtes, les projets sont personnels, et il n’y a pas de place pour des outils lourds ou des flux trop complexes. Le besoin est clair : un environnement compact, fiable, orienté projet, et suffisamment neutre pour s’y installer sans friction.
 
 ## The Solution
 
-Ouvrir **Fun** sur le PC et y rester. Chatter avec une **IA open source** (« je fais ça ? ») : elle explique, génère et **modifie des diagrammes en live**. Dessiner / structurer sur un canvas (Excalidraw en premier ; draw.io en onglet, avec repli « bientôt » si l’intégration bloque). Lancer un **Pomodoro** à côté (durées choisies, notifications travail/pause). Ouvrir un **dossier projet** local pour lier l’IA et les diagrammes au travail en cours (pas tout le PC au MVP).
+Fun fournit un environnement desktop centré sur un dossier projet ouvert localement. Le produit initialise une structure dédiée sous `.fun/`, affiche les projets récents et permet d’ouvrir un dossier comme contexte de travail. Une fois le projet chargé, l’utilisateur peut créer et sauvegarder des diagrammes Excalidraw, les relire, les modifier ou les générer via une conversation avec l’IA.
 
-Plus tard (hors MVP) : revue / mail, collab amis ou équipe, automatisations (Calendar, Trello…), jeux en pause.
+Le cœur du produit est l’atelier : un canvas principal, une zone de chat, un état de projet visible, et un timer de concentration. La conversation IA est reliée au projet, et un benchmark des modèles `:free` OpenRouter a pour rôle de sélectionner le modèle actif de manière transparente. La dimension Pomodoro vient compléter la boucle de travail sans sortir du contexte.
 
 ## What Makes This Different
 
-Pas un « moat » technique inventé : la différence, c’est la **facilité d’un seul petit logiciel** qui remplace le ballet Excalidraw + ChatGPT + timer + … pour le même flux de travail. Exécution et intégration > feature unique.
+La différence de Fun n’est pas une innovation de fond de marché artificielle ; elle repose sur une promesse simple et forte : un seul espace de travail par projet. L’utilisateur ne jongle plus entre un tableau blanc, un assistant IA, un timer et des fichiers dispersés. L’outil agit comme un atelier domestique de conception — compact, cadré, efficace, et intégré.
+
+Le produit est aussi intentionally scoped : il ne s’étend pas à tout le filesystem, ni à un usage multi-utilisateurs, ni à une infrastructure backend complète. L’avantage vient de la discipline de périmètre et de la qualité d’intégration, pas d’un faux « moat » technique.
 
 ## Who This Serves
 
-**Primaire (MVP)** : Gedeonkp, seul, sur son poste — side-project personnel.
+**Principal** : un créateur solo, développeur, designer ou concepteur de projets personnels, qui travaille sur son poste et veut une vraie continuité entre idée, schéma, IA et concentration.
 
-**Secondaire (après MVP)** : amis sur des projets partagés ; éventuellement équipe / chef au travail pour montrer et faire valider.
+**Secondaire** : des amis ou une petite équipe qui peuvent revoir un projet, un diagramme ou un concept dans le même contexte, sans devoir reconstruire le flux de travail depuis zéro.
 
 ## Success Criteria
 
-À la fin des ~3 jours MVP, succès si :
+Le produit est un succès si, dans le flux principal :
 
-1. J’ouvre Fun + un dossier projet et je dessine (Excalidraw).
-2. Je chat avec l’IA et elle génère / modifie un diagramme.
-3. Le Pomodoro notifie fin de travail / pause.
+1. l’utilisateur ouvre un dossier local et Fun crée le contexte du projet ;
+2. il crée un diagramme et l’éditer en direct sur le canvas ;
+3. il converse avec l’IA pour modifier ou générer un schéma utile ;
+4. le Pomodoro reste fonctionnel et visible sans sortir du projet ;
+5. le benchmark IA sélectionne un modèle actif fiable et le chat l’utilise sans friction.
 
-Pas de critère business ni d’usage large à ce stade — prouver que le tout-en-un marche **simplement pour soi**.
+Ce n’est pas un objectif de scale business ; c’est une preuve que le flux « projet + dessin + IA + concentration » fonctionne réellement pour une personne dans un contexte temporel limité.
 
 ## Scope
 
 **Dans le MVP**
 
-- App PC (Next + Tauri), Google Cloud si besoin (Spring Boot)
-- Canvas Excalidraw + dossier projet
-- Chat IA open source → génère / modifie diagramme
-- Pomodoro + notifications PC
-- draw.io (ou onglet « bientôt » — Plan A si bloqué)
-- Code → UML / benchmark modèles **si le temps le permet**
+- application desktop PC via Tauri + Next.js static export ;
+- ouverture d’un dossier projet local ;
+- structure `.fun/` avec métadonnées de projet ;
+- canvas Excalidraw, liste et création de diagrammes ;
+- assistant IA via OpenRouter ;
+- benchmark des modèles `:free` ;
+- Pomodoro configurable avec notifications et pause méditation ;
+- onglet UML avec placeholder « Bientôt » si l’intégration ne va pas au bout.
 
 **Hors MVP (confirmé)**
 
-- Mobile
-- Jeux en pause
-- Intégrations avancées Trello / Calendar / mail
-- Déploiement / orchestration (K8s, etc.)
-- Collab chef / équipe
-- Accès à tout le PC (seulement le dossier projet ouvert)
+- mobile ;
+- collaboration multi-utilisateur ;
+- accès au filesystem complet du PC ;
+- backend Fun hébergé ;
+- intégrations externes lourdes (Trello, calendrier, mail) ;
+- jeu ou produits non liés au flux de projet.
 
 ## Vision
 
-Les soirs après le boulot (environ **2–3 heures** avant de dormir), ouvrir Fun, avancer sur le projet, et **montrer / travailler** avec des amis ou des équipes — sans reconstruire le flux à chaque fois dans cinq apps différentes. Si ça tient, élargir progressivement (collab, automatisations, draw.io solide, business plus tard).
+L’objectif à moyen terme est de transformer Fun en un studio de travail de projet personnel, où l’utilisateur peut ouvrir un dossier, faire apparaître l’idée, la dessiner, la faire parler, et la faire avancer sans sortir du contexte. Si le flux tient, le produit peut ensuite s’étendre vers des fonctions de revue, de validation, de partage plus structuré, et d’aide plus poussée à la conception — toujours sans perdre l’esprit central de simplicité et de concentration.

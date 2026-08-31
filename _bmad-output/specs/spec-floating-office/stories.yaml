@@ -1,0 +1,48 @@
+- id: "1"
+  title: Shell FloatingCompanion + persistance positions
+  description: >-
+    Introduire la coque flottante partagée (drag, z-index, bounds viewport)
+    et persister les positions 💬/🍅 dans .fun/settings.json. Voir CAP-3, CAP-6
+    et brownfield.md.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    Étendre ProjectSettings Rust + TS. Remplacer le placement fixe de
+    PomodoroChip par pastille dans FloatingCompanion ; préparer slot 💬 sans
+    overlay chat complet encore.
+
+- id: "2"
+  title: Compagnon 💬 overlay + chat async
+  description: >-
+    Pastille 💬 ouvre overlay avec ChatSidebar réutilisé ; fermer l'overlay
+    pendant loading ne cancel pas la requête ; états idle/thinking/done. Voir
+    CAP-1 et companion-states.md.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    Extraire logique chat de WorkshopLayout si nécessaire. Ne pas régresser
+    diagram_update / applyScene / prepareExcalidrawScene.
+
+- id: "3"
+  title: Notification OS fin de chat IA
+  description: >-
+    Commande Tauri notify_chat_complete (ou réutilisation notify) + badge 💬
+    done ; corps notif mentionne action canvas si diagram_update. Voir CAP-2.
+  spec_checkpoint: false
+  invoke_dev_with: >-
+    Ajouter permission capabilities/default.json. Message français explicite.
+
+- id: "4"
+  title: Souffle 🍅 draggable + parité timer
+  description: >-
+    Migrer PomodoroChip vers pastille 🍅 flottante avec config et timer
+    identiques ; conserver notify fin de phase. Voir CAP-4 et brownfield.md.
+  spec_checkpoint: false
+
+- id: "5"
+  title: Lofi audio + scène visuelle Souffle
+  description: >-
+    Audio ambient au démarrage phase travail, mute/volume sur 🍅, une scène
+    visuelle légère inspirée MeditationOverlay. Voir CAP-5 et moscow-priorities.md.
+  spec_checkpoint: true
+  invoke_dev_with: >-
+    MVP audio : fichiers embarqués public/sounds/lofi/ ou URL settings.
+    Scène : overlay non bloquant, dismissible.
