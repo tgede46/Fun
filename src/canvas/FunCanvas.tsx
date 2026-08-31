@@ -25,7 +25,7 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo } = useHistory(scene);
-  const { camera, zoom, panStart, screenToWorld } = useZoomPan();
+  const { camera, zoom, panStart, panMove, panEnd, screenToWorld } = useZoomPan();
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeColor] = useState(DEFAULT_STROKE);
   const [gridEnabled] = useState(true);
@@ -112,6 +112,12 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent) => {
+      // Pan si en cours
+      if (e.buttons === 4 || (e.buttons === 1 && e.ctrlKey)) {
+        panMove(e.clientX, e.clientY);
+        return;
+      }
+
       if (tool === "select") {
         selectionTool.handlePointerMove(e, screenToWorld);
       } else if (tool === "freehand") {
@@ -124,11 +130,12 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         diamondTool.handlePointerMove(e, screenToWorld);
       }
     },
-    [tool, screenToWorld, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
+    [tool, screenToWorld, panMove, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
   );
 
   const handlePointerUp = useCallback(
     () => {
+      panEnd();
       if (tool === "select") {
         selectionTool.handlePointerUp();
       } else if (tool === "freehand") {
@@ -141,7 +148,7 @@ export function FunCanvas({ initialScene }: FunCanvasProps) {
         diamondTool.handlePointerUp();
       }
     },
-    [tool, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
+    [tool, panEnd, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool],
   );
 
   const handleWheel = useCallback(
