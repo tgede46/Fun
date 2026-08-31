@@ -1,5 +1,3 @@
-import type { FreehandPath } from "../types";
-
 /** Ramer-Douglas-Peucker simplification. */
 function simplifyRDP(points: { x: number; y: number }[], epsilon: number): { x: number; y: number }[] {
   if (points.length <= 2) return points;

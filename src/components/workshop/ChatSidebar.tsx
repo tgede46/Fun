@@ -12,6 +12,8 @@ type ChatSidebarProps = {
   loading: boolean;
   chatError: string | null;
   onSend: (message: string) => void;
+  /** overlay = remplit le parent (pas de largeur fixe sidebar) */
+  variant?: "sidebar" | "overlay";
 };
 
 function AiStatusPanel({
@@ -115,6 +117,7 @@ export function ChatSidebar({
   loading,
   chatError,
   onSend,
+  variant = "sidebar",
 }: ChatSidebarProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -159,11 +162,21 @@ export function ChatSidebar({
     [handleSend],
   );
 
+  const isOverlay = variant === "overlay";
+
   return (
-    <aside className="flex flex-col w-80 border-l border-border bg-card" aria-label="Chat">
-      <p className="px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-border">
-        Assistant IA
-      </p>
+    <aside
+      className={cn(
+        "flex h-full min-h-0 flex-col bg-card",
+        isOverlay ? "w-full" : "w-80 border-l border-border",
+      )}
+      aria-label="Chat"
+    >
+      {isOverlay ? null : (
+        <p className="border-b border-border px-4 py-2 text-xs font-semibold text-muted-foreground">
+          Assistant IA
+        </p>
+      )}
 
       <AiStatusPanel
         aiStatus={aiStatus}

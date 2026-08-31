@@ -54,6 +54,18 @@ pub struct ProjectSettings {
     pub companion_chat: Option<CompanionPosition>,
     #[serde(default)]
     pub companion_pomo: Option<CompanionPosition>,
+    #[serde(default = "default_lofi_muted")]
+    pub lofi_muted: bool,
+    #[serde(default = "default_lofi_volume")]
+    pub lofi_volume: u8,
+}
+
+fn default_lofi_muted() -> bool {
+    false
+}
+
+fn default_lofi_volume() -> u8 {
+    40
 }
 
 impl Default for ProjectSettings {
@@ -64,6 +76,8 @@ impl Default for ProjectSettings {
             theme: FunTheme::Light,
             companion_chat: None,
             companion_pomo: None,
+            lofi_muted: false,
+            lofi_volume: 40,
         }
     }
 }
@@ -132,6 +146,18 @@ pub fn set_companion_position(
     Ok(settings)
 }
 
+pub fn set_lofi_prefs(
+    project_root: &Path,
+    muted: bool,
+    volume: u8,
+) -> Result<ProjectSettings, String> {
+    let mut settings = read_settings(project_root)?;
+    settings.lofi_muted = muted;
+    settings.lofi_volume = volume.min(100);
+    write_settings(project_root, &settings)?;
+    Ok(settings)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -182,6 +208,20 @@ mod tests {
             reloaded.companion_chat,
             Some(CompanionPosition { x: 120, y: 340 })
         );
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn set_lofi_prefs_persists() {
+        let project = temp_project();
+        let updated = set_lofi_prefs(&project, true, 55).expect("set lofi");
+        assert!(updated.lofi_muted);
+        assert_eq!(updated.lofi_volume, 55);
+
+        let reloaded = read_settings(&project).expect("reload");
+        assert!(reloaded.lofi_muted);
+        assert_eq!(reloaded.lofi_volume, 55);
 
         let _ = fs::remove_dir_all(project);
     }

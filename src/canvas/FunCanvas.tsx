@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { FunObject, FunScene, Camera, ToolType, ResizeHandle } from "../types";
+import type { FunObject, FunScene, ResizeHandle } from "../types";
 import { DEFAULT_STROKE } from "../types";
 import { useScene } from "../hooks/useScene";
 import { useTool } from "../hooks/useTool";
@@ -13,22 +13,22 @@ import { useShapeTool } from "../tools/ShapeTool";
 import { useSelectionTool } from "../tools/SelectionTool";
 import { useTextTool } from "../tools/TextTool";
 import { CanvasRenderer } from "./CanvasRenderer";
-import { pointInObject, objectBBox } from "../utils/geometry";
+import { objectBBox } from "../utils/geometry";
 
 interface FunCanvasProps {
   initialScene?: FunScene;
   onSceneChange?: (scene: FunScene) => void;
 }
 
-export function FunCanvas({ initialScene, onSceneChange }: FunCanvasProps) {
-  const { scene, objects, addObject, updateObject, deleteObject, deleteObjects, replaceAllObjects, setSceneDirect, getObject } = useScene(initialScene);
+export function FunCanvas({ initialScene }: FunCanvasProps) {
+  const { scene, objects, addObject, updateObject, deleteObjects, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
-  const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection, isSelected } = useSelection();
-  const { push, undo, redo, canUndo, canRedo } = useHistory(scene);
-  const { camera, zoom, panStart, panMove, panEnd, resetCamera, screenToWorld, worldToScreen } = useZoomPan();
+  const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
+  const { push, undo, redo } = useHistory(scene);
+  const { camera, zoom, panStart, screenToWorld } = useZoomPan();
   const svgRef = useRef<SVGSVGElement>(null);
-  const [activeColor, setActiveColor] = useState(DEFAULT_STROKE);
-  const [gridEnabled, setGridEnabled] = useState(true);
+  const [activeColor] = useState(DEFAULT_STROKE);
+  const [gridEnabled] = useState(true);
 
   const handleAddObject = useCallback((obj: FunObject) => {
     addObject(obj);
@@ -53,7 +53,7 @@ export function FunCanvas({ initialScene, onSceneChange }: FunCanvasProps) {
     clearSelection,
     onUpdate: handleUpdateObject,
   });
-  const textTool = useTextTool({ camera, onAdd: handleAddObject, activeColor });
+  const textTool = useTextTool({ onAdd: handleAddObject, activeColor });
 
   const hitResizeHandle = useCallback(
     (clientX: number, clientY: number): ResizeHandle | null => {
@@ -128,7 +128,7 @@ export function FunCanvas({ initialScene, onSceneChange }: FunCanvasProps) {
   );
 
   const handlePointerUp = useCallback(
-    (e: React.PointerEvent) => {
+    () => {
       if (tool === "select") {
         selectionTool.handlePointerUp();
       } else if (tool === "freehand") {

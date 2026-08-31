@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { FunObject, FunScene } from "../types";
 
 const INITIAL_SCENE: FunScene = {
@@ -14,7 +14,7 @@ let nextZIndex = 1;
 export function useScene(initial?: FunScene) {
   const [scene, setScene] = useState<FunScene>(initial ?? INITIAL_SCENE);
   const sceneRef = useRef(scene);
-  sceneRef.current = scene;
+  useEffect(() => { sceneRef.current = scene; });
 
   const addObject = useCallback((obj: FunObject) => {
     const withZ = { ...obj, zIndex: nextZIndex++ };

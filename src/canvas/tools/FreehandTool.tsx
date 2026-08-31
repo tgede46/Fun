@@ -11,6 +11,7 @@ interface UseFreehandToolProps {
 
 export function useFreehandTool({ camera, onAdd, activeColor = DEFAULT_STROKE }: UseFreehandToolProps) {
   const [isDrawing, setIsDrawing] = useState(false);
+  const [previewPoints, setPreviewPoints] = useState<{ x: number; y: number }[] | null>(null);
   const pointsRef = useRef<{ x: number; y: number }[]>([]);
 
   const handlePointerDown = useCallback(
@@ -19,6 +20,7 @@ export function useFreehandTool({ camera, onAdd, activeColor = DEFAULT_STROKE }:
       setIsDrawing(true);
       const world = screenToWorld(e.clientX, e.clientY);
       pointsRef.current = [world];
+      setPreviewPoints([world]);
     },
     [],
   );
@@ -28,6 +30,7 @@ export function useFreehandTool({ camera, onAdd, activeColor = DEFAULT_STROKE }:
       if (!isDrawing) return;
       const world = screenToWorld(e.clientX, e.clientY);
       pointsRef.current.push(world);
+      setPreviewPoints([...pointsRef.current]);
     },
     [isDrawing],
   );
@@ -35,6 +38,7 @@ export function useFreehandTool({ camera, onAdd, activeColor = DEFAULT_STROKE }:
   const handlePointerUp = useCallback(() => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    setPreviewPoints(null);
 
     const raw = pointsRef.current;
     pointsRef.current = [];
@@ -65,8 +69,6 @@ export function useFreehandTool({ camera, onAdd, activeColor = DEFAULT_STROKE }:
       points: smoothed,
     });
   }, [isDrawing, camera.zoom, activeColor, onAdd]);
-
-  const previewPoints = isDrawing ? pointsRef.current : null;
 
   return {
     isDrawing,

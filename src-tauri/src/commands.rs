@@ -42,6 +42,8 @@ pub struct ProjectSettingsResult {
     pub theme: String,
     pub companion_chat: Option<CompanionPositionResult>,
     pub companion_pomo: Option<CompanionPositionResult>,
+    pub lofi_muted: bool,
+    pub lofi_volume: u8,
 }
 
 #[derive(Debug, Serialize)]
@@ -63,6 +65,8 @@ pub fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
         theme: settings.theme.as_str().to_string(),
         companion_chat: companion_to_result(settings.companion_chat),
         companion_pomo: companion_to_result(settings.companion_pomo),
+        lofi_muted: settings.lofi_muted,
+        lofi_volume: settings.lofi_volume,
     }
 }
 
@@ -226,6 +230,17 @@ pub fn set_companion_position(
 ) -> Result<ProjectSettingsResult, String> {
     let project_root = PathBuf::from(&project_path);
     let updated = settings::set_companion_position(project_root.as_path(), &companion, x, y)?;
+    Ok(settings_to_result(updated))
+}
+
+#[tauri::command]
+pub fn set_lofi_prefs(
+    project_path: String,
+    muted: bool,
+    volume: u8,
+) -> Result<ProjectSettingsResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let updated = settings::set_lofi_prefs(project_root.as_path(), muted, volume)?;
     Ok(settings_to_result(updated))
 }
 

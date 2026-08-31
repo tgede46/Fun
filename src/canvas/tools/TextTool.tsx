@@ -1,14 +1,13 @@
 import { useCallback, useState } from "react";
-import type { Camera, TextObject } from "../types";
-import { DEFAULT_FILL, DEFAULT_STROKE, DEFAULT_FONT_SIZE } from "../types";
+import type { TextObject } from "../types";
+import { DEFAULT_STROKE, DEFAULT_FONT_SIZE } from "../types";
 
 interface UseTextToolProps {
-  camera: Camera;
   onAdd: (obj: TextObject) => void;
   activeColor?: string;
 }
 
-export function useTextTool({ camera, onAdd, activeColor = DEFAULT_STROKE }: UseTextToolProps) {
+export function useTextTool({ onAdd, activeColor = DEFAULT_STROKE }: UseTextToolProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const handlePointerDown = useCallback(
@@ -33,7 +32,7 @@ export function useTextTool({ camera, onAdd, activeColor = DEFAULT_STROKE }: Use
         fontSize: DEFAULT_FONT_SIZE,
       });
     },
-    [camera.zoom, activeColor, onAdd],
+    [activeColor, onAdd],
   );
 
   const startEditing = useCallback((id: string) => {

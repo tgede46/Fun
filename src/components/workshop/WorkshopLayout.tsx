@@ -1,16 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  createAndLoadDiagram,
   deleteDiagram,
   listDiagrams,
-  loadDiagramIntoCanvas,
-  parseExcalidrawContent,
-  prepareExcalidrawScene,
   saveDiagram,
   type DiagramListItem,
-  type ExcalidrawInitialDataState,
 } from "@/lib/diagram";
 import {
   getAiStatus,
@@ -22,6 +17,7 @@ import {
   type ChatTurn,
 } from "@/lib/ai";
 import { loadChatHistory, saveChatHistory } from "@/lib/chat-storage";
+import { chatCompleteBody, notifyChatComplete } from "@/lib/chat-notify";
 import { formatInvokeError } from "@/lib/invoke-error";
 import { getProjectSettings, setProjectTheme } from "@/lib/settings";
 import {
@@ -30,14 +26,15 @@ import {
   type FunTheme,
 } from "@/lib/theme";
 import { CanvasArea } from "./CanvasArea";
-import { ChatSidebar } from "./ChatSidebar";
 import { ConfirmDialog } from "./ConfirmDialog";
+import { FloatingCompanionsHost } from "./FloatingCompanionsHost";
 import { MeditationOverlay } from "./MeditationOverlay";
 import { ModeRail } from "./ModeRail";
-import { FloatingCompanionsHost } from "./FloatingCompanionsHost";
 import { Toolbar } from "./Toolbar";
 import { usePomodoro } from "@/hooks/usePomodoro";
-import type { ExcalidrawCanvasHandle } from "./ExcalidrawCanvas";
+import type { FunScene } from "@/canvas/types";
+import { createEmptyScene } from "@/canvas/utils/serialization";
+import { invoke } from "@tauri-apps/api/core";
 
 type WorkshopMode = "sketch" | "uml";
 
@@ -50,9 +47,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [diagrams, setDiagrams] = useState<DiagramListItem[]>([]);
   const [activeDiagramPath, setActiveDiagramPath] = useState<string | null>(null);
   const [diagramName, setDiagramName] = useState<string | null>(null);
-  const [initialData, setInitialData] = useState<ExcalidrawInitialDataState | null>(
-    null,
-  );
+  const [scene, setScene] = useState<FunScene | null>(null);
   const [isCreatingDiagram, setIsCreatingDiagram] = useState(false);
   const [isDeletingDiagram, setIsDeletingDiagram] = useState(false);
   const [diagramError, setDiagramError] = useState<string | null>(null);
@@ -66,7 +61,6 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   );
   const [chatLoading, setChatLoading] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
-  const [diagramRawContent, setDiagramRawContent] = useState<string | null>(null);
   const [pomodoroWork, setPomodoroWork] = useState(25);
   const [pomodoroBreak, setPomodoroBreak] = useState(5);
   const [mode, setMode] = useState<WorkshopMode>("sketch");
@@ -78,8 +72,6 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     path: string;
     label: string;
   } | null>(null);
-
-  const canvasRef = useRef<ExcalidrawCanvasHandle>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -146,9 +138,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   }, [projectPath, chatHistory]);
 
   useEffect(() => {
-    if (!aiStatus?.key_configured) {
-      return;
-    }
+    if (!aiStatus?.key_configured) return;
 
     let cancelled = false;
 
@@ -172,21 +162,16 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           setBenchmarkMessage(`Benchmark terminé — modèle actif : ${short}.`);
         } else if (result.ran_at) {
           setBenchmarkState("fresh");
-          setBenchmarkMessage("Benchmark à jour — aucune nouvelle évaluation nécessaire.");
+          setBenchmarkMessage("Benchmark à jour.");
         } else {
           setBenchmarkState("failed");
-          setBenchmarkMessage(
-            "Benchmark pas encore effectué — le modèle par défaut est utilisé.",
-          );
+          setBenchmarkMessage("Benchmark pas encore effectué.");
         }
       } catch (err) {
         if (!cancelled) {
           setBenchmarkState("failed");
           setBenchmarkMessage(
-            formatInvokeError(
-              err,
-              "Benchmark indisponible — le dernier modèle connu reste utilisé.",
-            ),
+            formatInvokeError(err, "Benchmark indisponible."),
           );
         }
       }
@@ -203,11 +188,14 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setSaveError(null);
 
       try {
-        const result = await loadDiagramIntoCanvas(projectPath, path);
-        setActiveDiagramPath(result.path);
-        setDiagramName(result.name);
-        setInitialData(result.initialData);
-        setDiagramRawContent(result.rawContent);
+        const loaded = await invoke<{ path: string; content: string }>("load_diagram", {
+          projectPath,
+          diagramPath: path,
+        });
+        const name = path.split(/[/\\]/).pop()?.replace(/\.excalidraw$/, "") ?? "diagramme";
+        setActiveDiagramPath(loaded.path);
+        setDiagramName(name);
+        setScene(createEmptyScene());
       } catch (err) {
         setDiagramError(
           err instanceof Error ? err.message : "Impossible d'ouvrir ce diagramme.",
@@ -223,11 +211,12 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     setSaveError(null);
 
     try {
-      const result = await createAndLoadDiagram(projectPath);
+      const result = await invoke<{ path: string; name: string }>("create_diagram", {
+        projectPath,
+      });
       setActiveDiagramPath(result.path);
       setDiagramName(result.name);
-      setInitialData(result.initialData);
-      setDiagramRawContent(result.rawContent);
+      setScene(createEmptyScene());
       await refreshDiagramList();
     } catch (err) {
       setDiagramError(
@@ -240,28 +229,15 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   const handleSelectDiagram = useCallback(
     (path: string) => {
-      if (path === activeDiagramPath) {
-        return;
-      }
+      if (path === activeDiagramPath) return;
       void openDiagram(path);
     },
     [activeDiagramPath, openDiagram],
   );
 
-  const handleSaveError = useCallback((message: string | null) => {
-    setSaveError(message);
-  }, []);
-
-  const handleDiagramSaved = useCallback((content: string) => {
-    setDiagramRawContent(content);
-    setSaveError(null);
-  }, []);
-
   const handleDeleteDiagram = useCallback((path?: string) => {
     const targetPath = path ?? activeDiagramPath;
-    if (!targetPath) {
-      return;
-    }
+    if (!targetPath) return;
 
     const label =
       path != null
@@ -272,9 +248,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   }, [activeDiagramPath, diagramName]);
 
   const confirmDeleteDiagram = useCallback(async () => {
-    if (!deletePending) {
-      return;
-    }
+    if (!deletePending) return;
 
     const targetPath = deletePending.path;
     setIsDeletingDiagram(true);
@@ -288,8 +262,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       if (activeDiagramPath === targetPath) {
         setActiveDiagramPath(null);
         setDiagramName(null);
-        setInitialData(null);
-        setDiagramRawContent(null);
+        setScene(null);
       }
 
       setDeletePending(null);
@@ -300,12 +273,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     } finally {
       setIsDeletingDiagram(false);
     }
-  }, [
-    activeDiagramPath,
-    deletePending,
-    projectPath,
-    refreshDiagramList,
-  ]);
+  }, [activeDiagramPath, deletePending, projectPath, refreshDiagramList]);
 
   const handleToggleTheme = useCallback(async () => {
     const next = toggleFunTheme(theme);
@@ -319,6 +287,18 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     }
   }, [projectPath, theme]);
 
+  const handleSceneChange = useCallback(
+    (newScene: FunScene) => {
+      setScene(newScene);
+      if (activeDiagramPath) {
+        void saveDiagram(projectPath, activeDiagramPath, JSON.stringify(newScene)).catch((err) => {
+          setSaveError(formatInvokeError(err, "Sauvegarde échouée."));
+        });
+      }
+    },
+    [projectPath, activeDiagramPath],
+  );
+
   const handleSendChat = useCallback(
     async (message: string) => {
       setChatError(null);
@@ -331,7 +311,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       try {
         const result = await sendChatMessage(projectPath, {
           diagramPath: activeDiagramPath,
-          diagramContent: diagramRawContent,
+          diagramContent: scene ? JSON.stringify(scene) : null,
           history: chatHistory.filter((t) => t.role !== "system"),
           userMessage: message,
         });
@@ -349,18 +329,15 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           await refreshDiagramList();
           setActiveDiagramPath(result.opened_diagram_path);
           setDiagramName(result.opened_diagram_name);
+          setScene(createEmptyScene());
         }
 
         if (result.diagram_update && targetPath) {
-          const { initialData: sanitized, sanitizedJson } =
-            await prepareExcalidrawScene(result.diagram_update);
-
-          setInitialData(sanitized);
-          setDiagramRawContent(sanitizedJson);
+          setScene(createEmptyScene());
 
           if (targetPath) {
             try {
-              await saveDiagram(projectPath, targetPath, sanitizedJson);
+              await saveDiagram(projectPath, targetPath, result.diagram_update);
             } catch (err) {
               setSaveError(
                 formatInvokeError(err, "Diagramme affiché mais sauvegarde échouée."),
@@ -371,8 +348,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           nextHistory.push({
             role: "system",
             content: result.opened_diagram_path
-              ? "✓ Nouveau diagramme créé et affiché sur le canvas (Trace)."
-              : "✓ Diagramme mis à jour sur le canvas (Trace).",
+              ? "Nouveau diagramme créé et affiché sur le canvas."
+              : "Diagramme mis à jour sur le canvas.",
           });
         } else if (
           result.persona === "editeur-canvas" &&
@@ -381,43 +358,49 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         ) {
           nextHistory.push({
             role: "system",
-            content:
-              "Trace n'a pas produit de JSON Excalidraw — rien n'a été dessiné. Essayez : « Crée un diagramme de démo avec Début, Action, Fin ».",
+            content: "Trace n'a pas produit de JSON — rien n'a été dessiné.",
           });
         }
 
         if (result.diagram_reset && targetPath) {
-          try {
-            const reloaded = await loadDiagramIntoCanvas(
-              projectPath,
-              targetPath,
-            );
-            setInitialData(reloaded.initialData);
-            setDiagramRawContent(reloaded.rawContent);
-            nextHistory.push({
-              role: "system",
-              content: "✓ Canvas réinitialisé — diagramme vide rechargé.",
-            });
-          } catch {
-            setChatError("Le diagramme a été réinitialisé mais le rechargement a échoué.");
-          }
+          setScene(createEmptyScene());
+          nextHistory.push({
+            role: "system",
+            content: "Canvas réinitialisé.",
+          });
         }
 
         setChatHistory(nextHistory);
+
+        void notifyChatComplete(
+          "Fun — Chat",
+          chatCompleteBody({
+            personaDisplay: result.persona_display,
+            diagramUpdated: !!result.diagram_update,
+            diagramCreated: !!result.opened_diagram_path,
+          }),
+        );
       } catch (err) {
         setChatError(
           formatInvokeError(
             err,
-            "Impossible de joindre l'assistant. Vérifiez votre connexion et la clé OpenRouter.",
+            "Impossible de joindre l'assistant.",
           ),
         );
-        // Retirer le message utilisateur optimiste si l'envoi a échoué
         setChatHistory(chatHistory);
+        void notifyChatComplete(
+          "Fun — Chat",
+          chatCompleteBody({
+            diagramUpdated: false,
+            diagramCreated: false,
+            error: "failed",
+          }),
+        );
       } finally {
         setChatLoading(false);
       }
     },
-    [projectPath, activeDiagramPath, diagramRawContent, chatHistory, refreshDiagramList],
+    [projectPath, activeDiagramPath, scene, chatHistory, refreshDiagramList],
   );
 
   const handleGenerateFromCode = useCallback(async () => {
@@ -432,7 +415,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         ...prev,
         {
           role: "system",
-          content: `✓ Diagramme « ${result.name} » généré depuis le code du projet.`,
+          content: `Diagramme « ${result.name} » généré depuis le code du projet.`,
         },
       ]);
     } catch (err) {
@@ -474,13 +457,11 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       <div className="flex flex-1 min-h-0">
         <ModeRail activeMode={mode} onModeChange={setMode} />
         <CanvasArea
-          projectPath={projectPath}
-          theme={theme}
           mode={mode}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
           diagramName={diagramName}
-          initialData={initialData}
+          scene={scene}
           error={diagramError}
           saveError={saveError}
           codeGenError={codeGenError}
@@ -488,27 +469,27 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onDeleteDiagram={(diagramPath) => {
             void handleDeleteDiagram(diagramPath);
           }}
-          onSaveError={handleSaveError}
-          onDiagramSaved={handleDiagramSaved}
-          canvasRef={canvasRef}
-        />
-        <ChatSidebar
-          aiStatus={aiStatus}
-          aiError={aiError}
-          benchmarkState={benchmarkState}
-          benchmarkMessage={benchmarkMessage}
-          history={chatHistory}
-          loading={chatLoading}
-          chatError={chatError}
-          onSend={handleSendChat}
+          onSceneChange={handleSceneChange}
         />
       </div>
       <FloatingCompanionsHost
         projectPath={projectPath}
+        chat={{
+          aiStatus,
+          aiError,
+          benchmarkState,
+          benchmarkMessage,
+          history: chatHistory,
+          loading: chatLoading,
+          chatError,
+          onSend: handleSendChat,
+        }}
         pomodoro={{
           timerLabel: pomodoro.timerLabel,
           timerDisplay: pomodoro.timerDisplay,
           isRunning: pomodoro.isRunning,
+          phase: pomodoro.phase,
+          workGeneration: pomodoro.workGeneration,
           configOpen: pomodoro.configOpen,
           workMinutes: pomodoro.workMinutes,
           breakMinutes: pomodoro.breakMinutes,
@@ -528,7 +509,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       <ConfirmDialog
         open={deletePending != null}
         title={`Supprimer « ${deletePending?.label ?? ""} » ?`}
-        message="Le fichier .excalidraw sera définitivement effacé du disque. Cette action est irréversible."
+        message="Le fichier sera définitivement effacé du disque. Cette action est irréversible."
         confirmLabel="Supprimer"
         loading={isDeletingDiagram}
         onConfirm={() => {

@@ -10,12 +10,16 @@ type SoufflePanelProps = {
   workMinutes: number;
   breakMinutes: number;
   saveError: string | null;
+  lofiMuted: boolean;
+  lofiVolume: number;
   onClose: () => void;
   onWorkChange: (value: number) => void;
   onBreakChange: (value: number) => void;
   onSaveConfig: () => void;
   onStart: () => void;
   onStop: () => void;
+  onLofiMutedChange: (muted: boolean) => void;
+  onLofiVolumeChange: (volume: number) => void;
 };
 
 export function SoufflePanel({
@@ -26,12 +30,16 @@ export function SoufflePanel({
   workMinutes,
   breakMinutes,
   saveError,
+  lofiMuted,
+  lofiVolume,
   onClose,
   onWorkChange,
   onBreakChange,
   onSaveConfig,
   onStart,
   onStop,
+  onLofiMutedChange,
+  onLofiVolumeChange,
 }: SoufflePanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -65,7 +73,7 @@ export function SoufflePanel({
             🍅 Souffle
           </p>
           <p className="text-sm text-muted-foreground">
-            Configure ton rythme, puis lance le chrono.
+            Configure ton rythme, l’ambiance, puis lance le chrono.
           </p>
         </div>
         <button
@@ -118,6 +126,33 @@ export function SoufflePanel({
               value={breakMinutes}
               disabled={isRunning}
               onChange={(e) => onBreakChange(Number(e.target.value))}
+            />
+          </label>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+          <p className="text-sm font-medium text-foreground">Ambiance lofi</p>
+          <label className="flex items-center justify-between gap-3 text-sm text-foreground">
+            <span>Muet</span>
+            <input
+              type="checkbox"
+              checked={lofiMuted}
+              onChange={(e) => onLofiMutedChange(e.target.checked)}
+              className="h-4 w-4"
+            />
+          </label>
+          <label className="flex flex-col gap-2">
+            <span className="text-sm text-muted-foreground">
+              Volume ({lofiVolume}%)
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={lofiVolume}
+              disabled={lofiMuted}
+              onChange={(e) => onLofiVolumeChange(Number(e.target.value))}
+              className="w-full"
             />
           </label>
         </div>

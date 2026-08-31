@@ -14,6 +14,16 @@ pub fn notify_pomodoro_phase(app: AppHandle, title: String, body: String) -> Res
 }
 
 #[tauri::command]
+pub fn notify_chat_complete(app: AppHandle, title: String, body: String) -> Result<(), String> {
+    app.notification()
+        .builder()
+        .title(&title)
+        .body(&body)
+        .show()
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn set_pomodoro_durations(
     project_path: String,
     work_minutes: u32,

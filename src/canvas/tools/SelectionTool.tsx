@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import type { Camera, FunObject, BBox } from "../types";
-import { pointInObject, objectBBox, resizeBBox, clamp } from "../utils/geometry";
+import { pointInObject, objectBBox, resizeBBox } from "../utils/geometry";
 import type { ResizeHandle } from "../types";
 
 interface UseSelectionToolProps {
@@ -15,7 +15,6 @@ interface UseSelectionToolProps {
 }
 
 export function useSelectionTool({
-  camera,
   objects,
   selectedIds,
   onSelect,

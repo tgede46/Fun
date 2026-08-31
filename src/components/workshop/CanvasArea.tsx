@@ -39,8 +39,6 @@ function StatusBanner({ message, tone }: { message: string; tone: "error" | "inf
 }
 
 export function CanvasArea({
-  projectPath,
-  theme,
   mode,
   diagrams,
   activeDiagramPath,
@@ -51,7 +49,6 @@ export function CanvasArea({
   codeGenError,
   onSelectDiagram,
   onDeleteDiagram,
-  onSaveError,
   onSceneChange,
 }: CanvasAreaProps) {
   const list = (

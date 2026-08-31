@@ -1,10 +1,9 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import type { FunObject, BBox } from "../types";
 import { bboxesOverlap, objectBBox } from "../utils/geometry";
 
 export function useSelection() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const lastSelectedRef = useRef<string | null>(null);
 
   const select = useCallback((id: string, additive = false) => {
     if (additive) {
@@ -20,12 +19,10 @@ export function useSelection() {
     } else {
       setSelectedIds(new Set([id]));
     }
-    lastSelectedRef.current = id;
   }, []);
 
   const selectOnly = useCallback((id: string) => {
     setSelectedIds(new Set([id]));
-    lastSelectedRef.current = id;
   }, []);
 
   const selectMultiple = useCallback((ids: string[]) => {
@@ -53,7 +50,6 @@ export function useSelection() {
   return {
     selectedIds,
     selectedCount: selectedIds.size,
-    lastSelected: lastSelectedRef.current,
     select,
     selectOnly,
     selectMultiple,

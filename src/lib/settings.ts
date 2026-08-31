@@ -12,6 +12,8 @@ export type ProjectSettings = {
   theme: string;
   companion_chat: CompanionPosition | null;
   companion_pomo: CompanionPosition | null;
+  lofi_muted: boolean;
+  lofi_volume: number;
 };
 
 export async function getProjectSettings(
@@ -41,5 +43,17 @@ export async function setCompanionPosition(
     companion,
     x,
     y,
+  });
+}
+
+export async function setLofiPrefs(
+  projectPath: string,
+  muted: boolean,
+  volume: number,
+): Promise<ProjectSettings> {
+  return invoke<ProjectSettings>("set_lofi_prefs", {
+    projectPath,
+    muted,
+    volume,
   });
 }

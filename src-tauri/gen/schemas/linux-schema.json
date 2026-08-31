@@ -447,6 +447,12 @@
           "markdownDescription": "Charge le JSON d'un diagramme Excalidraw."
         },
         {
+          "description": "Notification OS fin de réponse chat IA.",
+          "type": "string",
+          "const": "allow-notify-chat-complete",
+          "markdownDescription": "Notification OS fin de réponse chat IA."
+        },
+        {
           "description": "Notification OS fin de phase Pomodoro.",
           "type": "string",
           "const": "allow-notify-pomodoro-phase",
@@ -499,6 +505,12 @@
           "type": "string",
           "const": "allow-set-companion-position",
           "markdownDescription": "Persiste la position d'un compagnon flottant."
+        },
+        {
+          "description": "Persiste mute et volume de l'ambiance Souffle.",
+          "type": "string",
+          "const": "allow-set-lofi-prefs",
+          "markdownDescription": "Persiste mute et volume de l'ambiance Souffle."
         },
         {
           "description": "Persiste les durées Pomodoro.",

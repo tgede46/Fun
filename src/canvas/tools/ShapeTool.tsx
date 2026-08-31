@@ -4,6 +4,13 @@ import { DEFAULT_FILL, DEFAULT_STROKE, DEFAULT_STROKE_WIDTH } from "../types";
 
 type ShapeKind = "rect" | "ellipse" | "diamond";
 
+interface ShapePreview {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface UseShapeToolProps {
   camera: Camera;
   onAdd: (obj: FunObject) => void;
@@ -11,8 +18,9 @@ interface UseShapeToolProps {
   activeColor?: string;
 }
 
-export function useShapeTool({ camera, onAdd, kind, activeColor = DEFAULT_STROKE }: UseShapeToolProps) {
+export function useShapeTool({ onAdd, kind, activeColor = DEFAULT_STROKE }: UseShapeToolProps) {
   const [isDrawing, setIsDrawing] = useState(false);
+  const [preview, setPreview] = useState<ShapePreview | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
   const currentRef = useRef({ x: 0, y: 0 });
 
@@ -23,6 +31,7 @@ export function useShapeTool({ camera, onAdd, kind, activeColor = DEFAULT_STROKE
       const world = screenToWorld(e.clientX, e.clientY);
       startRef.current = world;
       currentRef.current = world;
+      setPreview({ x: world.x, y: world.y, width: 0, height: 0 });
     },
     [],
   );
@@ -30,7 +39,11 @@ export function useShapeTool({ camera, onAdd, kind, activeColor = DEFAULT_STROKE
   const handlePointerMove = useCallback(
     (e: React.PointerEvent, screenToWorld: (sx: number, sy: number) => { x: number; y: number }) => {
       if (!isDrawing) return;
-      currentRef.current = screenToWorld(e.clientX, e.clientY);
+      const world = screenToWorld(e.clientX, e.clientY);
+      currentRef.current = world;
+      const sx = Math.min(startRef.current.x, world.x);
+      const sy = Math.min(startRef.current.y, world.y);
+      setPreview({ x: sx, y: sy, width: Math.abs(world.x - startRef.current.x), height: Math.abs(world.y - startRef.current.y) });
     },
     [isDrawing],
   );
@@ -38,6 +51,7 @@ export function useShapeTool({ camera, onAdd, kind, activeColor = DEFAULT_STROKE
   const handlePointerUp = useCallback(() => {
     if (!isDrawing) return;
     setIsDrawing(false);
+    setPreview(null);
 
     const sx = Math.min(startRef.current.x, currentRef.current.x);
     const sy = Math.min(startRef.current.y, currentRef.current.y);
@@ -70,15 +84,6 @@ export function useShapeTool({ camera, onAdd, kind, activeColor = DEFAULT_STROKE
       onAdd({ ...base, type: "diamond" } as ShapeDiamond);
     }
   }, [isDrawing, kind, activeColor, onAdd]);
-
-  const preview = isDrawing
-    ? {
-        x: Math.min(startRef.current.x, currentRef.current.x),
-        y: Math.min(startRef.current.y, currentRef.current.y),
-        width: Math.abs(currentRef.current.x - startRef.current.x),
-        height: Math.abs(currentRef.current.y - startRef.current.y),
-      }
-    : null;
 
   return {
     isDrawing,
