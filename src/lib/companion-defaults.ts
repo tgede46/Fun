@@ -17,9 +17,10 @@ export function defaultCompanionPosition(
     };
   }
 
+  // Souffle : à gauche, mi-hauteur — jamais centré.
   return {
-    x: Math.round(window.innerWidth / 2 - BUBBLE_SIZE / 2),
-    y: window.innerHeight - BUBBLE_SIZE - VIEWPORT_MARGIN - 8,
+    x: VIEWPORT_MARGIN,
+    y: Math.round(window.innerHeight * 0.45),
   };
 }
 

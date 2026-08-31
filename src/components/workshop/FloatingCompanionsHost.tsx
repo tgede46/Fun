@@ -8,7 +8,7 @@ import {
   type CompanionPosition,
 } from "@/lib/settings";
 import { FloatingCompanion } from "./FloatingCompanion";
-import { PomodoroChip } from "./PomodoroChip";
+import { SoufflePanel } from "./SoufflePanel";
 
 type FloatingCompanionsHostProps = {
   projectPath: string;
@@ -95,28 +95,35 @@ export function FloatingCompanionsHost({
         id="pomo"
         icon="🍅"
         position={pomoPos}
-        ariaLabel="Souffle — configurer ou démarrer"
-        title={pomodoro.timerLabel}
-        subtitle={pomodoro.timerDisplay}
-        expanded={pomodoro.configOpen}
+        ariaLabel={
+          pomodoro.isRunning
+            ? `Souffle — ${pomodoro.timerLabel} ${pomodoro.timerDisplay}`
+            : "Souffle — ouvrir la configuration"
+        }
+        liveLabel={pomodoro.isRunning ? pomodoro.timerDisplay : undefined}
+        pulsing={pomodoro.isRunning}
         onPositionChange={(next) => {
           setPomoPos(next);
           void persistPosition("pomo", next);
         }}
-        onBubbleClick={() => pomodoro.setConfigOpen(!pomodoro.configOpen)}
-      >
-        <PomodoroChip
-          workMinutes={pomodoro.workMinutes}
-          breakMinutes={pomodoro.breakMinutes}
-          saveError={pomodoro.saveError}
-          isRunning={pomodoro.isRunning}
-          onWorkChange={pomodoro.setWorkMinutes}
-          onBreakChange={pomodoro.setBreakMinutes}
-          onSaveConfig={() => void pomodoro.saveConfig()}
-          onStart={pomodoro.handleStart}
-          onStop={pomodoro.handleStop}
-        />
-      </FloatingCompanion>
+        onBubbleClick={() => pomodoro.setConfigOpen(true)}
+      />
+
+      <SoufflePanel
+        open={pomodoro.configOpen}
+        timerLabel={pomodoro.timerLabel}
+        timerDisplay={pomodoro.timerDisplay}
+        isRunning={pomodoro.isRunning}
+        workMinutes={pomodoro.workMinutes}
+        breakMinutes={pomodoro.breakMinutes}
+        saveError={pomodoro.saveError}
+        onClose={() => pomodoro.setConfigOpen(false)}
+        onWorkChange={pomodoro.setWorkMinutes}
+        onBreakChange={pomodoro.setBreakMinutes}
+        onSaveConfig={() => void pomodoro.saveConfig()}
+        onStart={pomodoro.handleStart}
+        onStop={pomodoro.handleStop}
+      />
     </>
   );
 }

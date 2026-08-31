@@ -62,6 +62,8 @@ impl Default for ProjectSettings {
             pomodoro_work_minutes: 25,
             pomodoro_break_minutes: 5,
             theme: FunTheme::Light,
+            companion_chat: None,
+            companion_pomo: None,
         }
     }
 }

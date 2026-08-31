@@ -2,7 +2,6 @@
 
 import {
   useCallback,
-  useEffect,
   useRef,
   useState,
   type PointerEvent,
@@ -23,12 +22,11 @@ type FloatingCompanionProps = {
   ariaLabel: string;
   onPositionChange: (position: CompanionPosition) => void;
   onBubbleClick?: () => void;
-  title?: string;
-  subtitle?: string;
-  expanded?: boolean;
-  children?: ReactNode;
+  /** Affiché à côté de l’icône (ex. chrono en cours). */
+  liveLabel?: string;
   badge?: boolean;
   pulsing?: boolean;
+  children?: ReactNode;
 };
 
 export function FloatingCompanion({
@@ -38,14 +36,12 @@ export function FloatingCompanion({
   ariaLabel,
   onPositionChange,
   onBubbleClick,
-  title,
-  subtitle,
-  expanded = false,
-  children,
+  liveLabel,
   badge = false,
   pulsing = false,
 }: FloatingCompanionProps) {
-  const [pos, setPos] = useState(position);
+  const [dragPos, setDragPos] = useState<CompanionPosition | null>(null);
+  const pos = dragPos ?? position;
   const dragState = useRef<{
     pointerId: number;
     startX: number;
@@ -55,13 +51,12 @@ export function FloatingCompanion({
     moved: boolean;
   } | null>(null);
 
-  useEffect(() => {
-    setPos(position);
-  }, [position.x, position.y]);
+  const width = liveLabel ? COMPANION_BUBBLE_SIZE + 72 : COMPANION_BUBBLE_SIZE;
 
   const finishDrag = useCallback(
     (next: CompanionPosition, moved: boolean) => {
       dragState.current = null;
+      setDragPos(null);
       if (moved) {
         onPositionChange(next);
       } else {
@@ -100,10 +95,11 @@ export function FloatingCompanion({
     }
 
     if (drag.moved) {
-      setPos(
+      setDragPos(
         clampCompanionPosition(
           drag.originX + deltaX,
           drag.originY + deltaY,
+          width,
         ),
       );
     }
@@ -124,8 +120,8 @@ export function FloatingCompanion({
       finalPos = clampCompanionPosition(
         drag.originX + deltaX,
         drag.originY + deltaY,
+        width,
       );
-      setPos(finalPos);
     }
 
     finishDrag(finalPos, drag.moved);
@@ -139,7 +135,7 @@ export function FloatingCompanion({
 
     event.currentTarget.releasePointerCapture(event.pointerId);
     dragState.current = null;
-    setPos(position);
+    setDragPos(null);
   };
 
   return (
@@ -148,24 +144,28 @@ export function FloatingCompanion({
       style={{
         left: pos.x,
         top: pos.y,
-        width: COMPANION_BUBBLE_SIZE,
+        width,
         height: COMPANION_BUBBLE_SIZE,
       }}
       data-companion={id}
     >
       <button
         type="button"
-        className={`relative flex h-full w-full items-center justify-center rounded-full border border-border bg-card text-lg shadow-lg transition-colors hover:bg-accent/50 ${
+        className={`relative flex h-full w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-2 text-lg shadow-lg transition-colors hover:bg-accent/50 ${
           pulsing ? "animate-pulse ring-2 ring-primary/40" : ""
         }`}
         aria-label={ariaLabel}
-        aria-expanded={expanded}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerCancel}
       >
         <span aria-hidden>{icon}</span>
+        {liveLabel ? (
+          <span className="font-mono text-xs tabular-nums text-foreground">
+            {liveLabel}
+          </span>
+        ) : null}
         {badge ? (
           <span
             className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
@@ -173,24 +173,6 @@ export function FloatingCompanion({
           />
         ) : null}
       </button>
-
-      {title || subtitle ? (
-        <div className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-card/90 px-2 py-0.5 text-[10px] text-muted-foreground shadow-sm">
-          {title ? <span className="font-medium text-foreground">{title}</span> : null}
-          {title && subtitle ? " · " : null}
-          {subtitle ? <span>{subtitle}</span> : null}
-        </div>
-      ) : null}
-
-      {expanded && children ? (
-        <div
-          className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2"
-          role="presentation"
-          onPointerDown={(event) => event.stopPropagation()}
-        >
-          {children}
-        </div>
-      ) : null}
     </div>
   );
 }
