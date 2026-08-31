@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { LOFI_PAGE_WASH, LOFI_SCENE_BACKGROUND } from "@/lib/lofi-scene";
 
 type SoufflePanelProps = {
   open: boolean;
@@ -21,6 +22,35 @@ type SoufflePanelProps = {
   onLofiMutedChange: (muted: boolean) => void;
   onLofiVolumeChange: (volume: number) => void;
 };
+
+function LofiToggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+        checked ? "bg-primary" : "bg-muted"
+      }`}
+      onClick={() => onChange(!checked)}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-background shadow transition-transform ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
+    </button>
+  );
+}
 
 export function SoufflePanel({
   open,
@@ -66,8 +96,14 @@ export function SoufflePanel({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-background" role="dialog" aria-modal="true" aria-labelledby="souffle-title">
-      <header className="flex items-center justify-between border-b border-border px-6 py-4">
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-background"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="souffle-title"
+      style={{ backgroundImage: LOFI_PAGE_WASH }}
+    >
+      <header className="flex shrink-0 items-center justify-between border-b border-border/60 bg-background/80 px-6 py-4 backdrop-blur-sm">
         <div>
           <p id="souffle-title" className="text-lg font-semibold text-foreground">
             🍅 Souffle
@@ -86,9 +122,11 @@ export function SoufflePanel({
         </button>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center gap-8 px-6 py-10">
-        <div className="rounded-2xl border border-border bg-card px-8 py-10 text-center shadow-sm">
-          <p className="mb-2 text-sm font-medium text-muted-foreground">{timerLabel}</p>
+      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 overflow-y-auto px-6 pb-10 pt-8">
+        <div className="rounded-2xl border border-border bg-card/90 px-8 py-8 text-center shadow-sm backdrop-blur-sm">
+          <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+            {timerLabel}
+          </p>
           <p className="font-mono text-5xl tracking-tight text-foreground tabular-nums">
             {timerDisplay}
           </p>
@@ -98,7 +136,7 @@ export function SoufflePanel({
             </p>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
-              Choisis les durées, puis démarre.
+              Les durées seront enregistrées au démarrage.
             </p>
           )}
         </div>
@@ -130,17 +168,37 @@ export function SoufflePanel({
           </label>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-          <p className="text-sm font-medium text-foreground">Ambiance lofi</p>
-          <label className="flex items-center justify-between gap-3 text-sm text-foreground">
-            <span>Muet</span>
-            <input
-              type="checkbox"
-              checked={lofiMuted}
-              onChange={(e) => onLofiMutedChange(e.target.checked)}
-              className="h-4 w-4"
+        <div className="rounded-2xl border border-border bg-card/90 p-5 space-y-4 backdrop-blur-sm">
+          <div>
+            <p className="text-sm font-medium text-foreground">Ambiance lofi</p>
+            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+              Musique et scène visuelle légère au démarrage de la phase travail.
+              Tu peux masquer la scène dans l’atelier sans couper le chrono.
+            </p>
+          </div>
+
+          <div
+            className="relative h-20 overflow-hidden rounded-xl border border-border/60"
+            aria-hidden
+          >
+            <div
+              className="absolute inset-0 opacity-80"
+              style={{ background: LOFI_SCENE_BACKGROUND }}
             />
-          </label>
+            <p className="absolute bottom-2 left-3 text-[11px] font-medium text-foreground/80">
+              Aperçu de la scène
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-foreground">Muet</span>
+            <LofiToggle
+              checked={lofiMuted}
+              onChange={onLofiMutedChange}
+              label="Couper l’ambiance sonore"
+            />
+          </div>
+
           <label className="flex flex-col gap-2">
             <span className="text-sm text-muted-foreground">
               Volume ({lofiVolume}%)
@@ -152,7 +210,7 @@ export function SoufflePanel({
               value={lofiVolume}
               disabled={lofiMuted}
               onChange={(e) => onLofiVolumeChange(Number(e.target.value))}
-              className="w-full"
+              className="h-2 w-full cursor-pointer accent-primary disabled:opacity-40"
             />
           </label>
         </div>
@@ -163,27 +221,27 @@ export function SoufflePanel({
           </p>
         ) : null}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="flex flex-col gap-3">
           {!isRunning ? (
             <>
               <button
-                className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
+                className="w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                type="button"
+                onClick={() => void onStart()}
+              >
+                Démarrer
+              </button>
+              <button
+                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
                 type="button"
                 onClick={() => void onSaveConfig()}
               >
-                Enregistrer
-              </button>
-              <button
-                className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                type="button"
-                onClick={onStart}
-              >
-                Démarrer
+                Enregistrer sans démarrer
               </button>
             </>
           ) : (
             <button
-              className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
+              className="w-full rounded-xl border border-border px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
               type="button"
               onClick={onStop}
             >

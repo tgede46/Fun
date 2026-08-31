@@ -1,5 +1,7 @@
 "use client";
 
+import { LOFI_SCENE_BACKGROUND } from "@/lib/lofi-scene";
+
 type LofiSceneOverlayProps = {
   open: boolean;
   onDismiss: () => void;
@@ -19,8 +21,7 @@ export function LofiSceneOverlay({ open, onDismiss }: LofiSceneOverlayProps) {
       <div
         className="absolute inset-0 opacity-40"
         style={{
-          background:
-            "radial-gradient(ellipse at 20% 80%, rgba(120, 90, 60, 0.35), transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(60, 90, 110, 0.28), transparent 50%), linear-gradient(180deg, transparent 40%, rgba(20, 18, 16, 0.18))",
+          background: LOFI_SCENE_BACKGROUND,
         }}
       />
       <div className="pointer-events-auto absolute bottom-6 left-6">

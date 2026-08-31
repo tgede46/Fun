@@ -38,6 +38,6 @@ export function phaseLabel(phase: PomodoroPhase): string {
     case "break":
       return "Pause";
     default:
-      return "Pomodoro";
+      return "Prêt";
   }
 }

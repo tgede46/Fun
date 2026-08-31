@@ -45,11 +45,26 @@ export function usePomodoro({
     }
   }, [breakMinutes, workMinutes]);
 
-  const handleStart = useCallback(() => {
-    setConfigOpen(false);
-    setShowMeditation(false);
-    startPhase("work");
-  }, [startPhase]);
+  const handleStart = useCallback(async () => {
+    setSaveError(null);
+    try {
+      await setPomodoroDurations(projectPath, workMinutes, breakMinutes);
+      onDurationsChange?.(workMinutes, breakMinutes);
+      setConfigOpen(false);
+      setShowMeditation(false);
+      startPhase("work");
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Impossible de sauvegarder.",
+      );
+    }
+  }, [
+    breakMinutes,
+    onDurationsChange,
+    projectPath,
+    startPhase,
+    workMinutes,
+  ]);
 
   const handleStop = useCallback(() => {
     phaseEndHandledRef.current = true;
