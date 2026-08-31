@@ -65,7 +65,9 @@ export function useSelectionTool({
       });
 
       if (clickedObj) {
-        if (selectedIds.has(clickedObj.id)) {
+        if (e.shiftKey) {
+          onSelect(clickedObj.id, true);
+        } else if (selectedIds.has(clickedObj.id)) {
           onSelect(clickedObj.id, true);
         } else {
           onSelectOnly(clickedObj.id);
@@ -73,7 +75,21 @@ export function useSelectionTool({
         setIsDragging(true);
         dragStartRef.current = world;
         const starts = new Map<string, { x: number; y: number }>();
-        const ids = selectedIds.has(clickedObj.id) ? selectedIds : new Set([clickedObj.id]);
+        
+        let ids: Set<string>;
+        if (e.shiftKey) {
+          ids = new Set(selectedIds);
+          if (ids.has(clickedObj.id)) {
+            ids.delete(clickedObj.id);
+          } else {
+            ids.add(clickedObj.id);
+          }
+        } else if (selectedIds.has(clickedObj.id)) {
+          ids = selectedIds;
+        } else {
+          ids = new Set([clickedObj.id]);
+        }
+        
         for (const id of ids) {
           const obj = objects.find((o) => o.id === id);
           if (obj && !obj.locked) starts.set(id, { x: obj.x, y: obj.y });
