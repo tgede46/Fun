@@ -4,7 +4,7 @@ import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { DiagramList } from "./DiagramList";
-import { FunCanvas } from "@/canvas/FunCanvas";
+import { ExcalidrawCanvas } from "@/canvas/ExcalidrawCanvas";
 import dynamic from "next/dynamic";
 
 const Canvas3D = dynamic(
@@ -19,6 +19,8 @@ type CanvasAreaProps = {
   theme: FunTheme;
   mode: WorkshopMode;
   focusMode: boolean;
+  layersOpen: boolean;
+  onLayersOpenChange: (open: boolean) => void;
   diagrams: DiagramListItem[];
   activeDiagramPath: string | null;
   diagramName: string | null;
@@ -50,6 +52,8 @@ function StatusBanner({ message, tone }: { message: string; tone: "error" | "inf
 export function CanvasArea({
   mode,
   focusMode,
+  layersOpen,
+  onLayersOpenChange,
   diagrams,
   activeDiagramPath,
   diagramName,
@@ -169,9 +173,12 @@ export function CanvasArea({
         )}
       </div>
       {viewMode === "2d" ? (
-        <FunCanvas
+        <ExcalidrawCanvas
           initialScene={scene}
           onSceneChange={onSceneChange}
+          focusMode={focusMode}
+          layersOpen={layersOpen}
+          onLayersOpenChange={onLayersOpenChange}
         />
       ) : (
         <Canvas3D scene={scene} onSceneChange={onSceneChange} />

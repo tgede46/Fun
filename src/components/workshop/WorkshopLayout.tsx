@@ -48,6 +48,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const [activeDiagramPath, setActiveDiagramPath] = useState<string | null>(null);
   const [diagramName, setDiagramName] = useState<string | null>(null);
   const [focusMode, setFocusMode] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
   const [scene, setScene] = useState<FunScene | null>(null);
   const [isCreatingDiagram, setIsCreatingDiagram] = useState(false);
   const [isDeletingDiagram, setIsDeletingDiagram] = useState(false);
@@ -439,7 +440,14 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         themeError={themeError}
         mode={mode}
         focusMode={focusMode}
-        onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+        onToggleFocusMode={() => {
+          setFocusMode((prev) => {
+            if (!prev) {
+              setLayersOpen(false);
+            }
+            return !prev;
+          });
+        }}
         onToggleTheme={() => {
           void handleToggleTheme();
         }}
@@ -464,6 +472,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           theme={theme}
           mode={mode}
           focusMode={focusMode}
+          layersOpen={layersOpen}
+          onLayersOpenChange={setLayersOpen}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
           diagramName={diagramName}
@@ -482,6 +492,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       <FloatingCompanionsHost
         projectPath={projectPath}
         focusMode={focusMode}
+        layersOpen={layersOpen}
         chat={{
           aiStatus,
           aiError,

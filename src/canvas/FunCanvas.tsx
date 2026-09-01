@@ -29,6 +29,8 @@ interface FunCanvasProps {
   initialScene?: FunScene;
   onSceneChange?: (scene: FunScene) => void;
   focusMode?: boolean;
+  layersOpen?: boolean;
+  onLayersOpenChange?: (open: boolean) => void;
 }
 
 interface ContextMenu {
@@ -43,6 +45,8 @@ export function FunCanvas({
   initialScene,
   onSceneChange,
   focusMode = false,
+  layersOpen = false,
+  onLayersOpenChange,
 }: FunCanvasProps) {
   const { scene, objects, addObject, updateObject, deleteObjects, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
@@ -54,7 +58,13 @@ export function FunCanvas({
   const [gridEnabled] = useState(true);
   const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
-  const [showLayers, setShowLayers] = useState(false);
+
+  const setLayersOpen = useCallback(
+    (open: boolean) => {
+      onLayersOpenChange?.(open);
+    },
+    [onLayersOpenChange],
+  );
 
   const handleAddObject = useCallback((obj: FunObject) => {
     addObject(obj);
@@ -70,10 +80,10 @@ export function FunCanvas({
   }, [onSceneChange, scene]);
 
   useEffect(() => {
-    if (focusMode) {
-      setShowLayers(false);
+    if (focusMode && layersOpen) {
+      setLayersOpen(false);
     }
-  }, [focusMode]);
+  }, [focusMode, layersOpen, setLayersOpen]);
 
   const freehandTool = useFreehandTool({ camera, onAdd: handleAddObject, activeColor });
   const rectTool = useShapeTool({ camera, onAdd: handleAddObject, kind: "rect", activeColor });
@@ -410,10 +420,10 @@ export function FunCanvas({
             <button
               type="button"
               className={`w-7 h-7 flex items-center justify-center rounded text-sm transition-colors ${
-                showLayers ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                layersOpen ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
               }`}
               title="Calques"
-              onClick={() => setShowLayers(!showLayers)}
+              onClick={() => setLayersOpen(!layersOpen)}
             >
               ☰
             </button>
@@ -457,14 +467,14 @@ export function FunCanvas({
             selectedObjects={objects.filter((o) => selectedIds.has(o.id))}
             onUpdate={handleUpdateObject}
           />
-          {showLayers ? (
+          {layersOpen ? (
             <LayersPanel
               objects={objects}
               selectedIds={selectedIds}
               onSelect={select}
               onUpdate={handleUpdateObject}
               onDelete={deleteObjects}
-              onClose={() => setShowLayers(false)}
+              onClose={() => setLayersOpen(false)}
             />
           ) : null}
         </>

@@ -3,19 +3,22 @@ import { COMPANION_BUBBLE_SIZE } from "@/lib/companion-defaults";
 
 export { COMPANION_BUBBLE_SIZE };
 
-const VIEWPORT_MARGIN = 16;
+const VIEWPORT_MARGIN = 8;
 const MODE_RAIL_WIDTH = 56;
 const TOOLBAR_HEIGHT = 48;
 const TAB_BAR_HEIGHT = 52;
-const LAYERS_PANEL_WIDTH = 224; // w-56 + left-3
-const INSPECTOR_PANEL_WIDTH = 256; // w-64 + right-3
-const PANEL_GAP = 12;
+const LAYERS_PANEL_WIDTH = 224;
+const INSPECTOR_PANEL_WIDTH = 256;
+const PANEL_GAP = 8;
+/** Hauteur approx. des panneaux flottants en haut du canvas. */
+const PANEL_TOP_ZONE = 240;
 
 export type CompanionLayoutOptions = {
   focusMode: boolean;
+  layersOpen?: boolean;
 };
 
-function chromeBounds(options: CompanionLayoutOptions) {
+function chromeBounds(options: CompanionLayoutOptions, y?: number) {
   if (typeof window === "undefined") {
     return { minX: VIEWPORT_MARGIN, maxX: 800, minY: VIEWPORT_MARGIN, maxY: 600 };
   }
@@ -27,9 +30,14 @@ function chromeBounds(options: CompanionLayoutOptions) {
     ? window.innerHeight - COMPANION_BUBBLE_SIZE - VIEWPORT_MARGIN
     : 600;
 
-  if (!options.focusMode) {
-    minX = MODE_RAIL_WIDTH + LAYERS_PANEL_WIDTH + PANEL_GAP;
+  const inTopChrome = y === undefined || y < PANEL_TOP_ZONE;
+
+  if (!options.focusMode && inTopChrome) {
     maxX = window.innerWidth - INSPECTOR_PANEL_WIDTH - PANEL_GAP;
+  }
+
+  if (options.layersOpen && inTopChrome) {
+    minX = Math.max(minX, MODE_RAIL_WIDTH + LAYERS_PANEL_WIDTH + PANEL_GAP);
   }
 
   return { minX, maxX, minY, maxY };
@@ -43,8 +51,9 @@ export function defaultCompanionPosition(
     return { x: 100, y: 100 };
   }
 
-  const { minX, maxX, minY, maxY } = chromeBounds(options);
-  const y = Math.round(minY + (maxY - minY) * 0.35);
+  const { minY, maxY } = chromeBounds(options);
+  const y = Math.round(minY + (maxY - minY) * 0.55);
+  const { minX, maxX } = chromeBounds(options, y);
 
   if (companion === "chat") {
     return {
@@ -55,7 +64,7 @@ export function defaultCompanionPosition(
 
   return {
     x: minX,
-    y,
+    y: Math.round(minY + (maxY - minY) * 0.25),
   };
 }
 
@@ -69,11 +78,14 @@ export function clampCompanionPosition(
     return { x, y };
   }
 
-  const { minX, maxX, minY, maxY } = chromeBounds(options);
+  const clampedY = chromeBounds(options).minY;
+  const maxY = chromeBounds(options).maxY;
+  const safeY = Math.min(Math.max(clampedY, y), maxY);
+  const { minX, maxX } = chromeBounds(options, safeY);
   const safeMaxX = Math.max(minX, maxX - bubbleWidth);
 
   return {
     x: Math.min(Math.max(minX, x), safeMaxX),
-    y: Math.min(Math.max(minY, y), maxY),
+    y: safeY,
   };
 }

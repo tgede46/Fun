@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
 import {
   clampCompanionPosition,
@@ -23,6 +23,7 @@ import { SoufflePanel } from "./SoufflePanel";
 type FloatingCompanionsHostProps = {
   projectPath: string;
   focusMode: boolean;
+  layersOpen: boolean;
   pomodoro: {
     timerLabel: string;
     timerDisplay: string;
@@ -55,10 +56,14 @@ type FloatingCompanionsHostProps = {
 export function FloatingCompanionsHost({
   projectPath,
   focusMode,
+  layersOpen,
   pomodoro,
   chat,
 }: FloatingCompanionsHostProps) {
-  const layoutOptions: CompanionLayoutOptions = { focusMode };
+  const layoutOptions = useMemo<CompanionLayoutOptions>(
+    () => ({ focusMode, layersOpen }),
+    [focusMode, layersOpen],
+  );
 
   const [chatPos, setChatPos] = useState<CompanionPosition>(() =>
     defaultCompanionPosition("chat", layoutOptions),
@@ -93,13 +98,12 @@ export function FloatingCompanionsHost({
           return;
         }
 
-        const loadLayout = { focusMode: false as boolean };
         const chat =
-          settings.companion_chat ?? defaultCompanionPosition("chat", loadLayout);
+          settings.companion_chat ?? defaultCompanionPosition("chat", layoutOptions);
         const pomo =
-          settings.companion_pomo ?? defaultCompanionPosition("pomo", loadLayout);
-        setChatPos(clampCompanionPosition(chat.x, chat.y, 44, loadLayout));
-        setPomoPos(clampCompanionPosition(pomo.x, pomo.y, 116, loadLayout));
+          settings.companion_pomo ?? defaultCompanionPosition("pomo", layoutOptions);
+        setChatPos(clampCompanionPosition(chat.x, chat.y, 44, layoutOptions));
+        setPomoPos(clampCompanionPosition(pomo.x, pomo.y, 116, layoutOptions));
         setLofiMuted(settings.lofi_muted ?? false);
         setLofiVolume(settings.lofi_volume ?? 40);
       } catch {

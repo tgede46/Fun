@@ -54,18 +54,30 @@ export function FloatingCompanion({
   } | null>(null);
 
   const width = liveLabel ? COMPANION_BUBBLE_SIZE + 72 : COMPANION_BUBBLE_SIZE;
-  const prevFocusMode = useRef(layoutOptions.focusMode);
+  const prevLayout = useRef({
+    focusMode: layoutOptions.focusMode,
+    layersOpen: layoutOptions.layersOpen ?? false,
+  });
 
   useLayoutEffect(() => {
-    if (prevFocusMode.current === layoutOptions.focusMode) {
+    const prev = prevLayout.current;
+    const layersOpen = layoutOptions.layersOpen ?? false;
+    if (prev.focusMode === layoutOptions.focusMode && prev.layersOpen === layersOpen) {
       return;
     }
-    prevFocusMode.current = layoutOptions.focusMode;
+    prevLayout.current = { focusMode: layoutOptions.focusMode, layersOpen };
     const next = clampCompanionPosition(position.x, position.y, width, layoutOptions);
     if (next.x !== position.x || next.y !== position.y) {
       onPositionChange(next);
     }
-  }, [layoutOptions, layoutOptions.focusMode, onPositionChange, position, width]);
+  }, [
+    layoutOptions,
+    layoutOptions.focusMode,
+    layoutOptions.layersOpen,
+    onPositionChange,
+    position,
+    width,
+  ]);
 
   const finishDrag = useCallback(
     (next: CompanionPosition, moved: boolean) => {
