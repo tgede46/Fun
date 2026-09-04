@@ -1,4 +1,4 @@
-import type { FunObject, Camera } from "./types";
+import type { FunObject, Camera, UMLCompositionObject } from "./types";
 import { GRID_SIZE } from "./types";
 import { FreehandRenderer } from "./renderers/FreehandRenderer";
 import { ShapeRenderer } from "./renderers/ShapeRenderer";
@@ -174,7 +174,7 @@ export function CanvasRenderer({
             case "uml-aggregation":
               return <UMLAggregationRenderer key={obj.id} obj={obj as FunObject & { type: "uml-aggregation" }} selected={selected} />;
             case "uml-composition":
-              return <UMLCompositionRenderer key={obj.id} obj={obj as FunObject & { type: "uml-composition" }} selected={selected} />;
+              return <UMLCompositionRenderer key={obj.id} obj={obj as UMLCompositionObject} selected={selected} />;
             case "uml-dependency":
               return <UMLDependencyRenderer key={obj.id} obj={obj as FunObject & { type: "uml-dependency" }} selected={selected} />;
             case "uml-notes-link":

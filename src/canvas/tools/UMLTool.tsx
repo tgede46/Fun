@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import type { Camera, UMLClassObject, UMLInterfaceObject, UMLAbstractClassObject, UMLEnumObject, UMLActorObject, UMLUseCaseObject, UMLStateObject, UMLComponentObject, UMLNodeObject, UMLDatabaseObject, UMLPackageObject, UMLNoteObject, UMLBoundaryObject, FunObject } from "../types";
 
 type UMLShapeKind =
@@ -42,7 +42,7 @@ const DEFAULT_HEIGHTS: Record<UMLShapeKind, number> = {
 export function useUMLTool({ camera, onAdd, kind, activeColor = "#1e1e1e" }: UseUMLToolProps) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [preview, setPreview] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
-  const startRef = useState({ x: 0, y: 0 });
+  const startRef = useRef({ x: 0, y: 0 });
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, screenToWorld: (sx: number, sy: number) => { x: number; y: number }) => {

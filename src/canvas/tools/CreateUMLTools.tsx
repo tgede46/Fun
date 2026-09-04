@@ -9,6 +9,7 @@ export function useCreateUMLTools({ onAdd }: { onAdd: (obj: FunObject) => void }
     const id = crypto.randomUUID();
     const obj: UMLClassObject = {
       id,
+      type: "uml-class",
       x: sx - 60,
       y: sy - 50,
       width: 120,

@@ -1,6 +1,6 @@
-import type { UMLAggregationObject } from "../types";
+import type { UMLCompositionObject } from "../types";
 
-export function UMLAggregationRenderer({ obj, selected }: { obj: UMLAggregationObject; selected?: boolean }) {
+export function UMLCompositionRenderer({ obj, selected }: { obj: UMLCompositionObject; selected?: boolean }) {
   const [start, end] = obj.points;
   if (!start || !end) return null;
 
