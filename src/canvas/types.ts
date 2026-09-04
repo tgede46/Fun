@@ -317,3 +317,11 @@ export type ToolType =
   | "uml-composition"
   | "uml-dependency"
   | "uml-notes-link";
+
+export interface FunScene {
+  id?: string;
+  objects: FunObject[];
+  camera?: Camera;
+  grid?: boolean;
+  version?: number;
+}

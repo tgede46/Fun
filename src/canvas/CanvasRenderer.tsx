@@ -6,6 +6,26 @@ import { TextRenderer } from "./renderers/TextRenderer";
 import { ArrowRenderer } from "./renderers/ArrowRenderer";
 import { ImageRenderer } from "./renderers/ImageRenderer";
 import { SnapLines } from "./components/SnapLines";
+import { UMLClassRenderer } from "./renderers/UMLClassRenderer";
+import { UMLInterfaceRenderer } from "./renderers/UMLInterfaceRenderer";
+import { UMLAbstractClassRenderer } from "./renderers/UMLAbstractClassRenderer";
+import { UMLEnumRenderer } from "./renderers/UMLEnumRenderer";
+import { UMLActorRenderer } from "./renderers/UMLActorRenderer";
+import { UMLUseCaseRenderer } from "./renderers/UMLUseCaseRenderer";
+import { UMLStateRenderer } from "./renderers/UMLStateRenderer";
+import { UMLComponentRenderer } from "./renderers/UMLComponentRenderer";
+import { UMLNodeRenderer } from "./renderers/UMLNodeRenderer";
+import { UMLDatabaseRenderer } from "./renderers/UMLDatabaseRenderer";
+import { UMLPackageRenderer } from "./renderers/UMLPackageRenderer";
+import { UMLNoteRenderer } from "./renderers/UMLNoteRenderer";
+import { UMLBoundaryRenderer } from "./renderers/UMLBoundaryRenderer";
+import { UMLAssociationRenderer } from "./renderers/UMLAssociationRenderer";
+import { UMLInheritanceRenderer } from "./renderers/UMLInheritanceRenderer";
+import { UMLImplementationRenderer } from "./renderers/UMLImplementationRenderer";
+import { UMLAggregationRenderer } from "./renderers/UMLAggregationRenderer";
+import { UMLCompositionRenderer } from "./renderers/UMLCompositionRenderer";
+import { UMLDependencyRenderer } from "./renderers/UMLDependencyRenderer";
+import { UMLNotesLinkRenderer } from "./renderers/UMLNotesLinkRenderer";
 
 interface CanvasRendererProps {
   objects: FunObject[];
@@ -119,6 +139,46 @@ export function CanvasRenderer({
               return <ArrowRenderer key={obj.id} obj={obj} selected={selected} />;
             case "image":
               return <ImageRenderer key={obj.id} obj={obj} selected={selected} />;
+            case "uml-class":
+              return <UMLClassRenderer key={obj.id} obj={obj as FunObject & { type: "uml-class" }} selected={selected} />;
+            case "uml-interface":
+              return <UMLInterfaceRenderer key={obj.id} obj={obj as FunObject & { type: "uml-interface" }} selected={selected} />;
+            case "uml-abstract-class":
+              return <UMLAbstractClassRenderer key={obj.id} obj={obj as FunObject & { type: "uml-abstract-class" }} selected={selected} />;
+            case "uml-enum":
+              return <UMLEnumRenderer key={obj.id} obj={obj as FunObject & { type: "uml-enum" }} selected={selected} />;
+            case "uml-actor":
+              return <UMLActorRenderer key={obj.id} obj={obj as FunObject & { type: "uml-actor" }} selected={selected} />;
+            case "uml-usecase":
+              return <UMLUseCaseRenderer key={obj.id} obj={obj as FunObject & { type: "uml-usecase" }} selected={selected} />;
+            case "uml-state":
+              return <UMLStateRenderer key={obj.id} obj={obj as FunObject & { type: "uml-state" }} selected={selected} />;
+            case "uml-component":
+              return <UMLComponentRenderer key={obj.id} obj={obj as FunObject & { type: "uml-component" }} selected={selected} />;
+            case "uml-node":
+              return <UMLNodeRenderer key={obj.id} obj={obj as FunObject & { type: "uml-node" }} selected={selected} />;
+            case "uml-database":
+              return <UMLDatabaseRenderer key={obj.id} obj={obj as FunObject & { type: "uml-database" }} selected={selected} />;
+            case "uml-package":
+              return <UMLPackageRenderer key={obj.id} obj={obj as FunObject & { type: "uml-package" }} selected={selected} />;
+            case "uml-note":
+              return <UMLNoteRenderer key={obj.id} obj={obj as FunObject & { type: "uml-note" }} selected={selected} />;
+            case "uml-boundary":
+              return <UMLBoundaryRenderer key={obj.id} obj={obj as FunObject & { type: "uml-boundary" }} selected={selected} />;
+            case "uml-association":
+              return <UMLAssociationRenderer key={obj.id} obj={obj as FunObject & { type: "uml-association" }} selected={selected} />;
+            case "uml-inheritance":
+              return <UMLInheritanceRenderer key={obj.id} obj={obj as FunObject & { type: "uml-inheritance" }} selected={selected} />;
+            case "uml-implementation":
+              return <UMLImplementationRenderer key={obj.id} obj={obj as FunObject & { type: "uml-implementation" }} selected={selected} />;
+            case "uml-aggregation":
+              return <UMLAggregationRenderer key={obj.id} obj={obj as FunObject & { type: "uml-aggregation" }} selected={selected} />;
+            case "uml-composition":
+              return <UMLCompositionRenderer key={obj.id} obj={obj as FunObject & { type: "uml-composition" }} selected={selected} />;
+            case "uml-dependency":
+              return <UMLDependencyRenderer key={obj.id} obj={obj as FunObject & { type: "uml-dependency" }} selected={selected} />;
+            case "uml-notes-link":
+              return <UMLNotesLinkRenderer key={obj.id} obj={obj as FunObject & { type: "uml-notes-link" }} selected={selected} />;
             default:
               return null;
           }

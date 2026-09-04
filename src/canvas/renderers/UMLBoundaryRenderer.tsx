@@ -4,9 +4,8 @@ export function UMLBoundaryRenderer({ obj, selected }: { obj: UMLBoundaryObject;
   const strokeWidth = obj.strokeWidth;
   const inset = strokeWidth / 2;
   const fontSize = obj.fontSize ?? 14;
-  const dashPattern = `${8 / obj.zoom} ${4 / obj.zoom}`;
+  const dashArray = `8 4`;
 
-  // Boundary = rectangle pointillé (cadre système)
   return (
     <g opacity={obj.opacity} data-object-id={obj.id}>
       <rect
@@ -16,21 +15,21 @@ export function UMLBoundaryRenderer({ obj, selected }: { obj: UMLBoundaryObject;
         height={Math.max(0, obj.height - strokeWidth)}
         fill="none"
         stroke={obj.stroke}
-        strokeWidth={strokeWidth * 1.5}
-        strokeDasharray={dashPattern}
+        strokeWidth={strokeWidth}
+        strokeDasharray={dashArray}
       />
 
       <text
         x={obj.x + obj.width / 2}
-        y={obj.y - 8}
+        y={obj.y - 6}
         fill={obj.stroke}
         fontSize={fontSize}
-        fontWeight="bold"
         fontFamily="sans-serif"
         textAnchor="middle"
+        fontStyle="italic"
         pointerEvents="none"
       >
-        {obj.name || "Boundary"}
+        {obj.name}
       </text>
 
       {selected && (
