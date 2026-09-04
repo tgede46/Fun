@@ -78,49 +78,9 @@ export interface ImageObject extends BaseObject {
   naturalHeight: number;
 }
 
-export interface UmlClassObject extends BaseObject {
-  type: "uml-class";
-  className: string;
-  stereotype?: string;
-  attributes: string[];
-  methods: string[];
-  compartmentDivider: number;
-}
+export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | ArrowObject | ImageObject;
 
-export interface UmlPackageObject extends BaseObject {
-  type: "uml-package";
-  packageName: string;
-  stereotype?: string;
-}
-
-export interface UmlNoteObject extends BaseObject {
-  type: "uml-note";
-  text: string;
-}
-
-export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | ArrowObject | ImageObject | Mesh3DObject | UmlClassObject | UmlPackageObject | UmlNoteObject;
-
-export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "image" | "3d" | "uml-class" | "uml-package" | "uml-note";
-
-export type Mesh3DGeometry = "box" | "sphere" | "cylinder" | "cone" | "torus" | "extrude";
-
-export interface Material3D {
-  color: string;
-  metalness: number;
-  roughness: number;
-  opacity: number;
-  wireframe: boolean;
-}
-
-export interface Mesh3DObject extends BaseObject {
-  type: "mesh3d";
-  geometry: Mesh3DGeometry;
-  material: Material3D;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  extrudeShape?: { points: { x: number; y: number }[]; depth?: number };
-}
+export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "image";
 
 export interface FunScene {
   id?: string;

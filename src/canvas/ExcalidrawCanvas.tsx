@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
-import type { FunScene, FunObject, Mesh3DObject, UmlClassObject, UmlPackageObject, UmlNoteObject } from "./types";
+import type { FunScene, FunObject } from "./types";
 import type {
   ExcalidrawInitialDataState,
   ExcalidrawImperativeAPI,
@@ -47,124 +47,9 @@ function excalidrawElementsToFunObjects(
   elements: readonly ExcalidrawBaseElement[],
 ): FunObject[] {
   const result: FunObject[] = [];
-  const processedIds = new Set<string>();
-  const groupedByGroupId = new Map<string, ExcalidrawBaseElement[]>();
 
   for (const el of elements) {
     if (el.isDeleted) continue;
-    if (el.groupIds && el.groupIds.length > 0) {
-      const gid = el.groupIds[0];
-      if (!groupedByGroupId.has(gid)) groupedByGroupId.set(gid, []);
-      groupedByGroupId.get(gid)!.push(el);
-    }
-  }
-
-  for (const [gid, groupElements] of groupedByGroupId) {
-    if (processedIds.has(gid)) continue;
-    processedIds.add(gid);
-
-    const headerEl = groupElements.find((e) => e.id.endsWith("-header"));
-    const attrsEl = groupElements.find((e) => e.id.endsWith("-attrs"));
-    const methodsEl = groupElements.find((e) => e.id.endsWith("-methods"));
-    const labelEl = groupElements.find((e) => e.id.endsWith("-label"));
-    const textEl = groupElements.find((e) => e.id.endsWith("-text"));
-    const mainRect = groupElements.find(
-      (e) => e.type === "rectangle" && !e.id.includes("-"),
-    );
-
-    if (headerEl && mainRect) {
-      const attrs = attrsEl?.text
-        ? attrsEl.text.split("\n").filter((t) => t.trim())
-        : [];
-      const methods = methodsEl?.text
-        ? methodsEl.text.split("\n").filter((t) => t.trim())
-        : [];
-      const headerText = headerEl.text ?? "";
-      const newlineIdx = headerText.indexOf("\n");
-      let stereotype: string | undefined;
-      let className: string;
-      if (headerText.startsWith("«") && newlineIdx > 0) {
-        const firstLine = headerText.substring(0, newlineIdx);
-        const match = firstLine.match(/^«(\w+)»$/);
-        stereotype = match?.[1];
-        className = headerText.substring(newlineIdx + 1);
-      } else {
-        className = headerText;
-      }
-
-      const obj: UmlClassObject = {
-        id: gid,
-        type: "uml-class",
-        x: mainRect.x,
-        y: mainRect.y,
-        width: mainRect.width,
-        height: mainRect.height,
-        fill: mainRect.backgroundColor ?? "transparent",
-        stroke: mainRect.strokeColor ?? "#1e1e1e",
-        strokeWidth: mainRect.strokeWidth ?? 2,
-        opacity: (mainRect.opacity ?? 100) / 100,
-        locked: mainRect.locked ?? false,
-        zIndex: 0,
-        className,
-        stereotype,
-        attributes: attrs,
-        methods,
-        compartmentDivider: 0,
-      };
-      result.push(obj);
-      continue;
-    }
-
-    if (labelEl && groupElements.some((e) => e.id.endsWith("-tab"))) {
-      const labelText = labelEl.text ?? "";
-      const stereotypeMatch = labelText.match(/^«(\w+)»\s*(.+)$/);
-      const stereotype = stereotypeMatch?.[1];
-      const packageName = stereotypeMatch?.[2] ?? labelText;
-
-      const obj: UmlPackageObject = {
-        id: gid,
-        type: "uml-package",
-        x: mainRect?.x ?? 0,
-        y: mainRect?.y ?? 0,
-        width: mainRect?.width ?? 120,
-        height: mainRect?.height ?? 80,
-        fill: mainRect?.backgroundColor ?? "transparent",
-        stroke: mainRect?.strokeColor ?? "#1e1e1e",
-        strokeWidth: mainRect?.strokeWidth ?? 2,
-        opacity: (mainRect?.opacity ?? 100) / 100,
-        locked: mainRect?.locked ?? false,
-        zIndex: 0,
-        packageName,
-        stereotype,
-      };
-      result.push(obj);
-      continue;
-    }
-
-    if (textEl && mainRect) {
-      const obj: UmlNoteObject = {
-        id: gid,
-        type: "uml-note",
-        x: mainRect.x,
-        y: mainRect.y,
-        width: mainRect.width,
-        height: mainRect.height,
-        fill: mainRect.backgroundColor ?? "transparent",
-        stroke: mainRect.strokeColor ?? "#1e1e1e",
-        strokeWidth: mainRect.strokeWidth ?? 2,
-        opacity: (mainRect.opacity ?? 100) / 100,
-        locked: mainRect.locked ?? false,
-        zIndex: 0,
-        text: textEl.text ?? "",
-      };
-      result.push(obj);
-      continue;
-    }
-  }
-
-  for (const el of elements) {
-    if (el.isDeleted) continue;
-    if (processedIds.has(el.id)) continue;
     if (el.groupIds && el.groupIds.length > 0) continue;
 
     const base = {
@@ -248,20 +133,15 @@ function excalidrawElementsToFunObjects(
 function funSceneToExcalidrawData(
   scene: FunScene,
 ): ExcalidrawInitialDataState {
-  const mesh3DObjects = scene.objects.filter(
-    (obj): obj is Mesh3DObject => obj.type === "mesh3d",
-  );
-  void mesh3DObjects;
+  const objects = scene.objects;
 
-  const non3DObjects = scene.objects.filter((obj) => obj.type !== "mesh3d");
-
-  if (non3DObjects.length === 0) {
+  if (objects.length === 0) {
     return { elements: [], appState: {}, files: {} };
   }
 
   const excalidrawElements: unknown[] = [];
 
-  for (const obj of non3DObjects) {
+  for (const obj of objects) {
     const base = {
       id: obj.id,
       x: obj.x,
@@ -325,229 +205,6 @@ function funSceneToExcalidrawData(
       continue;
     }
 
-    if (obj.type === "uml-class") {
-      const headerH = 32;
-      const attrH = Math.max(obj.attributes.length * 22 + 8, 24);
-      const methodH = Math.max(obj.methods.length * 22 + 8, 24);
-      const totalH = headerH + attrH + methodH;
-
-      excalidrawElements.push({
-        ...base,
-        height: totalH,
-        type: "rectangle" as const,
-        borderRadius: 0,
-        groupIds: [obj.id],
-      });
-
-      excalidrawElements.push({
-        id: `${obj.id}-header`,
-        x: obj.x,
-        y: obj.y,
-        width: obj.width,
-        height: headerH,
-        type: "text" as const,
-        text: obj.stereotype ? `«${obj.stereotype}»\n${obj.className}` : obj.className,
-        fontSize: 16,
-        fontFamily: 1,
-        textAlign: "center" as const,
-        verticalAlign: "middle" as const,
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: 0,
-        opacity: 100,
-        locked: false,
-        containerId: null,
-        originalText: obj.stereotype ? `«${obj.stereotype}»\n${obj.className}` : obj.className,
-        autoResize: true,
-        groupIds: [obj.id],
-      });
-
-      excalidrawElements.push({
-        id: `${obj.id}-div1`,
-        x: obj.x,
-        y: obj.y + headerH,
-        width: obj.width,
-        height: 0,
-        type: "line" as const,
-        points: [[0, 0], [obj.width, 0]] as [number, number][],
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: obj.strokeWidth,
-        opacity: 100,
-        locked: false,
-        groupIds: [obj.id],
-      });
-
-      const attrText = obj.attributes.join("\n") || " ";
-      excalidrawElements.push({
-        id: `${obj.id}-attrs`,
-        x: obj.x + 8,
-        y: obj.y + headerH + 4,
-        width: obj.width - 16,
-        height: attrH - 8,
-        type: "text" as const,
-        text: attrText,
-        fontSize: 14,
-        fontFamily: 1,
-        textAlign: "left" as const,
-        verticalAlign: "top" as const,
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: 0,
-        opacity: 100,
-        locked: false,
-        containerId: null,
-        originalText: attrText,
-        autoResize: true,
-        groupIds: [obj.id],
-      });
-
-      excalidrawElements.push({
-        id: `${obj.id}-div2`,
-        x: obj.x,
-        y: obj.y + headerH + attrH,
-        width: obj.width,
-        height: 0,
-        type: "line" as const,
-        points: [[0, 0], [obj.width, 0]] as [number, number][],
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: obj.strokeWidth,
-        opacity: 100,
-        locked: false,
-        groupIds: [obj.id],
-      });
-
-      const methodText = obj.methods.join("\n") || " ";
-      excalidrawElements.push({
-        id: `${obj.id}-methods`,
-        x: obj.x + 8,
-        y: obj.y + headerH + attrH + 4,
-        width: obj.width - 16,
-        height: methodH - 8,
-        type: "text" as const,
-        text: methodText,
-        fontSize: 14,
-        fontFamily: 1,
-        textAlign: "left" as const,
-        verticalAlign: "top" as const,
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: 0,
-        opacity: 100,
-        locked: false,
-        containerId: null,
-        originalText: methodText,
-        autoResize: true,
-        groupIds: [obj.id],
-      });
-      continue;
-    }
-
-    if (obj.type === "uml-package") {
-      const tabW = Math.max(obj.packageName.length * 9 + 24, 100);
-
-      excalidrawElements.push({
-        ...base,
-        type: "rectangle" as const,
-        borderRadius: 0,
-        groupIds: [obj.id],
-      });
-
-      excalidrawElements.push({
-        id: `${obj.id}-tab`,
-        x: obj.x,
-        y: obj.y,
-        width: tabW,
-        height: 28,
-        type: "rectangle" as const,
-        borderRadius: 0,
-        strokeColor: obj.stroke,
-        backgroundColor: obj.fill === "transparent" ? "#f8f9fa" : obj.fill,
-        strokeWidth: obj.strokeWidth,
-        opacity: 100,
-        locked: false,
-        groupIds: [obj.id],
-      });
-
-      const label = obj.stereotype ? `«${obj.stereotype}» ${obj.packageName}` : obj.packageName;
-      excalidrawElements.push({
-        id: `${obj.id}-label`,
-        x: obj.x + 8,
-        y: obj.y + 4,
-        width: tabW - 16,
-        height: 20,
-        type: "text" as const,
-        text: label,
-        fontSize: 14,
-        fontFamily: 1,
-        textAlign: "left" as const,
-        verticalAlign: "top" as const,
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: 0,
-        opacity: 100,
-        locked: false,
-        containerId: null,
-        originalText: label,
-        autoResize: true,
-        groupIds: [obj.id],
-      });
-      continue;
-    }
-
-    if (obj.type === "uml-note") {
-      excalidrawElements.push({
-        ...base,
-        type: "rectangle" as const,
-        borderRadius: 0,
-        groupIds: [obj.id],
-      });
-
-      const foldX = obj.width - 16;
-      const foldY = 16;
-      excalidrawElements.push({
-        id: `${obj.id}-fold`,
-        x: obj.x + foldX,
-        y: obj.y,
-        width: 16,
-        height: foldY,
-        type: "line" as const,
-        points: [[0, 0], [-foldX, foldY]] as [number, number][],
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: obj.strokeWidth,
-        opacity: 100,
-        locked: false,
-        groupIds: [obj.id],
-      });
-
-      const noteText = obj.text || " ";
-      excalidrawElements.push({
-        id: `${obj.id}-text`,
-        x: obj.x + 8,
-        y: obj.y + 8,
-        width: obj.width - 16,
-        height: obj.height - 16,
-        type: "text" as const,
-        text: noteText,
-        fontSize: 14,
-        fontFamily: 1,
-        textAlign: "left" as const,
-        verticalAlign: "top" as const,
-        strokeColor: obj.stroke,
-        backgroundColor: "transparent",
-        strokeWidth: 0,
-        opacity: 100,
-        locked: false,
-        containerId: null,
-        originalText: noteText,
-        autoResize: true,
-        groupIds: [obj.id],
-      });
-      continue;
-    }
-
     const typeMap: Record<string, string> = {
       rect: "rectangle",
       ellipse: "ellipse",
@@ -581,21 +238,10 @@ export function ExcalidrawCanvas({
     typeof import("@excalidraw/excalidraw").Excalidraw | null
   >(null);
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
-  const mesh3DRef = useRef<Mesh3DObject[]>([]);
 
   useEffect(() => {
     ExcalidrawWrapper().then(setExcalidrawComponent);
   }, []);
-
-  useEffect(() => {
-    if (initialScene) {
-      mesh3DRef.current = initialScene.objects.filter(
-        (obj): obj is Mesh3DObject => obj.type === "mesh3d",
-      );
-    } else {
-      mesh3DRef.current = [];
-    }
-  }, [initialScene]);
 
   const initialData = useMemo(() => {
     if (!initialScene) {
@@ -610,11 +256,10 @@ export function ExcalidrawCanvas({
       if (!onSceneChange) return;
 
       const funObjects = excalidrawElementsToFunObjects(elements);
-      const allObjects: FunObject[] = [...funObjects, ...mesh3DRef.current];
 
       const scene: FunScene = {
         id: initialScene?.id ?? crypto.randomUUID(),
-        objects: allObjects,
+        objects: funObjects,
         camera: {
           x: appState.scrollX ?? 0,
           y: appState.scrollY ?? 0,

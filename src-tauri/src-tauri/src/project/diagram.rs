@@ -142,21 +142,12 @@ pub fn create_drawio_diagram(project_root: &Path) -> Result<PathBuf, String> {
     Err("Impossible de générer un nom de diagramme unique.".to_string())
 }
 
-pub fn load_drawio_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
+pub fn load_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
     validate_diagram_path(project_root, diagram_path)?;
     fs::read_to_string(diagram_path).map_err(|e| e.to_string())
 }
 
-pub fn save_drawio_diagram(
-    project_root: &Path,
-    diagram_path: &Path,
-    content: &str,
-) -> Result<(), String> {
-    validate_diagram_path(project_root, diagram_path)?;
-    fs::write(diagram_path, content).map_err(|e| e.to_string())
-}
-
-pub fn load_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
+pub fn load_drawio_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
     validate_diagram_path(project_root, diagram_path)?;
     fs::read_to_string(diagram_path).map_err(|e| e.to_string())
 }
@@ -175,6 +166,15 @@ pub fn save_diagram(
         return Err("JSON Excalidraw invalide.".to_string());
     }
 
+    fs::write(diagram_path, content).map_err(|e| e.to_string())
+}
+
+pub fn save_drawio_diagram(
+    project_root: &Path,
+    diagram_path: &Path,
+    content: &str,
+) -> Result<(), String> {
+    validate_diagram_path(project_root, diagram_path)?;
     fs::write(diagram_path, content).map_err(|e| e.to_string())
 }
 
@@ -318,7 +318,9 @@ mod tests {
         let project = temp_project();
         let diagram_path = create_diagram(&project).expect("create");
         assert!(diagram_path.exists());
-        assert!(diagram_path.to_string_lossy().contains(".fun/diagrams/croquis-"));
+        assert!(diagram_path
+            .to_string_lossy()
+            .contains(".fun/diagrams/croquis-"));
 
         let content = load_diagram(&project, &diagram_path).expect("load");
         assert!(content.contains("\"type\": \"excalidraw\""));
@@ -402,6 +404,18 @@ mod tests {
     }
 
     #[test]
+    fn list_diagrams_includes_drawio_files() {
+        let project = temp_project();
+        let _ = create_diagram(&project).expect("create excalidraw");
+        let _ = create_drawio_diagram(&project).expect("create drawio");
+
+        let list = list_diagrams(&project).expect("list");
+        assert_eq!(list.len(), 2);
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
     fn validate_excalidraw_json_accepts_valid() {
         let json = r#"{ "type": "excalidraw", "version": 2, "elements": [], "appState": {}, "files": {} }"#;
         assert!(validate_excalidraw_json(json).is_ok());
@@ -441,7 +455,10 @@ mod tests {
         let parsed: serde_json::Value = serde_json::from_str(&reset_content).expect("parse");
         assert_eq!(parsed["type"], "excalidraw");
         assert!(parsed["elements"].as_array().unwrap().is_empty());
-        assert_eq!(diagram_path.file_stem().unwrap().to_str().unwrap(), diagram_path.file_stem().unwrap().to_str().unwrap());
+        assert_eq!(
+            diagram_path.file_stem().unwrap().to_str().unwrap(),
+            diagram_path.file_stem().unwrap().to_str().unwrap()
+        );
 
         let _ = fs::remove_dir_all(project);
     }

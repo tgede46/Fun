@@ -1,4 +1,4 @@
-import type { FunObject, UmlClassObject, UmlPackageObject, UmlNoteObject } from "../types";
+import type { FunObject } from "../types";
 import { displayObjectLabel } from "../utils/object-label";
 
 interface InspectorProps {
@@ -47,18 +47,6 @@ export function Inspector({ selectedObjects, onUpdate }: InspectorProps) {
             className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
           />
         </div>
-
-        {obj.type === "uml-class" && (
-          <UmlClassFields obj={obj} onUpdate={onUpdate} />
-        )}
-
-        {obj.type === "uml-package" && (
-          <UmlPackageFields obj={obj} onUpdate={onUpdate} />
-        )}
-
-        {obj.type === "uml-note" && (
-          <UmlNoteFields obj={obj} onUpdate={onUpdate} />
-        )}
 
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -192,124 +180,6 @@ export function Inspector({ selectedObjects, onUpdate }: InspectorProps) {
           </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function UmlClassFields({
-  obj,
-  onUpdate,
-}: {
-  obj: UmlClassObject;
-  onUpdate: (id: string, patch: Partial<FunObject>) => void;
-}) {
-  const handleAttributesChange = (value: string) => {
-    const lines = value.split("\n").filter((l) => l.trim());
-    onUpdate(obj.id, { attributes: lines } as Partial<FunObject>);
-  };
-
-  const handleMethodsChange = (value: string) => {
-    const lines = value.split("\n").filter((l) => l.trim());
-    onUpdate(obj.id, { methods: lines } as Partial<FunObject>);
-  };
-
-  return (
-    <>
-      <div>
-        <label className="text-xs text-muted-foreground">Nom de la classe</label>
-        <input
-          type="text"
-          value={obj.className}
-          onChange={(e) => onUpdate(obj.id, { className: e.target.value } as Partial<FunObject>)}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground">Stereotype</label>
-        <input
-          type="text"
-          value={obj.stereotype ?? ""}
-          placeholder="ex: interface, abstract"
-          onChange={(e) => onUpdate(obj.id, { stereotype: e.target.value || undefined } as Partial<FunObject>)}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground">
-          Attributs <span className="text-muted-foreground/60">(1 par ligne)</span>
-        </label>
-        <textarea
-          value={obj.attributes.join("\n")}
-          onChange={(e) => handleAttributesChange(e.target.value)}
-          rows={3}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background font-mono"
-          placeholder="- nom: String&#10;- age: int"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground">
-          Methodes <span className="text-muted-foreground/60">(1 par ligne)</span>
-        </label>
-        <textarea
-          value={obj.methods.join("\n")}
-          onChange={(e) => handleMethodsChange(e.target.value)}
-          rows={3}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background font-mono"
-          placeholder="+ getNom(): String&#10;+ setAge(age: int): void"
-        />
-      </div>
-    </>
-  );
-}
-
-function UmlPackageFields({
-  obj,
-  onUpdate,
-}: {
-  obj: UmlPackageObject;
-  onUpdate: (id: string, patch: Partial<FunObject>) => void;
-}) {
-  return (
-    <>
-      <div>
-        <label className="text-xs text-muted-foreground">Nom du package</label>
-        <input
-          type="text"
-          value={obj.packageName}
-          onChange={(e) => onUpdate(obj.id, { packageName: e.target.value } as Partial<FunObject>)}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
-        />
-      </div>
-      <div>
-        <label className="text-xs text-muted-foreground">Stereotype</label>
-        <input
-          type="text"
-          value={obj.stereotype ?? ""}
-          placeholder="ex: model, view, controller"
-          onChange={(e) => onUpdate(obj.id, { stereotype: e.target.value || undefined } as Partial<FunObject>)}
-          className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
-        />
-      </div>
-    </>
-  );
-}
-
-function UmlNoteFields({
-  obj,
-  onUpdate,
-}: {
-  obj: UmlNoteObject;
-  onUpdate: (id: string, patch: Partial<FunObject>) => void;
-}) {
-  return (
-    <div>
-      <label className="text-xs text-muted-foreground">Texte de la note</label>
-      <textarea
-        value={obj.text}
-        onChange={(e) => onUpdate(obj.id, { text: e.target.value } as Partial<FunObject>)}
-        rows={4}
-        className="mt-1 w-full px-2 py-1 text-sm border border-border rounded bg-background"
-      />
     </div>
   );
 }

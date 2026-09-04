@@ -1,18 +1,12 @@
-import { useState } from "react";
 import type { DiagramListItem } from "@/lib/diagram";
 import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { DiagramList } from "./DiagramList";
 import { ExcalidrawCanvas } from "@/canvas/ExcalidrawCanvas";
-import dynamic from "next/dynamic";
+import { DrawioEmbed } from "@/canvas/drawio/DrawioEmbed";
 
-const Canvas3D = dynamic(
-  () => import("@/canvas3d/Canvas3D").then((mod) => mod.Canvas3D),
-  { ssr: false, loading: () => <div className="flex-1 flex items-center justify-center">Chargement 3D...</div> },
-);
-
-type WorkshopMode = "sketch" | "uml" | "3d";
+type WorkshopMode = "sketch" | "uml";
 
 type CanvasAreaProps = {
   projectPath: string;
@@ -28,10 +22,13 @@ type CanvasAreaProps = {
   error: string | null;
   saveError: string | null;
   codeGenError: string | null;
+  drawioXml: string | null;
   onSelectDiagram: (path: string) => void;
   onDeleteDiagram?: (path: string) => void;
   onSaveError: (message: string | null) => void;
   onSceneChange?: (scene: FunScene) => void;
+  onCreateDrawioDiagram: () => void;
+  onDrawioXmlChange?: (xml: string) => void;
 };
 
 function StatusBanner({ message, tone }: { message: string; tone: "error" | "info" }) {
@@ -49,6 +46,28 @@ function StatusBanner({ message, tone }: { message: string; tone: "error" | "inf
   );
 }
 
+function BienTotOverlay({ onCreateDiagram }: { onCreateDiagram: () => void }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center bg-canvas/80">
+      <div className="text-center p-8">
+        <div className="text-4xl mb-4 opacity-50">
+          {"\u256B"}
+        </div>
+        <h2 className="text-xl font-semibold text-foreground mb-2">Mode UML</h2>
+        <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+          Le mode UML est en cours de d\u00e9veloppement. Utilisez draw.io int\u00e9gr\u00e9 pour cr\u00e9er vos diagrammes UML.
+        </p>
+        <button
+          onClick={onCreateDiagram}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90 transition-opacity"
+        >
+          Cr\u00e9er un nouveau diagramme UML
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function CanvasArea({
   mode,
   focusMode,
@@ -61,12 +80,14 @@ export function CanvasArea({
   error,
   saveError,
   codeGenError,
+  drawioXml,
   onSelectDiagram,
   onDeleteDiagram,
+  onSaveError,
   onSceneChange,
+  onCreateDrawioDiagram,
+  onDrawioXmlChange,
 }: CanvasAreaProps) {
-  const [viewMode, setViewMode] = useState<"2d" | "3d">("2d");
-
   const list = (
     <DiagramList
       diagrams={diagrams}
@@ -77,22 +98,24 @@ export function CanvasArea({
   );
 
   if (mode === "uml") {
+    const hasDiagram = activeDiagramPath != null && drawioXml != null;
+
     return (
-      <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
+      <section className="flex flex-col flex-1 min-w-0 bg-canvas relative" aria-label="Canvas UML">
         <div className="p-3 border-b border-border">{list}</div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 p-6">
-          <div className="flex flex-col items-center gap-3 bg-card rounded-2xl border border-border px-10 py-8 shadow-sm max-w-md text-center">
-            <p className="text-2xl font-bold text-foreground">UML structur</p>
-            <p className="text-sm text-muted-foreground">
-              Le mode UML formel arrive dans une prochaine version.
-            </p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              En attendant, utilisez le mode <strong className="text-foreground">Sketch</strong>{" "}
-              (icone a gauche) pour dessiner librement, ou{" "}
-              <strong className="text-foreground">Depuis le code</strong> pour generer un diagramme
-              depuis vos sources.
-            </p>
+        <div className="flex-1 relative">
+          {/* draw.io int\u00e9gr\u00e9 */}
+          <div className="absolute inset-0">
+            <DrawioEmbed
+              initialXml={drawioXml}
+              onXmlChange={onDrawioXmlChange}
+            />
           </div>
+
+          {/* Placeholder "Bient\u00f4t" quand pas de diagramme */}
+          {!hasDiagram && (
+            <BienTotOverlay onCreateDiagram={onCreateDrawioDiagram} />
+          )}
         </div>
       </section>
     );
@@ -119,10 +142,10 @@ export function CanvasArea({
           <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
             {diagrams.length > 0
               ? "Choisissez un diagramme dans la liste ci-dessus, ou creez-en un nouveau."
-              : "Cliquez sur « Nouveau diagramme » dans la barre du haut pour ouvrir un canvas vierge."}
+              : "Cliquez sur \u00ab Nouveau diagramme \u00bb dans la barre du haut pour ouvrir un canvas vierge."}
           </p>
           <p className="text-xs text-muted-foreground text-center max-w-md">
-            Astuce : « Depuis le code » scanne les fichiers sources du projet et genere un diagramme
+            Astuce : \u00ab Depuis le code \u00bb scanne les fichiers sources du projet et genere un diagramme
             automatiquement (connexion IA requise).
           </p>
         </div>
@@ -138,51 +161,25 @@ export function CanvasArea({
         <p className="text-sm font-medium text-foreground truncate">
           {diagramName ? formatDiagramName(diagramName) : null}
         </p>
-        <div className="flex items-center gap-1 ml-auto">
-          <button
-            type="button"
-            className={`px-2 py-1 text-xs rounded transition-colors ${
-              viewMode === "2d"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-            onClick={() => setViewMode("2d")}
-          >
-            2D
-          </button>
-          <button
-            type="button"
-            className={`px-2 py-1 text-xs rounded transition-colors ${
-              viewMode === "3d"
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-accent/50"
-            }`}
-            onClick={() => setViewMode("3d")}
-          >
-            3D
-          </button>
+        <div className="ml-auto">
+          {saveError ? (
+            <p className="text-xs text-destructive" role="status">
+              Sauvegarde \u00e9choue\u00e9e : {saveError}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              Sauvegarde automatique
+            </p>
+          )}
         </div>
-        {saveError ? (
-          <p className="text-xs text-destructive ml-2" role="status">
-            Sauvegarde echouee : {saveError}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground ml-2 hidden sm:block">
-            Sauvegarde automatique
-          </p>
-        )}
       </div>
-      {viewMode === "2d" ? (
-        <ExcalidrawCanvas
-          initialScene={scene}
-          onSceneChange={onSceneChange}
-          focusMode={focusMode}
-          layersOpen={layersOpen}
-          onLayersOpenChange={onLayersOpenChange}
-        />
-      ) : (
-        <Canvas3D scene={scene} onSceneChange={onSceneChange} />
-      )}
+      <ExcalidrawCanvas
+        initialScene={scene}
+        onSceneChange={onSceneChange}
+        focusMode={focusMode}
+        layersOpen={layersOpen}
+        onLayersOpenChange={onLayersOpenChange}
+      />
     </section>
   );
 }

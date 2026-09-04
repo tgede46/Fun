@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
-import type { FunScene, FunObject, Mesh3DObject } from "@/canvas/types";
+import type { FunScene, FunObject } from "@/canvas/types";
 import {
   parseExcalidrawContent,
   prepareExcalidrawScene,
@@ -9,6 +9,7 @@ import {
 export type CreateDiagramResult = {
   path: string;
   name: string;
+  is_drawio?: boolean;
 };
 
 export type LoadDiagramResult = {
@@ -30,11 +31,27 @@ export async function createDiagram(
   return invoke<CreateDiagramResult>("create_diagram", { projectPath });
 }
 
+export async function createDrawioDiagram(
+  projectPath: string,
+): Promise<CreateDiagramResult> {
+  return invoke<CreateDiagramResult>("create_drawio_diagram", { projectPath });
+}
+
 export async function loadDiagram(
   projectPath: string,
   diagramPath: string,
 ): Promise<LoadDiagramResult> {
   return invoke<LoadDiagramResult>("load_diagram", {
+    projectPath,
+    diagramPath,
+  });
+}
+
+export async function loadDrawioDiagram(
+  projectPath: string,
+  diagramPath: string,
+): Promise<LoadDiagramResult> {
+  return invoke<LoadDiagramResult>("load_drawio_diagram", {
     projectPath,
     diagramPath,
   });
@@ -46,6 +63,18 @@ export async function saveDiagram(
   content: string,
 ): Promise<void> {
   await invoke("save_diagram", {
+    projectPath,
+    diagramPath,
+    content,
+  });
+}
+
+export async function saveDrawioDiagram(
+  projectPath: string,
+  diagramPath: string,
+  content: string,
+): Promise<void> {
+  await invoke("save_drawio_diagram", {
     projectPath,
     diagramPath,
     content,
@@ -106,46 +135,40 @@ export async function loadDiagramIntoCanvas(
 }
 
 export function serializeFunScene(scene: FunScene): string {
-  const excalidrawElements = scene.objects
-    .filter((obj) => obj.type !== "mesh3d")
-    .map((obj) => {
-      const base = {
-        id: obj.id,
-        type: obj.type === "freehand" ? "freedraw" : obj.type,
-        x: obj.x,
-        y: obj.y,
-        width: obj.width,
-        height: obj.height,
-        strokeColor: obj.stroke,
-        backgroundColor: obj.fill,
-        strokeWidth: obj.strokeWidth,
-        opacity: obj.opacity,
-        locked: obj.locked,
+  const excalidrawElements = scene.objects.map((obj) => {
+    const base = {
+      id: obj.id,
+      type: obj.type === "freehand" ? "freedraw" : obj.type,
+      x: obj.x,
+      y: obj.y,
+      width: obj.width,
+      height: obj.height,
+      strokeColor: obj.stroke,
+      backgroundColor: obj.fill,
+      strokeWidth: obj.strokeWidth,
+      opacity: obj.opacity,
+      locked: obj.locked,
+    };
+
+    if (obj.type === "freehand") {
+      return {
+        ...base,
+        type: "freedraw",
+        points: obj.points.map((p) => ({ x: p.x, y: p.y })),
       };
+    }
 
-      if (obj.type === "freehand") {
-        return {
-          ...base,
-          type: "freedraw",
-          points: obj.points.map((p) => ({ x: p.x, y: p.y })),
-        };
-      }
+    if (obj.type === "text") {
+      return {
+        ...base,
+        type: "text",
+        text: obj.text,
+        fontSize: obj.fontSize,
+      };
+    }
 
-      if (obj.type === "text") {
-        return {
-          ...base,
-          type: "text",
-          text: obj.text,
-          fontSize: obj.fontSize,
-        };
-      }
-
-      return base;
-    });
-
-  const mesh3dObjects = scene.objects.filter(
-    (obj): obj is Mesh3DObject => obj.type === "mesh3d",
-  );
+    return base;
+  });
 
   const result = {
     type: "excalidraw" as const,
@@ -155,7 +178,6 @@ export function serializeFunScene(scene: FunScene): string {
       viewBackgroundColor: "#ffffff",
     },
     files: {},
-    _fun3d: mesh3dObjects.length > 0 ? mesh3dObjects : undefined,
   };
 
   return JSON.stringify(result, null, 2);
@@ -173,8 +195,6 @@ export async function deserializeFunScene(rawContent: string): Promise<FunScene>
   const excalidrawElements = await parseExcalidrawContent(
     JSON.stringify(excalidrawData),
   );
-
-  const mesh3dObjects: Mesh3DObject[] = parsed._fun3d ?? [];
 
   const excalidrawObjects: FunObject[] = (excalidrawElements.elements ?? []).map(
     (el: Record<string, unknown>) => {
@@ -203,7 +223,7 @@ export async function deserializeFunScene(rawContent: string): Promise<FunScene>
 
   return {
     id: crypto.randomUUID(),
-    objects: [...excalidrawObjects, ...mesh3dObjects],
+    objects: excalidrawObjects,
     camera: { x: 0, y: 0, zoom: 1 },
     grid: true,
     version: 1,

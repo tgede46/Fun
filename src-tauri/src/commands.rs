@@ -21,6 +21,8 @@ pub struct OpenProjectResult {
 pub struct CreateDiagramResult {
     pub path: String,
     pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub is_drawio: Option<bool>,
 }
 
 #[derive(Debug, Serialize)]
@@ -178,14 +180,55 @@ pub fn create_diagram(project_path: String) -> Result<CreateDiagramResult, Strin
     let diagram_path = diagram::create_diagram(project_root.as_path())?;
     let name = diagram_path
         .file_stem()
-        .and_then(|n| n.to_str())
+        .and_then(|n: &std::ffi::OsStr| n.to_str())
         .unwrap_or("diagramme")
         .to_string();
 
     Ok(CreateDiagramResult {
         path: diagram_path.to_string_lossy().into_owned(),
         name,
+        is_drawio: None,
     })
+}
+
+#[tauri::command]
+pub fn create_drawio_diagram(project_path: String) -> Result<CreateDiagramResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let diagram_path = diagram::create_drawio_diagram(project_root.as_path())?;
+    let name = diagram_path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("uml")
+        .to_string();
+
+    Ok(CreateDiagramResult {
+        path: diagram_path.to_string_lossy().into_owned(),
+        name,
+        is_drawio: Some(true),
+    })
+}
+
+#[tauri::command]
+pub fn load_drawio_diagram(project_path: String, diagram_path: String) -> Result<LoadDiagramResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let path = PathBuf::from(&diagram_path);
+    let content = diagram::load_drawio_diagram(project_root.as_path(), path.as_path())?;
+
+    Ok(LoadDiagramResult {
+        path: diagram_path,
+        content,
+    })
+}
+
+#[tauri::command]
+pub fn save_drawio_diagram(
+    project_path: String,
+    diagram_path: String,
+    content: String,
+) -> Result<(), String> {
+    let project_root = PathBuf::from(&project_path);
+    let path = PathBuf::from(&diagram_path);
+    diagram::save_drawio_diagram(project_root.as_path(), path.as_path(), &content)
 }
 
 #[tauri::command]

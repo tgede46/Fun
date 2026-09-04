@@ -1,8 +1,6 @@
 import Link from "next/link";
 import type { FunTheme } from "@/lib/theme";
-
-type WorkshopMode = "sketch" | "uml" | "3d";
-
+import type { WorkshopMode } from "./ModeRail";
 import { ThemeToggle } from "./ThemeToggle";
 
 type ToolbarProps = {
@@ -80,37 +78,47 @@ export function Toolbar({
           onToggle={onToggleTheme}
           projectPath={projectPath}
         />
-        {mode === "sketch" ? (
-          <>
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
-              onClick={onGenerateFromCode}
-              disabled={isGeneratingFromCode}
-              title="Scanne les fichiers source du projet et génère un diagramme Excalidraw via l'IA"
-            >
-              {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-              onClick={onDeleteDiagram}
-              disabled={!canDeleteDiagram || isDeletingDiagram}
-              title="Supprime le diagramme ouvert (.fun/diagrams/)"
-            >
-              {isDeletingDiagram ? "Suppression…" : "Supprimer"}
-            </button>
-            <button
-              type="button"
-              className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
-              onClick={onNewDiagram}
-              disabled={isCreatingDiagram}
-              title="Crée un fichier .excalidraw vide dans .fun/diagrams/"
-            >
-              {isCreatingDiagram ? "Création…" : "Nouveau diagramme"}
-            </button>
-          </>
-        ) : null}
+        {/* Boutons disponibles dans les deux modes */}
+        <button
+          type="button"
+          className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+          onClick={onGenerateFromCode}
+          disabled={isGeneratingFromCode}
+          title="Scanne les fichiers source du projet et génère un diagramme via l'IA"
+        >
+          {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
+        </button>
+        {canDeleteDiagram && mode === "sketch" && (
+          <button
+            type="button"
+            className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            onClick={onDeleteDiagram}
+            disabled={!canDeleteDiagram || isDeletingDiagram}
+            title="Supprime le diagramme ouvert (.fun/diagrams/)"
+          >
+            {isDeletingDiagram ? "Suppression…" : "Supprimer"}
+          </button>
+        )}
+        {canDeleteDiagram && mode === "uml" && (
+          <button
+            type="button"
+            className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+            onClick={onDeleteDiagram}
+            disabled={!canDeleteDiagram || isDeletingDiagram}
+            title="Supprime le diagramme UML ouvert (.fun/diagrams/)"
+          >
+            {isDeletingDiagram ? "Suppression…" : "Supprimer"}
+          </button>
+        )}
+        <button
+          type="button"
+          className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+          onClick={onNewDiagram}
+          disabled={isCreatingDiagram}
+          title={mode === "uml" ? "Crée un nouveau fichier diagramme UML vide dans .fun/diagrams/" : "Crée un fichier .excalidraw vide dans .fun/diagrams/"}
+        >
+          {isCreatingDiagram ? "Création…" : mode === "uml" ? "Nouveau UML" : "Nouveau diagramme"}
+        </button>
       </div>
     </header>
   );

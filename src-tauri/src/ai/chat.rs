@@ -66,7 +66,7 @@ pub async fn send_chat(
             let content = diagram::load_diagram(project_path, &path)?;
             let name = path
                 .file_stem()
-                .and_then(|n| n.to_str())
+                .and_then(|n: &std::ffi::OsStr| n.to_str())
                 .unwrap_or("diagramme")
                 .to_string();
             opened_diagram_path = Some(path.to_string_lossy().into_owned());

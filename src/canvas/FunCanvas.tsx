@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useEffect, useMemo } from "react";
-import type { FunObject, FunScene, ResizeHandle, UmlClassObject, UmlPackageObject, UmlNoteObject } from "./types";
+import type { FunObject, FunScene, ResizeHandle } from "./types";
 import { DEFAULT_STROKE } from "./types";
 import { useScene } from "./hooks/useScene";
 import { useTool } from "./hooks/useTool";
@@ -175,72 +175,9 @@ export function FunCanvas({
         textTool.handlePointerDown(e, screenToWorld);
       } else if (tool === "arrow") {
         arrowTool.handlePointerDown(e, screenToWorld);
-      } else if (tool === "uml-class" || tool === "uml-package" || tool === "uml-note") {
-        const world = screenToWorld(e.clientX, e.clientY);
-        const id = crypto.randomUUID();
-        let obj: FunObject;
-
-        if (tool === "uml-class") {
-          obj = {
-            id,
-            type: "uml-class",
-            x: world.x - 75,
-            y: world.y - 50,
-            width: 150,
-            height: 120,
-            fill: "#ffffff",
-            stroke: "#1e1e1e",
-            strokeWidth: 2,
-            opacity: 1,
-            locked: false,
-            zIndex: objects.length,
-            className: "ClassName",
-            stereotype: undefined,
-            attributes: ["- attribute: Type"],
-            methods: ["+ method(): void"],
-            compartmentDivider: 0,
-          } as UmlClassObject;
-        } else if (tool === "uml-package") {
-          obj = {
-            id,
-            type: "uml-package",
-            x: world.x - 80,
-            y: world.y - 40,
-            width: 160,
-            height: 100,
-            fill: "#f8f9fa",
-            stroke: "#1e1e1e",
-            strokeWidth: 2,
-            opacity: 1,
-            locked: false,
-            zIndex: objects.length,
-            packageName: "Package",
-            stereotype: undefined,
-          } as UmlPackageObject;
-        } else {
-          obj = {
-            id,
-            type: "uml-note",
-            x: world.x - 70,
-            y: world.y - 40,
-            width: 140,
-            height: 80,
-            fill: "#fffde7",
-            stroke: "#1e1e1e",
-            strokeWidth: 1,
-            opacity: 1,
-            locked: false,
-            zIndex: objects.length,
-            text: "Note",
-          } as UmlNoteObject;
-        }
-
-        handleAddObject(obj);
-        selectTool("select");
-        selectOnly(id);
       }
     },
-    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, arrowTool, hitResizeHandle, contextMenu, objects, handleAddObject, selectTool, selectOnly],
+    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, arrowTool, hitResizeHandle, contextMenu],
   );
 
   const handlePointerMove = useCallback(
@@ -451,10 +388,6 @@ export function FunCanvas({
         <ToolButton tool="text" label="Texte" icon="T" active={tool === "text"} onClick={() => selectTool("text")} shortcut="T" />
         <ToolButton tool="arrow" label="Flèche" icon="→" active={tool === "arrow"} onClick={() => selectTool("arrow")} shortcut="A" />
         <ToolButton tool="image" label="Image" icon="🖼" active={tool === "image"} onClick={imageTool.handleFileInput} shortcut="I" />
-        <div className="w-px h-5 bg-border mx-0.5" />
-        <ToolButton tool="uml-class" label="Classe UML" icon="▊" active={tool === "uml-class"} onClick={() => selectTool("uml-class")} shortcut="U" />
-        <ToolButton tool="uml-package" label="Package UML" icon="📦" active={tool === "uml-package"} onClick={() => selectTool("uml-package")} shortcut="K" />
-        <ToolButton tool="uml-note" label="Note UML" icon="📝" active={tool === "uml-note"} onClick={() => selectTool("uml-note")} shortcut="N" />
       </div>
 
       {/* Top bar */}
@@ -575,7 +508,7 @@ export function FunCanvas({
           <span>{objects.length} objet{objects.length > 1 ? "s" : ""}</span>
         )}
         <span className="text-border">|</span>
-        <span>{tool === "select" ? "V" : tool === "freehand" ? "P" : tool === "rect" ? "R" : tool === "ellipse" ? "O" : tool === "diamond" ? "D" : tool === "text" ? "T" : tool === "arrow" ? "A" : tool === "uml-class" ? "U" : tool === "uml-package" ? "K" : tool === "uml-note" ? "N" : "I"}</span>
+        <span>{tool === "select" ? "V" : tool === "freehand" ? "P" : tool === "rect" ? "R" : tool === "ellipse" ? "O" : tool === "diamond" ? "D" : tool === "text" ? "T" : tool === "arrow" ? "A" : "I"}</span>
       </div>
     </div>
   );

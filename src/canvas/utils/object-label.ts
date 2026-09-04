@@ -8,7 +8,6 @@ const TYPE_LABELS: Record<string, string> = {
   text: "Texte",
   arrow: "Flèche",
   image: "Image",
-  mesh3d: "Objet 3D",
 };
 
 export function defaultObjectLabel(type: string, objects: FunObject[]): string {
