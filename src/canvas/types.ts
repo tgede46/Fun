@@ -78,9 +78,29 @@ export interface ImageObject extends BaseObject {
   naturalHeight: number;
 }
 
-export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | ArrowObject | ImageObject | Mesh3DObject;
+export interface UmlClassObject extends BaseObject {
+  type: "uml-class";
+  className: string;
+  stereotype?: string;
+  attributes: string[];
+  methods: string[];
+  compartmentDivider: number;
+}
 
-export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "image" | "3d";
+export interface UmlPackageObject extends BaseObject {
+  type: "uml-package";
+  packageName: string;
+  stereotype?: string;
+}
+
+export interface UmlNoteObject extends BaseObject {
+  type: "uml-note";
+  text: string;
+}
+
+export type FunObject = FreehandPath | ShapeRect | ShapeEllipse | ShapeDiamond | TextObject | ArrowObject | ImageObject | Mesh3DObject | UmlClassObject | UmlPackageObject | UmlNoteObject;
+
+export type ToolType = "select" | "freehand" | "rect" | "ellipse" | "diamond" | "text" | "arrow" | "image" | "3d" | "uml-class" | "uml-package" | "uml-note";
 
 export type Mesh3DGeometry = "box" | "sphere" | "cylinder" | "cone" | "torus" | "extrude";
 

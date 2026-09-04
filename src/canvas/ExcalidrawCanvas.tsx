@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
-import type { FunScene, FunObject, Mesh3DObject } from "./types";
+import type { FunScene, FunObject, Mesh3DObject, UmlClassObject, UmlPackageObject, UmlNoteObject } from "./types";
 import type {
   ExcalidrawInitialDataState,
   ExcalidrawImperativeAPI,
@@ -40,15 +40,132 @@ interface ExcalidrawBaseElement {
   text?: string;
   fontSize?: number;
   src?: string;
+  groupIds?: string[];
 }
 
 function excalidrawElementsToFunObjects(
   elements: readonly ExcalidrawBaseElement[],
 ): FunObject[] {
   const result: FunObject[] = [];
+  const processedIds = new Set<string>();
+  const groupedByGroupId = new Map<string, ExcalidrawBaseElement[]>();
 
   for (const el of elements) {
     if (el.isDeleted) continue;
+    if (el.groupIds && el.groupIds.length > 0) {
+      const gid = el.groupIds[0];
+      if (!groupedByGroupId.has(gid)) groupedByGroupId.set(gid, []);
+      groupedByGroupId.get(gid)!.push(el);
+    }
+  }
+
+  for (const [gid, groupElements] of groupedByGroupId) {
+    if (processedIds.has(gid)) continue;
+    processedIds.add(gid);
+
+    const headerEl = groupElements.find((e) => e.id.endsWith("-header"));
+    const attrsEl = groupElements.find((e) => e.id.endsWith("-attrs"));
+    const methodsEl = groupElements.find((e) => e.id.endsWith("-methods"));
+    const labelEl = groupElements.find((e) => e.id.endsWith("-label"));
+    const textEl = groupElements.find((e) => e.id.endsWith("-text"));
+    const mainRect = groupElements.find(
+      (e) => e.type === "rectangle" && !e.id.includes("-"),
+    );
+
+    if (headerEl && mainRect) {
+      const attrs = attrsEl?.text
+        ? attrsEl.text.split("\n").filter((t) => t.trim())
+        : [];
+      const methods = methodsEl?.text
+        ? methodsEl.text.split("\n").filter((t) => t.trim())
+        : [];
+      const headerText = headerEl.text ?? "";
+      const newlineIdx = headerText.indexOf("\n");
+      let stereotype: string | undefined;
+      let className: string;
+      if (headerText.startsWith("«") && newlineIdx > 0) {
+        const firstLine = headerText.substring(0, newlineIdx);
+        const match = firstLine.match(/^«(\w+)»$/);
+        stereotype = match?.[1];
+        className = headerText.substring(newlineIdx + 1);
+      } else {
+        className = headerText;
+      }
+
+      const obj: UmlClassObject = {
+        id: gid,
+        type: "uml-class",
+        x: mainRect.x,
+        y: mainRect.y,
+        width: mainRect.width,
+        height: mainRect.height,
+        fill: mainRect.backgroundColor ?? "transparent",
+        stroke: mainRect.strokeColor ?? "#1e1e1e",
+        strokeWidth: mainRect.strokeWidth ?? 2,
+        opacity: (mainRect.opacity ?? 100) / 100,
+        locked: mainRect.locked ?? false,
+        zIndex: 0,
+        className,
+        stereotype,
+        attributes: attrs,
+        methods,
+        compartmentDivider: 0,
+      };
+      result.push(obj);
+      continue;
+    }
+
+    if (labelEl && groupElements.some((e) => e.id.endsWith("-tab"))) {
+      const labelText = labelEl.text ?? "";
+      const stereotypeMatch = labelText.match(/^«(\w+)»\s*(.+)$/);
+      const stereotype = stereotypeMatch?.[1];
+      const packageName = stereotypeMatch?.[2] ?? labelText;
+
+      const obj: UmlPackageObject = {
+        id: gid,
+        type: "uml-package",
+        x: mainRect?.x ?? 0,
+        y: mainRect?.y ?? 0,
+        width: mainRect?.width ?? 120,
+        height: mainRect?.height ?? 80,
+        fill: mainRect?.backgroundColor ?? "transparent",
+        stroke: mainRect?.strokeColor ?? "#1e1e1e",
+        strokeWidth: mainRect?.strokeWidth ?? 2,
+        opacity: (mainRect?.opacity ?? 100) / 100,
+        locked: mainRect?.locked ?? false,
+        zIndex: 0,
+        packageName,
+        stereotype,
+      };
+      result.push(obj);
+      continue;
+    }
+
+    if (textEl && mainRect) {
+      const obj: UmlNoteObject = {
+        id: gid,
+        type: "uml-note",
+        x: mainRect.x,
+        y: mainRect.y,
+        width: mainRect.width,
+        height: mainRect.height,
+        fill: mainRect.backgroundColor ?? "transparent",
+        stroke: mainRect.strokeColor ?? "#1e1e1e",
+        strokeWidth: mainRect.strokeWidth ?? 2,
+        opacity: (mainRect.opacity ?? 100) / 100,
+        locked: mainRect.locked ?? false,
+        zIndex: 0,
+        text: textEl.text ?? "",
+      };
+      result.push(obj);
+      continue;
+    }
+  }
+
+  for (const el of elements) {
+    if (el.isDeleted) continue;
+    if (processedIds.has(el.id)) continue;
+    if (el.groupIds && el.groupIds.length > 0) continue;
 
     const base = {
       id: el.id,
@@ -142,7 +259,9 @@ function funSceneToExcalidrawData(
     return { elements: [], appState: {}, files: {} };
   }
 
-  const excalidrawElements = non3DObjects.map((obj) => {
+  const excalidrawElements: unknown[] = [];
+
+  for (const obj of non3DObjects) {
     const base = {
       id: obj.id,
       x: obj.x,
@@ -157,15 +276,16 @@ function funSceneToExcalidrawData(
     };
 
     if (obj.type === "freehand") {
-      return {
+      excalidrawElements.push({
         ...base,
         type: "freedraw" as const,
         points: obj.points.map((p) => [p.x, p.y] as [number, number]),
-      };
+      });
+      continue;
     }
 
     if (obj.type === "text") {
-      return {
+      excalidrawElements.push({
         ...base,
         type: "text" as const,
         text: obj.text,
@@ -177,11 +297,12 @@ function funSceneToExcalidrawData(
         containerId: null,
         originalText: obj.text,
         autoResize: true,
-      };
+      });
+      continue;
     }
 
     if (obj.type === "arrow") {
-      return {
+      excalidrawElements.push({
         ...base,
         type: "arrow" as const,
         points: obj.points.map((p) => [p.x, p.y] as [number, number]),
@@ -189,17 +310,242 @@ function funSceneToExcalidrawData(
         endBinding: null,
         startArrowhead: null,
         endArrowhead: "triangle",
-      };
+      });
+      continue;
     }
 
     if (obj.type === "image") {
-      return {
+      excalidrawElements.push({
         ...base,
         type: "image" as const,
         src: obj.src,
         fileId: null,
         crop: null,
-      };
+      });
+      continue;
+    }
+
+    if (obj.type === "uml-class") {
+      const headerH = 32;
+      const attrH = Math.max(obj.attributes.length * 22 + 8, 24);
+      const methodH = Math.max(obj.methods.length * 22 + 8, 24);
+      const totalH = headerH + attrH + methodH;
+
+      excalidrawElements.push({
+        ...base,
+        height: totalH,
+        type: "rectangle" as const,
+        borderRadius: 0,
+        groupIds: [obj.id],
+      });
+
+      excalidrawElements.push({
+        id: `${obj.id}-header`,
+        x: obj.x,
+        y: obj.y,
+        width: obj.width,
+        height: headerH,
+        type: "text" as const,
+        text: obj.stereotype ? `«${obj.stereotype}»\n${obj.className}` : obj.className,
+        fontSize: 16,
+        fontFamily: 1,
+        textAlign: "center" as const,
+        verticalAlign: "middle" as const,
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: 0,
+        opacity: 100,
+        locked: false,
+        containerId: null,
+        originalText: obj.stereotype ? `«${obj.stereotype}»\n${obj.className}` : obj.className,
+        autoResize: true,
+        groupIds: [obj.id],
+      });
+
+      excalidrawElements.push({
+        id: `${obj.id}-div1`,
+        x: obj.x,
+        y: obj.y + headerH,
+        width: obj.width,
+        height: 0,
+        type: "line" as const,
+        points: [[0, 0], [obj.width, 0]] as [number, number][],
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: obj.strokeWidth,
+        opacity: 100,
+        locked: false,
+        groupIds: [obj.id],
+      });
+
+      const attrText = obj.attributes.join("\n") || " ";
+      excalidrawElements.push({
+        id: `${obj.id}-attrs`,
+        x: obj.x + 8,
+        y: obj.y + headerH + 4,
+        width: obj.width - 16,
+        height: attrH - 8,
+        type: "text" as const,
+        text: attrText,
+        fontSize: 14,
+        fontFamily: 1,
+        textAlign: "left" as const,
+        verticalAlign: "top" as const,
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: 0,
+        opacity: 100,
+        locked: false,
+        containerId: null,
+        originalText: attrText,
+        autoResize: true,
+        groupIds: [obj.id],
+      });
+
+      excalidrawElements.push({
+        id: `${obj.id}-div2`,
+        x: obj.x,
+        y: obj.y + headerH + attrH,
+        width: obj.width,
+        height: 0,
+        type: "line" as const,
+        points: [[0, 0], [obj.width, 0]] as [number, number][],
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: obj.strokeWidth,
+        opacity: 100,
+        locked: false,
+        groupIds: [obj.id],
+      });
+
+      const methodText = obj.methods.join("\n") || " ";
+      excalidrawElements.push({
+        id: `${obj.id}-methods`,
+        x: obj.x + 8,
+        y: obj.y + headerH + attrH + 4,
+        width: obj.width - 16,
+        height: methodH - 8,
+        type: "text" as const,
+        text: methodText,
+        fontSize: 14,
+        fontFamily: 1,
+        textAlign: "left" as const,
+        verticalAlign: "top" as const,
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: 0,
+        opacity: 100,
+        locked: false,
+        containerId: null,
+        originalText: methodText,
+        autoResize: true,
+        groupIds: [obj.id],
+      });
+      continue;
+    }
+
+    if (obj.type === "uml-package") {
+      const tabW = Math.max(obj.packageName.length * 9 + 24, 100);
+
+      excalidrawElements.push({
+        ...base,
+        type: "rectangle" as const,
+        borderRadius: 0,
+        groupIds: [obj.id],
+      });
+
+      excalidrawElements.push({
+        id: `${obj.id}-tab`,
+        x: obj.x,
+        y: obj.y,
+        width: tabW,
+        height: 28,
+        type: "rectangle" as const,
+        borderRadius: 0,
+        strokeColor: obj.stroke,
+        backgroundColor: obj.fill === "transparent" ? "#f8f9fa" : obj.fill,
+        strokeWidth: obj.strokeWidth,
+        opacity: 100,
+        locked: false,
+        groupIds: [obj.id],
+      });
+
+      const label = obj.stereotype ? `«${obj.stereotype}» ${obj.packageName}` : obj.packageName;
+      excalidrawElements.push({
+        id: `${obj.id}-label`,
+        x: obj.x + 8,
+        y: obj.y + 4,
+        width: tabW - 16,
+        height: 20,
+        type: "text" as const,
+        text: label,
+        fontSize: 14,
+        fontFamily: 1,
+        textAlign: "left" as const,
+        verticalAlign: "top" as const,
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: 0,
+        opacity: 100,
+        locked: false,
+        containerId: null,
+        originalText: label,
+        autoResize: true,
+        groupIds: [obj.id],
+      });
+      continue;
+    }
+
+    if (obj.type === "uml-note") {
+      excalidrawElements.push({
+        ...base,
+        type: "rectangle" as const,
+        borderRadius: 0,
+        groupIds: [obj.id],
+      });
+
+      const foldX = obj.width - 16;
+      const foldY = 16;
+      excalidrawElements.push({
+        id: `${obj.id}-fold`,
+        x: obj.x + foldX,
+        y: obj.y,
+        width: 16,
+        height: foldY,
+        type: "line" as const,
+        points: [[0, 0], [-foldX, foldY]] as [number, number][],
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: obj.strokeWidth,
+        opacity: 100,
+        locked: false,
+        groupIds: [obj.id],
+      });
+
+      const noteText = obj.text || " ";
+      excalidrawElements.push({
+        id: `${obj.id}-text`,
+        x: obj.x + 8,
+        y: obj.y + 8,
+        width: obj.width - 16,
+        height: obj.height - 16,
+        type: "text" as const,
+        text: noteText,
+        fontSize: 14,
+        fontFamily: 1,
+        textAlign: "left" as const,
+        verticalAlign: "top" as const,
+        strokeColor: obj.stroke,
+        backgroundColor: "transparent",
+        strokeWidth: 0,
+        opacity: 100,
+        locked: false,
+        containerId: null,
+        originalText: noteText,
+        autoResize: true,
+        groupIds: [obj.id],
+      });
+      continue;
     }
 
     const typeMap: Record<string, string> = {
@@ -208,17 +554,16 @@ function funSceneToExcalidrawData(
       diamond: "diamond",
     };
 
-    return {
+    excalidrawElements.push({
       ...base,
       type: (typeMap[obj.type] ?? obj.type) as
         | "rectangle"
         | "ellipse"
         | "diamond",
-    };
-  });
+    });
+  }
 
   return {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     elements: excalidrawElements as any[],
     appState: {
       viewBackgroundColor: "#ffffff",

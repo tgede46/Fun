@@ -38,6 +38,7 @@ pub fn run() {
             commands::delete_diagram,
             commands::get_project_settings,
             commands::set_project_theme,
+            commands::set_custom_colors,
             commands::set_companion_position,
             commands::set_lofi_prefs,
             commands::get_openrouter_key_configured,

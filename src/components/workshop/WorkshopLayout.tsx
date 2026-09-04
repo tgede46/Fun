@@ -5,6 +5,7 @@ import {
   deleteDiagram,
   listDiagrams,
   saveDiagram,
+  serializeFunScene,
   type DiagramListItem,
 } from "@/lib/diagram";
 import {
@@ -293,7 +294,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     (newScene: FunScene) => {
       setScene(newScene);
       if (activeDiagramPath) {
-        void saveDiagram(projectPath, activeDiagramPath, JSON.stringify(newScene)).catch((err) => {
+        void saveDiagram(projectPath, activeDiagramPath, serializeFunScene(newScene)).catch((err) => {
           setSaveError(formatInvokeError(err, "Sauvegarde échouée."));
         });
       }

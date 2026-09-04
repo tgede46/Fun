@@ -40,10 +40,29 @@ pub struct ProjectSettingsResult {
     pub pomodoro_work_minutes: u32,
     pub pomodoro_break_minutes: u32,
     pub theme: String,
+    pub custom_colors: Option<CustomColorsResult>,
     pub companion_chat: Option<CompanionPositionResult>,
     pub companion_pomo: Option<CompanionPositionResult>,
     pub lofi_muted: bool,
     pub lofi_volume: u8,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CustomColorsInput {
+    pub background: Option<String>,
+    pub canvas: Option<String>,
+    pub foreground: Option<String>,
+    pub accent: Option<String>,
+    pub border: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CustomColorsResult {
+    pub background: Option<String>,
+    pub canvas: Option<String>,
+    pub foreground: Option<String>,
+    pub accent: Option<String>,
+    pub border: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -59,10 +78,19 @@ fn companion_to_result(
 }
 
 pub fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
+    let custom_colors = settings.custom_colors.map(|c| CustomColorsResult {
+        background: c.background,
+        canvas: c.canvas,
+        foreground: c.foreground,
+        accent: c.accent,
+        border: c.border,
+    });
+
     ProjectSettingsResult {
         pomodoro_work_minutes: settings.pomodoro_work_minutes,
         pomodoro_break_minutes: settings.pomodoro_break_minutes,
         theme: settings.theme.as_str().to_string(),
+        custom_colors,
         companion_chat: companion_to_result(settings.companion_chat),
         companion_pomo: companion_to_result(settings.companion_pomo),
         lofi_muted: settings.lofi_muted,
@@ -218,6 +246,23 @@ pub fn set_project_theme(
     let parsed = FunTheme::parse(&theme)?;
     let project_root = PathBuf::from(&project_path);
     let updated = settings::set_theme(project_root.as_path(), parsed)?;
+    Ok(settings_to_result(updated))
+}
+
+#[tauri::command]
+pub fn set_custom_colors(
+    project_path: String,
+    colors: Option<CustomColorsInput>,
+) -> Result<ProjectSettingsResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let mapped = colors.map(|c| settings::CustomColors {
+        background: c.background,
+        canvas: c.canvas,
+        foreground: c.foreground,
+        accent: c.accent,
+        border: c.border,
+    });
+    let updated = settings::set_custom_colors(project_root.as_path(), mapped)?;
     Ok(settings_to_result(updated))
 }
 

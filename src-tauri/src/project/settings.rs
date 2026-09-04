@@ -45,11 +45,27 @@ pub struct CompanionPosition {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CustomColors {
+    #[serde(default)]
+    pub background: Option<String>,
+    #[serde(default)]
+    pub canvas: Option<String>,
+    #[serde(default)]
+    pub foreground: Option<String>,
+    #[serde(default)]
+    pub accent: Option<String>,
+    #[serde(default)]
+    pub border: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ProjectSettings {
     pub pomodoro_work_minutes: u32,
     pub pomodoro_break_minutes: u32,
     #[serde(default)]
     pub theme: FunTheme,
+    #[serde(default)]
+    pub custom_colors: Option<CustomColors>,
     #[serde(default)]
     pub companion_chat: Option<CompanionPosition>,
     #[serde(default)]
@@ -74,6 +90,7 @@ impl Default for ProjectSettings {
             pomodoro_work_minutes: 25,
             pomodoro_break_minutes: 5,
             theme: FunTheme::Light,
+            custom_colors: None,
             companion_chat: None,
             companion_pomo: None,
             lofi_muted: false,
@@ -113,6 +130,16 @@ pub fn write_settings(project_root: &Path, settings: &ProjectSettings) -> Result
 pub fn set_theme(project_root: &Path, theme: FunTheme) -> Result<ProjectSettings, String> {
     let mut settings = read_settings(project_root)?;
     settings.theme = theme;
+    write_settings(project_root, &settings)?;
+    Ok(settings)
+}
+
+pub fn set_custom_colors(
+    project_root: &Path,
+    colors: Option<CustomColors>,
+) -> Result<ProjectSettings, String> {
+    let mut settings = read_settings(project_root)?;
+    settings.custom_colors = colors;
     write_settings(project_root, &settings)?;
     Ok(settings)
 }
@@ -222,6 +249,42 @@ mod tests {
         let reloaded = read_settings(&project).expect("reload");
         assert!(reloaded.lofi_muted);
         assert_eq!(reloaded.lofi_volume, 55);
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn set_custom_colors_persists() {
+        let project = temp_project();
+        let colors = CustomColors {
+            background: Some("#ff0000".to_string()),
+            canvas: Some("#00ff00".to_string()),
+            foreground: None,
+            accent: None,
+            border: None,
+        };
+        let updated = set_custom_colors(&project, Some(colors.clone())).expect("set colors");
+        assert_eq!(updated.custom_colors, Some(colors.clone()));
+
+        let reloaded = read_settings(&project).expect("reload");
+        assert_eq!(reloaded.custom_colors, Some(colors));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn set_custom_colors_reset_to_none() {
+        let project = temp_project();
+        let colors = CustomColors {
+            background: Some("#ff0000".to_string()),
+            canvas: None,
+            foreground: None,
+            accent: None,
+            border: None,
+        };
+        set_custom_colors(&project, Some(colors)).expect("set");
+        let updated = set_custom_colors(&project, None).expect("reset");
+        assert!(updated.custom_colors.is_none());
 
         let _ = fs::remove_dir_all(project);
     }

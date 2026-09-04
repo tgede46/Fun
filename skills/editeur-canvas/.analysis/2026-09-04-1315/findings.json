@@ -1,0 +1,242 @@
+{
+  "schema_version": 2,
+  "subject": "agent-editeur-canvas",
+  "generated": "2026-09-04T13:15:00Z",
+  "verdict": "Lean stateless agent with strong persona; critical eval gap and orphaned build artifact need attention.",
+  "grade": "good",
+  "summary": "Trace is a focused, well-characterized canvas editor with a clear persona and tight capability prompts. The primary weakness is an eval suite with only 2 cases (critical), and a prompt-quality-canon.md that inflates context without being routed. The persona is treated as investment and preserved.",
+  "standards": {
+    "canon": "/home/gedeonkp/Documents/projet/Fun/.agents/skills/bmad-agent-builder/references/prompt-quality-canon.md",
+    "principles": "/home/gedeonkp/Documents/projet/Fun/.agents/skills/bmad-agent-builder/references/agent-quality-principles.md",
+    "scripts": "/home/gedeonkp/Documents/projet/Fun/.agents/skills/bmad-agent-builder/references/script-standards.md"
+  },
+  "agent_profile": {
+    "name": "Trace",
+    "title": "Éditeur canvas",
+    "icon": "✏️",
+    "agent_type": "stateless",
+    "mission": "Traduire une instruction utilisateur en modifications concrètes sur le canvas Excalidraw"
+  },
+  "capabilities": [
+    { "name": "apply-instruction", "kind": "prompt", "note": "Translate user instruction into Excalidraw canvas changes" },
+    { "name": "validate-excalidraw", "kind": "prompt", "note": "Validate Excalidraw JSON before save (Rust-side)" },
+    { "name": "integration-fun", "kind": "prompt", "note": "Wire Trace into Fun Chat and diagram pipeline" }
+  ],
+  "detailed_analysis": {
+    "leanness": "Lean overall — two redundancy findings in SKILL.md/apply-instruction.md, one canonical issue; validate-excalidraw.md and integration-fun.md are tight.",
+    "architecture": "Clean stateless skill — frontmatter, topology, progressive disclosure, and activation all pass; one low-severity finding on reference frontmatter divergence.",
+    "determinism": "Minor over-structure in apply-instruction.md; otherwise destination-focused.",
+    "customization": "Metadata-only customize.toml, no override surface — acceptable for stateless agent with focused scope.",
+    "enhancement": "Lean core with critical eval gap and one misallocated reference; no hostile-environment or headless guidance.",
+    "agent-cohesion": "Lean, well-carved skill; orphaned canon reference and missing on-activation config parity."
+  },
+  "experience": {
+    "journeys": [
+      { "name": "Canvas edit", "steps": "User opens diagram → asks Trace to modify → Trace produces Excalidraw JSON → Rust validates and saves → canvas updates" },
+      { "name": "Review redirect", "steps": "User asks for review → Trace redirects to relecteur-diagramme" }
+    ],
+    "headless": "No headless invocation contract defined."
+  },
+  "themes": [
+    {
+      "title": "Over-documented wiring, under-documented contract",
+      "root_cause": "apply-instruction.md mixes LLM guidance with Rust pipeline plumbing and numbered process steps. validate-excalidraw.md describes validation as if the agent runs it, but Rust handles it. This confuses the model about its actual role.",
+      "finding_ids": ["leanness-2", "determinism-1", "determinism-2", "enhancement-2"],
+      "action": "Reframe apply-instruction.md as goal + non-inferables only. Reframe validate-excalidraw.md as the Rust validation contract, not agent behavior."
+    },
+    {
+      "title": "Build artifact pollution",
+      "root_cause": "prompt-quality-canon.md (1652 tokens, 2.7× SKILL.md) was auto-copied by the builder. It's a meta-document about prompt authoring, never routed, never loaded by the agent. It inflates context on every activation.",
+      "finding_ids": ["enhancement-3", "cohesion-1"],
+      "action": "Remove references/prompt-quality-canon.md from this skill. It belongs to the builder root."
+    },
+    {
+      "title": "Thin eval coverage",
+      "root_cause": "Only 2 eval cases for a skill that handles add/remove/relabel/recolor/reposition/connect. No edge-case, error, or hostile coverage.",
+      "finding_ids": ["enhancement-1", "cohesion-3"],
+      "action": "Add 6+ eval cases covering invalid JSON rejection, ambiguous instruction, delete of absent element, empty diagram, non-French input, and non-edit routing."
+    },
+    {
+      "title": "Missing personalization and fallback",
+      "root_cause": "On-activation doesn't load user config ({user_name}, {communication_language}). No fallback for non-edit or non-French inputs.",
+      "finding_ids": ["cohesion-2", "enhancement-5"],
+      "action": "Add config loading to On Activation. Add catch-all routing for non-edit intents."
+    }
+  ],
+  "strengths": [
+    "Strong, specific persona — 'artisan visuel précis' is memorable and functional",
+    "Clean stateless topology — everything in SKILL.md + 3 focused references",
+    "Tight non-inferables — JSON validity, canvas editability, Tauri persistence clearly stated",
+    "Communication style table encodes non-obvious mappings (ambiguous instruction, invalid JSON)",
+    "Integration-fun.md cleanly describes the wiring without bloating SKILL.md"
+  ],
+  "recommendations": [
+    { "rank": 1, "action": "Remove references/prompt-quality-canon.md — orphaned build artifact inflating context by 2.7×", "resolves": ["enhancement-3", "cohesion-1"] },
+    { "rank": 2, "action": "Add 6+ eval cases to cases.json covering edge cases, errors, and hostile inputs", "resolves": ["enhancement-1", "cohesion-3"] },
+    { "rank": 3, "action": "Reframe apply-instruction.md: collapse numbered steps to outcome statement, remove Rust plumbing description", "resolves": ["leanness-2", "determinism-1", "determinism-2"] },
+    { "rank": 4, "action": "Reframe validate-excalidraw.md as Rust-side validation contract, not agent behavior", "resolves": ["enhancement-2"] },
+    { "rank": 5, "action": "Add config loading ({user_name}, {communication_language}) to On Activation and catch-all routing for non-edit intents", "resolves": ["cohesion-2", "enhancement-5"] }
+  ],
+  "findings": [
+    {
+      "id": "leanness-1",
+      "severity": "low",
+      "title": "Overview restates name+description",
+      "location": "SKILL.md:10-12",
+      "evidence": "The overview sentence restates what the YAML name+description already convey.",
+      "recommendation": "Replace overview with the outcome-only mission line and cut the restated role description."
+    },
+    {
+      "id": "leanness-2",
+      "severity": "medium",
+      "title": "Approach prescribes process instead of stating outcome",
+      "location": "references/apply-instruction.md:14-19",
+      "evidence": "Four numbered steps script the route. A model that knows the outcome and non-inferables already knows to parse intent and confirm.",
+      "recommendation": "Collapse to outcome statement. Cut numbered steps and confirm step."
+    },
+    {
+      "id": "leanness-3",
+      "severity": "low",
+      "title": "Minimal diff principle restated across files",
+      "location": "SKILL.md:35, references/apply-instruction.md:21",
+      "evidence": "Same rule in two files.",
+      "recommendation": "Keep in SKILL.md, remove restatement from apply-instruction.md."
+    },
+    {
+      "id": "architecture-1",
+      "severity": "low",
+      "title": "Reference frontmatter uses non-standard fields",
+      "location": "references/apply-instruction.md:4-5",
+      "evidence": "code and type fields in reference frontmatter are inert.",
+      "recommendation": "Remove or document purpose."
+    },
+    {
+      "id": "determinism-1",
+      "severity": "medium",
+      "title": "Numbered steps in apply-instruction.md",
+      "location": "references/apply-instruction.md:16-20",
+      "evidence": "Four numbered steps form a scripted sequence.",
+      "recommendation": "Replace with goal statement."
+    },
+    {
+      "id": "determinism-2",
+      "severity": "low",
+      "title": "Plumbing description in apply-instruction.md",
+      "location": "references/apply-instruction.md:23",
+      "evidence": "Describes Rust pipeline flow not needed for LLM decision-making.",
+      "recommendation": "Move to integration-fun.md or remove."
+    },
+    {
+      "id": "determinism-3",
+      "severity": "low",
+      "title": "Missing consumer in apply-instruction.md",
+      "location": "references/apply-instruction.md",
+      "evidence": "No explicit consumer specified.",
+      "recommendation": "Add consumer line."
+    },
+    {
+      "id": "enhancement-1",
+      "severity": "critical",
+      "title": "Eval suite has only 2 cases",
+      "location": "evals/cases.json",
+      "evidence": "Only trigger-edit and baseline-separation. No edge-case, error, or hostile coverage.",
+      "recommendation": "Add 6+ cases covering invalid JSON, ambiguous instruction, delete-missing, empty canvas, non-French input, non-edit routing."
+    },
+    {
+      "id": "enhancement-2",
+      "severity": "high",
+      "title": "validate-excalidraw.md describes agent-side validation that never runs",
+      "location": "references/validate-excalidraw.md:29",
+      "evidence": "Non-Inferables says validation runs in Rust, but Approach reads as if the agent performs it.",
+      "recommendation": "Reframe as Rust validation contract. Remove agent-side checklist."
+    },
+    {
+      "id": "enhancement-3",
+      "severity": "high",
+      "title": "prompt-quality-canon.md is meta-reference, not operational guidance",
+      "location": "references/prompt-quality-canon.md",
+      "evidence": "1652 tokens, never routed, never loaded. Inflates context on every activation.",
+      "recommendation": "Remove from this skill. Belongs to builder root."
+    },
+    {
+      "id": "enhancement-4",
+      "severity": "medium",
+      "title": "SKILL.md activation duplicates identity and communication style",
+      "location": "SKILL.md:14-28",
+      "evidence": "Identity, Communication Style, and On Activation carry overlapping info.",
+      "recommendation": "Collapse into one block."
+    },
+    {
+      "id": "enhancement-5",
+      "severity": "medium",
+      "title": "No guidance for non-edit or non-French inputs",
+      "location": "SKILL.md:46",
+      "evidence": "Routing table lists French edit verbs only.",
+      "recommendation": "Add catch-all routing for non-edit intents."
+    },
+    {
+      "id": "enhancement-6",
+      "severity": "low",
+      "title": ".memlog.md mixes languages",
+      "location": ".memlog.md:6",
+      "evidence": "Chinese text in an English/French context.",
+      "recommendation": "Normalize to English."
+    },
+    {
+      "id": "enhancement-7",
+      "severity": "low",
+      "title": "No headless invocation contract",
+      "location": "SKILL.md",
+      "evidence": "No input schema for headless callers.",
+      "recommendation": "Add headless invocation section."
+    },
+    {
+      "id": "customization-1",
+      "severity": "medium",
+      "title": "No override surface in customize.toml",
+      "location": "skills/editeur-canvas/customize.toml:1-10",
+      "evidence": "Metadata only, no override hooks.",
+      "recommendation": "Acceptable for focused stateless agent. Document if needed."
+    },
+    {
+      "id": "customization-2",
+      "severity": "low",
+      "title": "Hardcoded persona and routing in SKILL.md",
+      "location": "skills/editeur-canvas/SKILL.md:6-46",
+      "evidence": "Name, emoji, language, routing verbs hardcoded.",
+      "recommendation": "Acceptable — persona is the deliverable."
+    },
+    {
+      "id": "customization-3",
+      "severity": "low",
+      "title": "Hardcoded error strings in references",
+      "location": "skills/editeur-canvas/references/validate-excalidraw.md:23",
+      "evidence": "Error message hardcoded inline.",
+      "recommendation": "Acceptable for focused agent."
+    },
+    {
+      "id": "cohesion-1",
+      "severity": "medium",
+      "title": "prompt-quality-canon.md is orphaned build artifact",
+      "location": "references/prompt-quality-canon.md",
+      "evidence": "1652 tokens, never routed, dead weight.",
+      "recommendation": "Remove from skill."
+    },
+    {
+      "id": "cohesion-2",
+      "severity": "low",
+      "title": "On-activation missing config loading",
+      "location": "SKILL.md:42-46",
+      "evidence": "Doesn't load {user_name}, {communication_language} like sibling skill.",
+      "recommendation": "Add config loading."
+    },
+    {
+      "id": "cohesion-3",
+      "severity": "low",
+      "title": "Only two eval cases for multi-operation skill",
+      "location": "evals/cases.json",
+      "evidence": "Handles 6 operations, tests 2.",
+      "recommendation": "Add 2-3 more cases."
+    }
+  ]
+}

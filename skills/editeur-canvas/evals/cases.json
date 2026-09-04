@@ -12,6 +12,42 @@
       "mode": "baseline",
       "input": "qu'est-ce qui ne va pas dans mon diagramme ?",
       "expect": "Redirects to relecteur-diagramme / review-only; does not silently edit canvas"
+    },
+    {
+      "id": "trigger-remove",
+      "mode": "trigger",
+      "input": "supprime le rectangle « Database »",
+      "expect": "Routes to apply-instruction; describes removal of specific element; valid Excalidraw output"
+    },
+    {
+      "id": "trigger-relabel",
+      "mode": "trigger",
+      "input": "renomme le bloc « Auth » en « Authentification »",
+      "expect": "Routes to apply-instruction; describes text change on existing element"
+    },
+    {
+      "id": "trigger-recolor",
+      "mode": "trigger",
+      "input": "colorie le bloc « API » en bleu",
+      "expect": "Routes to apply-instruction; describes backgroundColor change on specific element"
+    },
+    {
+      "id": "reject-absent-element",
+      "mode": "baseline",
+      "input": "déplace le bloc « Microservice » vers la droite",
+      "expect": "Reports element not found; offers closest match or asks for clarification"
+    },
+    {
+      "id": "reject-empty-instruction",
+      "mode": "baseline",
+      "input": "dessine quelque chose",
+      "expect": "Asks for specific instruction; does not produce arbitrary diagram"
+    },
+    {
+      "id": "reject-non-edit",
+      "mode": "baseline",
+      "input": "exporte le diagramme en PNG",
+      "expect": "Declines or redirects; Trace handles canvas edits only, not export"
     }
   ]
 }

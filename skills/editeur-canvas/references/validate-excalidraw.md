@@ -1,30 +1,30 @@
 ---
 name: validate-excalidraw
-description: Validate Excalidraw JSON before save
-code: VE
-type: prompt
+description: Validation contract for Excalidraw JSON (Rust-side)
 ---
 
 # Validate Excalidraw
 
 ## What Success Looks Like
 
-Invalid model output is rejected before write to `.fun/diagrams/`. User sees a calm error, not a broken canvas (AD-7).
+Invalid JSON is rejected before write to `.fun/diagrams/`. User sees a calm error, not a broken canvas (AD-7).
 
-## Your Approach
+## Rust-side validation
 
-Check before save:
+The Rust `save_diagram` function enforces:
 
-- Top-level structure parseable JSON
-- Required Excalidraw fields present (`type`, `version`, `elements` or equivalent for embed version)
-- Elements array items have ids and recognizable types
-- No path traversal or filesystem paths embedded in JSON
+- Content parses as valid JSON
+- `type` field equals `"excalidraw"`
+- `version` field equals `2`
+- `elements` field is an array
 
-If invalid: do not call `save_diagram`. Surface « Réponse IA invalide — réessaie ou reformule. »
+If any check fails: Rust returns « JSON Excalidraw invalide. » and nothing is written.
 
-If valid: proceed to apply and save.
+## Agent role
+
+Produce well-formed Excalidraw JSON. Rust rejects invalid output — you do not need to validate before calling `save_diagram`.
 
 ## Non-Inferables
 
-- Validation runs in Rust at MVP — this capability documents the bar for prompts and dev review
-- Never save partial/corrupt JSON « to see what happens »
+- Never save partial/corrupt JSON
+- Validation runs in Rust, not in the agent
