@@ -230,6 +230,25 @@ export interface UMLNotesLinkObject extends BaseObject {
   endID?: string;
 }
 
+// ─── Lien structuré (pour relations survivalistes aux conversions) ───
+export interface EdgeObject extends BaseObject {
+  type: "edge";
+  fromId: string;
+  toId: string;
+  kind: "association" | "inheritance" | "implementation" | "aggregation" | "composition" | "dependency" | "notes-link" | "arrow" | "transition";
+  points?: { x: number; y: number }[];
+  startArrow?: string;
+  endArrow?: string;
+  label?: string;
+}
+
+// ─── Métadonnées de source ───
+export interface DiagramMetadata {
+  sourceFormat?: "excalidraw" | "drawio" | "plantuml" | "fun";
+  sourceFilename?: string;
+  exportedAt?: string;
+}
+
 // ─── Types unifiés ───
 export type UMLObjectType =
   | "uml-class"
@@ -286,7 +305,8 @@ export type FunObject =
   | UMLAggregationObject
   | UMLCompositionObject
   | UMLDependencyObject
-  | UMLNotesLinkObject;
+  | UMLNotesLinkObject
+  | EdgeObject;
 
 export type ToolType =
   | "select"
@@ -321,6 +341,8 @@ export type ToolType =
 export interface FunScene {
   id?: string;
   objects: FunObject[];
+  edges?: EdgeObject[];
+  metadata?: DiagramMetadata;
   camera?: Camera;
   grid?: boolean;
   version?: number;
