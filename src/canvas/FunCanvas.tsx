@@ -16,6 +16,7 @@ import { useTextTool } from "./tools/TextTool";
 import { useImageTool } from "./tools/ImageTool";
 import { useClipboard } from "./hooks/useClipboard";
 import { CanvasRenderer } from "./CanvasRenderer";
+import { UnifiedDiagramTool } from "./tools/UnifiedDiagramTool";
 import { Inspector } from "./components/Inspector";
 import { LayersPanel } from "./components/LayersPanel";
 import { objectBBox } from "./utils/geometry";
@@ -48,7 +49,7 @@ export function FunCanvas({
   layersOpen = false,
   onLayersOpenChange,
 }: FunCanvasProps) {
-  const { scene, objects, addObject, updateObject, deleteObjects, setSceneDirect } = useScene(initialScene);
+  const { scene, objects, edges, addObject, updateObject, deleteObjects, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo, canUndo, canRedo } = useHistory(scene);
@@ -369,6 +370,7 @@ export function FunCanvas({
       >
         <CanvasRenderer
           objects={objects}
+          edges={edges}
           selectedIds={selectedIds}
           camera={camera}
           grid={gridEnabled}
