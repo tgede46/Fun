@@ -65,6 +65,13 @@ export function useScene(initial?: FunScene) {
     }));
   }, []);
 
+  const updateEdge = useCallback((id: string, patch: Partial<EdgeObject>) => {
+    setScene((prev) => ({
+      ...prev,
+      edges: prev.edges?.map((e) => (e.id === id ? { ...e, ...patch } as EdgeObject : e)) ?? [],
+    }));
+  }, []);
+
   const replaceAllObjects = useCallback((objects: FunObject[], edges?: EdgeObject[]) => {
     setScene((prev) => ({ ...prev, objects, edges: edges ?? prev.edges }));
   }, []);
@@ -124,6 +131,7 @@ export function useScene(initial?: FunScene) {
     deleteObjects,
     deleteEdge,
     deleteEdges,
+    updateEdge,
     replaceAllObjects,
     clearScene,
     setSceneDirect,

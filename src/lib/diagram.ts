@@ -167,13 +167,34 @@ export function serializeFunScene(scene: FunScene): string {
       };
     }
 
+    if (obj.type === "arrow") {
+      return {
+        ...base,
+        type: "arrow",
+        points: obj.points.map((p) => ({ x: p.x, y: p.y })),
+      };
+    }
+
     return base;
   });
+
+  const edges = (scene.edges ?? []).map((edge) => ({
+    id: edge.id,
+    type: "edge" as const,
+    fromId: edge.fromId,
+    toId: edge.toId,
+    kind: edge.kind,
+    label: edge.label,
+    stroke: edge.stroke,
+    strokeWidth: edge.strokeWidth,
+    points: edge.points,
+  }));
 
   const result = {
     type: "excalidraw" as const,
     version: 2 as const,
     elements: excalidrawElements,
+    edges,
     appState: {
       viewBackgroundColor: "#ffffff",
     },
@@ -221,9 +242,30 @@ export async function deserializeFunScene(rawContent: string): Promise<FunScene>
     },
   );
 
+  const edges = (parsed.edges ?? []).map((edge: Record<string, unknown>) => ({
+    id: edge.id as string,
+    type: "edge" as const,
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+    fill: "transparent",
+    stroke: (edge.stroke as string) ?? "#1e1e1e",
+    strokeWidth: (edge.strokeWidth as number) ?? 2,
+    opacity: 1,
+    locked: false,
+    zIndex: 0,
+    fromId: edge.fromId as string,
+    toId: edge.toId as string,
+    kind: edge.kind as string,
+    label: edge.label as string | undefined,
+    points: edge.points as { x: number; y: number }[] | undefined,
+  }));
+
   return {
     id: crypto.randomUUID(),
     objects: excalidrawObjects,
+    edges,
     camera: { x: 0, y: 0, zoom: 1 },
     grid: true,
     version: 1,

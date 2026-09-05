@@ -51,7 +51,7 @@ export function FunCanvas({
   layersOpen = false,
   onLayersOpenChange,
 }: FunCanvasProps) {
-  const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdge, deleteEdges, setSceneDirect } = useScene(initialScene);
+  const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdge, deleteEdges, updateEdge, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo, canUndo, canRedo } = useHistory(scene);
@@ -61,6 +61,7 @@ export function FunCanvas({
   const [gridEnabled] = useState(true);
   const [snapLines, setSnapLines] = useState<{ x: number[]; y: number[] }>({ x: [], y: [] });
   const [contextMenu, setContextMenu] = useState<ContextMenu | null>(null);
+  const [diagramToolOpen, setDiagramToolOpen] = useState(false);
 
   const setLayersOpen = useCallback(
     (open: boolean) => {
@@ -112,22 +113,52 @@ export function FunCanvas({
 
   const handleAddEdge = useCallback((edge: EdgeObject) => {
     addEdge(edge);
-    push({ ...scene, edges: [...(scene.edges ?? []), edge] });
+    const nextScene = { ...scene, edges: [...(scene.edges ?? []), edge] };
+    push(nextScene);
   }, [addEdge, push, scene]);
 
   const edgeTool = useEdgeTool({ camera, objects, onAddEdge: handleAddEdge, activeColor });
 
   const handleEdgeSelect = useCallback((id: string) => {
-    setSelectedEdgeIds(new Set([id]));
+    setSelectedEdgeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
     clearSelection();
   }, [clearSelection]);
+
+  const handleEdgeLabelChange = useCallback((id: string, label: string) => {
+    updateEdge(id, { label: label || undefined });
+    const nextEdges = (scene.edges ?? []).map((e) =>
+      e.id === id ? { ...e, label: label || undefined } : e
+    );
+    push({ ...scene, edges: nextEdges });
+  }, [updateEdge, push, scene]);
+
+  const handleEdgeEndpointDrag = useCallback((edgeId: string, endpoint: "from" | "to", newTargetId: string) => {
+    const nextEdges = (scene.edges ?? []).map((e) => {
+      if (e.id !== edgeId) return e;
+      return endpoint === "from"
+        ? { ...e, fromId: newTargetId }
+        : { ...e, toId: newTargetId };
+    });
+    updateEdge(edgeId, endpoint === "from" ? { fromId: newTargetId } : { toId: newTargetId });
+    push({ ...scene, edges: nextEdges });
+  }, [updateEdge, push, scene]);
 
   const handleDeleteSelectedEdges = useCallback(() => {
     if (selectedEdgeIds.size > 0) {
       deleteEdges([...selectedEdgeIds]);
+      const nextEdges = (scene.edges ?? []).filter((e) => !selectedEdgeIds.has(e.id));
+      push({ ...scene, edges: nextEdges });
       setSelectedEdgeIds(new Set());
     }
-  }, [selectedEdgeIds, deleteEdges]);
+  }, [selectedEdgeIds, deleteEdges, push, scene]);
 
   const edgePreview = edgeTool.phase === "source-selected" && edgeTool.sourceObj && edgeTool.previewEnd
     ? {
@@ -428,6 +459,8 @@ export function FunCanvas({
           grid={gridEnabled}
           snapLines={snapLines}
           onEdgeSelect={handleEdgeSelect}
+          onEdgeLabelChange={handleEdgeLabelChange}
+          onEdgeEndpointDrag={handleEdgeEndpointDrag}
           edgePreview={edgePreview}
         />
       </svg>
@@ -470,6 +503,28 @@ export function FunCanvas({
           >
             ↷
           </button>
+        </div>
+
+        {/* Import/Export */}
+        <div className="relative pointer-events-auto">
+          <button
+            type="button"
+            className="h-7 px-2 flex items-center gap-1 rounded text-xs text-muted-foreground bg-card border border-border shadow-sm hover:bg-accent/50 hover:text-foreground transition-colors"
+            onClick={() => setDiagramToolOpen(!diagramToolOpen)}
+          >
+            ⇄ Import/Export
+          </button>
+          {diagramToolOpen && (
+            <div className="absolute top-full left-0 mt-1 z-50">
+              <UnifiedDiagramTool
+                scene={scene}
+                onSceneChange={(newScene) => {
+                  setSceneDirect(newScene);
+                  setDiagramToolOpen(false);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Zoom + Layers */}

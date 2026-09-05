@@ -37,6 +37,8 @@ interface CanvasRendererProps {
   grid: boolean;
   onTextDoubleClick?: (id: string) => void;
   onEdgeSelect?: (id: string) => void;
+  onEdgeLabelChange?: (id: string, label: string) => void;
+  onEdgeEndpointDrag?: (edgeId: string, endpoint: "from" | "to", newTargetId: string) => void;
   snapLines?: { x: number[]; y: number[] };
   edgePreview?: { fromX: number; fromY: number; toX: number; toY: number; kind?: string } | null;
 }
@@ -116,6 +118,8 @@ export function CanvasRenderer({
   grid,
   onTextDoubleClick,
   onEdgeSelect,
+  onEdgeLabelChange,
+  onEdgeEndpointDrag,
   snapLines,
   edgePreview,
 }: CanvasRendererProps) {
@@ -140,6 +144,8 @@ export function CanvasRenderer({
             objectsById={objectsById}
             selected={selectedEdgeIds?.has(edge.id)}
             onSelect={onEdgeSelect}
+            onLabelChange={onEdgeLabelChange}
+            onEndpointDrag={onEdgeEndpointDrag}
           />
         ))}
 

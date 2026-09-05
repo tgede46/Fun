@@ -20,6 +20,7 @@ export function createEmptyScene(): FunScene {
   return {
     id: crypto.randomUUID(),
     objects: [],
+    edges: [],
     camera: { x: 0, y: 0, zoom: 1 },
     grid: true,
     version: 1,
