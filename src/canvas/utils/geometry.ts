@@ -81,8 +81,28 @@ export function pointInObject(px: number, py: number, obj: FunObject): boolean {
       return false;
     }
     default:
-      return false;
+      return pointInBBox(px, py, { x: obj.x, y: obj.y, width: obj.width, height: obj.height });
   }
+}
+
+export function pointNearEdge(
+  px: number,
+  py: number,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number,
+  threshold: number = 8,
+): boolean {
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return distance({ x: px, y: py }, { x: fromX, y: fromY }) < threshold;
+  let t = ((px - fromX) * dx + (py - fromY) * dy) / lenSq;
+  t = Math.max(0, Math.min(1, t));
+  const projX = fromX + t * dx;
+  const projY = fromY + t * dy;
+  return distance({ x: px, y: py }, { x: projX, y: projY }) < threshold;
 }
 
 export function resizeBBox(

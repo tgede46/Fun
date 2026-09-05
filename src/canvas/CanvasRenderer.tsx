@@ -32,10 +32,13 @@ interface CanvasRendererProps {
   objects: FunObject[];
   edges?: EdgeObject[];
   selectedIds: Set<string>;
+  selectedEdgeIds?: Set<string>;
   camera: Camera;
   grid: boolean;
   onTextDoubleClick?: (id: string) => void;
+  onEdgeSelect?: (id: string) => void;
   snapLines?: { x: number[]; y: number[] };
+  edgePreview?: { fromX: number; fromY: number; toX: number; toY: number; kind?: string } | null;
 }
 
 function GridPattern({ camera }: { camera: Camera }) {
@@ -108,14 +111,16 @@ export function CanvasRenderer({
   objects,
   edges = [],
   selectedIds,
+  selectedEdgeIds,
   camera,
   grid,
   onTextDoubleClick,
+  onEdgeSelect,
   snapLines,
+  edgePreview,
 }: CanvasRendererProps) {
   const sorted = [...objects].sort((a, b) => a.zIndex - b.zIndex);
 
-  // Map des coordonnées des objets pour positionner les edges
   const objectsById = new Map<string, { x: number; y: number; width: number; height: number }>();
   for (const obj of objects) {
     objectsById.set(obj.id, { x: obj.x, y: obj.y, width: obj.width, height: obj.height });
@@ -127,14 +132,34 @@ export function CanvasRenderer({
       <g transform={`translate(${camera.x}, ${camera.y}) scale(${camera.zoom})`}>
         {snapLines && <SnapLines xLines={snapLines.x} yLines={snapLines.y} camera={camera} />}
 
-        {/* Rendu des edges avant les objets pour qu'ils soient derrière */}
+        {/* Edges */}
         {edges.map((edge) => (
           <EdgeRenderer
             key={edge.id}
             edge={edge}
             objectsById={objectsById}
+            selected={selectedEdgeIds?.has(edge.id)}
+            onSelect={onEdgeSelect}
           />
         ))}
+
+        {/* Edge preview pendant la création */}
+        {edgePreview && (
+          <g opacity={0.6}>
+            <line
+              x1={edgePreview.fromX}
+              y1={edgePreview.fromY}
+              x2={edgePreview.toX}
+              y2={edgePreview.toY}
+              stroke="#4f8ff7"
+              strokeWidth={2}
+              strokeDasharray="6,4"
+              strokeLinecap="round"
+            />
+            <circle cx={edgePreview.fromX} cy={edgePreview.fromY} r={5} fill="#4f8ff7" stroke="white" strokeWidth={1.5} />
+            <circle cx={edgePreview.toX} cy={edgePreview.toY} r={5} fill="#4f8ff7" stroke="white" strokeWidth={1.5} />
+          </g>
+        )}
 
         {sorted.map((obj) => {
           const selected = selectedIds.has(obj.id);

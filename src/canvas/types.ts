@@ -317,6 +317,7 @@ export type ToolType =
   | "text"
   | "arrow"
   | "image"
+  | "edge"
   | "uml-class"
   | "uml-interface"
   | "uml-abstract-class"

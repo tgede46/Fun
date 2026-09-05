@@ -50,6 +50,21 @@ export function useScene(initial?: FunScene) {
     }));
   }, []);
 
+  const deleteEdge = useCallback((id: string) => {
+    setScene((prev) => ({
+      ...prev,
+      edges: prev.edges?.filter((e) => e.id !== id) ?? [],
+    }));
+  }, []);
+
+  const deleteEdges = useCallback((ids: string[]) => {
+    const idSet = new Set(ids);
+    setScene((prev) => ({
+      ...prev,
+      edges: prev.edges?.filter((e) => !idSet.has(e.id)) ?? [],
+    }));
+  }, []);
+
   const replaceAllObjects = useCallback((objects: FunObject[], edges?: EdgeObject[]) => {
     setScene((prev) => ({ ...prev, objects, edges: edges ?? prev.edges }));
   }, []);
@@ -107,6 +122,8 @@ export function useScene(initial?: FunScene) {
     updateObject,
     deleteObject,
     deleteObjects,
+    deleteEdge,
+    deleteEdges,
     replaceAllObjects,
     clearScene,
     setSceneDirect,

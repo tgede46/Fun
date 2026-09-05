@@ -14,12 +14,14 @@ import { useArrowTool } from "./tools/ArrowTool";
 import { useSelectionTool } from "./tools/SelectionTool";
 import { useTextTool } from "./tools/TextTool";
 import { useImageTool } from "./tools/ImageTool";
+import { useEdgeTool } from "./tools/EdgeTool";
 import { useClipboard } from "./hooks/useClipboard";
 import { CanvasRenderer } from "./CanvasRenderer";
 import { UnifiedDiagramTool } from "./tools/UnifiedDiagramTool";
 import { Inspector } from "./components/Inspector";
 import { LayersPanel } from "./components/LayersPanel";
 import { objectBBox } from "./utils/geometry";
+import type { EdgeObject } from "./types";
 import { ActionManager } from "./actions/manager";
 import { toolActions } from "./actions/toolActions";
 import { editActions } from "./actions/editActions";
@@ -49,7 +51,7 @@ export function FunCanvas({
   layersOpen = false,
   onLayersOpenChange,
 }: FunCanvasProps) {
-  const { scene, objects, edges, addObject, updateObject, deleteObjects, setSceneDirect } = useScene(initialScene);
+  const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdge, deleteEdges, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo, canUndo, canRedo } = useHistory(scene);
@@ -105,6 +107,37 @@ export function FunCanvas({
   const textTool = useTextTool({ onAdd: handleAddObject, activeColor });
   const imageTool = useImageTool({ onAdd: handleAddObject });
   const clipboard = useClipboard();
+
+  const [selectedEdgeIds, setSelectedEdgeIds] = useState<Set<string>>(new Set());
+
+  const handleAddEdge = useCallback((edge: EdgeObject) => {
+    addEdge(edge);
+    push({ ...scene, edges: [...(scene.edges ?? []), edge] });
+  }, [addEdge, push, scene]);
+
+  const edgeTool = useEdgeTool({ camera, objects, onAddEdge: handleAddEdge, activeColor });
+
+  const handleEdgeSelect = useCallback((id: string) => {
+    setSelectedEdgeIds(new Set([id]));
+    clearSelection();
+  }, [clearSelection]);
+
+  const handleDeleteSelectedEdges = useCallback(() => {
+    if (selectedEdgeIds.size > 0) {
+      deleteEdges([...selectedEdgeIds]);
+      setSelectedEdgeIds(new Set());
+    }
+  }, [selectedEdgeIds, deleteEdges]);
+
+  const edgePreview = edgeTool.phase === "source-selected" && edgeTool.sourceObj && edgeTool.previewEnd
+    ? {
+        fromX: edgeTool.sourceObj.x + edgeTool.sourceObj.width / 2,
+        fromY: edgeTool.sourceObj.y + edgeTool.sourceObj.height / 2,
+        toX: edgeTool.previewEnd.x,
+        toY: edgeTool.previewEnd.y,
+        kind: edgeTool.edgeKind,
+      }
+    : null;
 
   const actionContext: ActionContext = useMemo(() => ({
     elements: objects,
@@ -176,9 +209,11 @@ export function FunCanvas({
         textTool.handlePointerDown(e, screenToWorld);
       } else if (tool === "arrow") {
         arrowTool.handlePointerDown(e, screenToWorld);
+      } else if (tool === "edge") {
+        edgeTool.handlePointerDown(e, screenToWorld);
       }
     },
-    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, arrowTool, hitResizeHandle, contextMenu],
+    [tool, screenToWorld, panStart, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, textTool, arrowTool, edgeTool, hitResizeHandle, contextMenu],
   );
 
   const handlePointerMove = useCallback(
@@ -200,9 +235,11 @@ export function FunCanvas({
         diamondTool.handlePointerMove(e, screenToWorld);
       } else if (tool === "arrow") {
         arrowTool.handlePointerMove(e, screenToWorld);
+      } else if (tool === "edge") {
+        edgeTool.handlePointerMove(e, screenToWorld);
       }
     },
-    [tool, screenToWorld, panMove, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool],
+    [tool, screenToWorld, panMove, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool, edgeTool],
   );
 
   const handlePointerUp = useCallback(
@@ -220,9 +257,11 @@ export function FunCanvas({
         diamondTool.handlePointerUp();
       } else if (tool === "arrow") {
         arrowTool.handlePointerUp();
+      } else if (tool === "edge") {
+        edgeTool.handlePointerUp();
       }
     },
-    [tool, panEnd, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool],
+    [tool, panEnd, selectionTool, freehandTool, rectTool, ellipseTool, diamondTool, arrowTool, edgeTool],
   );
 
   const handleWheel = useCallback(
@@ -282,6 +321,7 @@ export function FunCanvas({
     }
     if (actionName === "delete") {
       deleteObjects([...selectedIds]);
+      handleDeleteSelectedEdges();
       clearSelection();
     }
     if (actionName === "selectAll") {
@@ -305,9 +345,20 @@ export function FunCanvas({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (edgeTool.phase !== "idle") {
+          edgeTool.cancel();
+          return;
+        }
         clearSelection();
+        setSelectedEdgeIds(new Set());
         selectTool("select");
         setContextMenu(null);
+        return;
+      }
+
+      if (e.key === "Tab" && tool === "edge" && edgeTool.phase === "source-selected") {
+        e.preventDefault();
+        edgeTool.cycleEdgeKind();
         return;
       }
 
@@ -315,7 +366,7 @@ export function FunCanvas({
         executeAction(action.name, "keyboard");
       });
     },
-    [actionContext, clearSelection, selectTool, executeAction],
+    [actionContext, clearSelection, selectTool, executeAction, edgeTool],
   );
 
   const handleCopy = useCallback(() => {
@@ -372,9 +423,12 @@ export function FunCanvas({
           objects={objects}
           edges={edges}
           selectedIds={selectedIds}
+          selectedEdgeIds={selectedEdgeIds}
           camera={camera}
           grid={gridEnabled}
           snapLines={snapLines}
+          onEdgeSelect={handleEdgeSelect}
+          edgePreview={edgePreview}
         />
       </svg>
 
@@ -390,6 +444,8 @@ export function FunCanvas({
         <ToolButton tool="text" label="Texte" icon="T" active={tool === "text"} onClick={() => selectTool("text")} shortcut="T" />
         <ToolButton tool="arrow" label="Flèche" icon="→" active={tool === "arrow"} onClick={() => selectTool("arrow")} shortcut="A" />
         <ToolButton tool="image" label="Image" icon="🖼" active={tool === "image"} onClick={imageTool.handleFileInput} shortcut="I" />
+        <div className="w-px h-5 bg-border mx-0.5" />
+        <ToolButton tool="edge" label="Connecteur" icon="⤳" active={tool === "edge"} onClick={() => selectTool("edge")} shortcut="E" />
       </div>
 
       {/* Top bar */}
@@ -504,13 +560,21 @@ export function FunCanvas({
 
       {/* Status bar */}
       <div className="absolute bottom-3 right-3 flex items-center gap-2 text-xs text-muted-foreground bg-card/80 border border-border rounded-lg px-2 py-1 shadow-sm pointer-events-none">
-        {selectedCount > 0 ? (
+        {selectedEdgeIds.size > 0 ? (
+          <span>{selectedEdgeIds.size} connexion{selectedEdgeIds.size > 1 ? "s" : ""}</span>
+        ) : selectedCount > 0 ? (
           <span>{selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}</span>
         ) : (
-          <span>{objects.length} objet{objects.length > 1 ? "s" : ""}</span>
+          <span>{objects.length} objet{objects.length > 1 ? "s" : ""} · {edges.length} lien{edges.length > 1 ? "s" : ""}</span>
         )}
         <span className="text-border">|</span>
-        <span>{tool === "select" ? "V" : tool === "freehand" ? "P" : tool === "rect" ? "R" : tool === "ellipse" ? "O" : tool === "diamond" ? "D" : tool === "text" ? "T" : tool === "arrow" ? "A" : "I"}</span>
+        <span>{tool === "select" ? "V" : tool === "freehand" ? "P" : tool === "rect" ? "R" : tool === "ellipse" ? "O" : tool === "diamond" ? "D" : tool === "text" ? "T" : tool === "arrow" ? "A" : tool === "edge" ? "E" : "I"}</span>
+        {edgeTool.phase === "source-selected" && (
+          <>
+            <span className="text-border">|</span>
+            <span className="text-[#4f8ff7]">Cliquer sur la cible ({edgeTool.edgeKind})</span>
+          </>
+        )}
       </div>
     </div>
   );
