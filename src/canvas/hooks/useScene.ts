@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FunObject, FunScene } from "../types";
+import type { FunObject, FunScene, EdgeObject } from "../types";
 
 const INITIAL_SCENE: FunScene = {
   id: crypto.randomUUID(),
   objects: [],
+  edges: [],
   camera: { x: 0, y: 0, zoom: 1 },
   grid: true,
   version: 1,
@@ -21,6 +22,10 @@ export function useScene(initial?: FunScene) {
     setScene((prev) => ({ ...prev, objects: [...prev.objects, withZ] }));
   }, []);
 
+  const addEdge = useCallback((edge: EdgeObject) => {
+    setScene((prev) => ({ ...prev, edges: [...(prev.edges ?? []), edge] }));
+  }, []);
+
   const updateObject = useCallback((id: string, patch: Partial<FunObject>) => {
     setScene((prev) => ({
       ...prev,
@@ -32,6 +37,7 @@ export function useScene(initial?: FunScene) {
     setScene((prev) => ({
       ...prev,
       objects: prev.objects.filter((o) => o.id !== id),
+      edges: prev.edges?.filter((e) => e.fromId !== id && e.toId !== id) ?? [],
     }));
   }, []);
 
@@ -40,15 +46,16 @@ export function useScene(initial?: FunScene) {
     setScene((prev) => ({
       ...prev,
       objects: prev.objects.filter((o) => !idSet.has(o.id)),
+      edges: prev.edges?.filter((e) => !idSet.has(e.fromId) && !idSet.has(e.toId)) ?? [],
     }));
   }, []);
 
-  const replaceAllObjects = useCallback((objects: FunObject[]) => {
-    setScene((prev) => ({ ...prev, objects }));
+  const replaceAllObjects = useCallback((objects: FunObject[], edges?: EdgeObject[]) => {
+    setScene((prev) => ({ ...prev, objects, edges: edges ?? prev.edges }));
   }, []);
 
   const clearScene = useCallback(() => {
-    setScene((prev) => ({ ...prev, objects: [] }));
+    setScene((prev) => ({ ...prev, objects: [], edges: [] }));
   }, []);
 
   const setSceneDirect = useCallback((newScene: FunScene) => {
@@ -57,6 +64,10 @@ export function useScene(initial?: FunScene) {
 
   const getObject = useCallback((id: string): FunObject | undefined => {
     return sceneRef.current.objects.find((o) => o.id === id);
+  }, []);
+
+  const getEdge = useCallback((id: string): EdgeObject | undefined => {
+    return sceneRef.current.edges?.find((e) => e.id === id);
   }, []);
 
   const getMaxZIndex = useCallback((): number => {
@@ -90,7 +101,9 @@ export function useScene(initial?: FunScene) {
   return {
     scene,
     objects: scene.objects,
+    edges: scene.edges ?? [],
     addObject,
+    addEdge,
     updateObject,
     deleteObject,
     deleteObjects,
@@ -98,6 +111,7 @@ export function useScene(initial?: FunScene) {
     clearScene,
     setSceneDirect,
     getObject,
+    getEdge,
     getMaxZIndex,
     bringToFront,
     sendToBack,

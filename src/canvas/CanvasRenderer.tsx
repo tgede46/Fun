@@ -1,4 +1,4 @@
-import type { FunObject, Camera, UMLCompositionObject } from "./types";
+import type { FunObject, Camera, UMLCompositionObject, EdgeObject } from "./types";
 import { GRID_SIZE } from "./types";
 import { FreehandRenderer } from "./renderers/FreehandRenderer";
 import { ShapeRenderer } from "./renderers/ShapeRenderer";
@@ -26,9 +26,11 @@ import { UMLAggregationRenderer } from "./renderers/UMLAggregationRenderer";
 import { UMLCompositionRenderer } from "./renderers/UMLCompositionRenderer";
 import { UMLDependencyRenderer } from "./renderers/UMLDependencyRenderer";
 import { UMLNotesLinkRenderer } from "./renderers/UMLNotesLinkRenderer";
+import { EdgeRenderer } from "./renderers/EdgeRenderer";
 
 interface CanvasRendererProps {
   objects: FunObject[];
+  edges?: EdgeObject[];
   selectedIds: Set<string>;
   camera: Camera;
   grid: boolean;
@@ -104,6 +106,7 @@ function ResizeHandles({
 
 export function CanvasRenderer({
   objects,
+  edges = [],
   selectedIds,
   camera,
   grid,
@@ -112,11 +115,27 @@ export function CanvasRenderer({
 }: CanvasRendererProps) {
   const sorted = [...objects].sort((a, b) => a.zIndex - b.zIndex);
 
+  // Map des coordonnées des objets pour positionner les edges
+  const objectsById = new Map<string, { x: number; y: number; width: number; height: number }>();
+  for (const obj of objects) {
+    objectsById.set(obj.id, { x: obj.x, y: obj.y, width: obj.width, height: obj.height });
+  }
+
   return (
     <>
       {grid && <GridPattern camera={camera} />}
       <g transform={`translate(${camera.x}, ${camera.y}) scale(${camera.zoom})`}>
         {snapLines && <SnapLines xLines={snapLines.x} yLines={snapLines.y} camera={camera} />}
+
+        {/* Rendu des edges avant les objets pour qu'ils soient derrière */}
+        {edges.map((edge) => (
+          <EdgeRenderer
+            key={edge.id}
+            edge={edge}
+            objectsById={objectsById}
+          />
+        ))}
+
         {sorted.map((obj) => {
           const selected = selectedIds.has(obj.id);
           switch (obj.type) {
