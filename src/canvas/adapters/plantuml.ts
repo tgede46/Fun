@@ -168,22 +168,6 @@ function buildEntityFromBlock(block: { type: string; name: string; lines: string
 
 // ─── Conversion entité → FunObject ───
 
-const FUN_TYPE_MAP: Record<PumlEntity["type"], string> = {
-  "class": "uml-class",
-  "interface": "uml-interface",
-  "abstract-class": "uml-abstract-class",
-  "enum": "uml-enum",
-  "component": "uml-component",
-  "node": "uml-node",
-  "database": "uml-database",
-  "package": "uml-package",
-  "note": "uml-note",
-  "actor": "uml-actor",
-  "usecase": "uml-usecase",
-  "state": "uml-state",
-  "boundary": "uml-boundary",
-};
-
 function pumlEntityToFunObject(entity: PumlEntity): FunObject {
   const base: BaseObject = {
     id: entity.id,
@@ -319,7 +303,7 @@ function pumlEntityToFunObject(entity: PumlEntity): FunObject {
 }
 
 function kindToPumlKind(kind: PumlRelation["kind"]): "association" | "inheritance" | "implementation" | "aggregation" | "composition" | "dependency" | "notes-link" | "transition" {
-  return kind as any;
+  return kind;
 }
 
 function pumlRelationToEdge(relation: PumlRelation, fromId: string, toId: string): EdgeObject {

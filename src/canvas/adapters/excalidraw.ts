@@ -1,7 +1,4 @@
 import type {
-  ExcalidrawImperativeAPI,
-  AppState,
-  BinaryFiles,
   ExcalidrawInitialDataState,
 } from "@excalidraw/excalidraw/types";
 import type { FunObject, FunScene, DiagramMetadata, BaseObject } from "../types";
@@ -224,7 +221,6 @@ function funObjectToExcalidrawElement(obj: FunObject): ExcalidrawElementLike | n
 
 export function funSceneToExcalidrawData(
   scene: FunScene,
-  options?: { preserveUnknownFields?: boolean }
 ): ExcalidrawInitialDataState {
   const objects = scene.objects;
 
@@ -240,7 +236,7 @@ export function funSceneToExcalidrawData(
   }
 
   return {
-    elements: excalidrawElements as any,
+    elements: excalidrawElements as unknown as ExcalidrawInitialDataState["elements"],
     appState: {
       viewBackgroundColor: "#ffffff",
     },

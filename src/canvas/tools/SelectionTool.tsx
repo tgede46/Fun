@@ -118,8 +118,8 @@ export function useSelectionTool({
         const dx = world.x - dragStartRef.current.x;
         const dy = world.y - dragStartRef.current.y;
         
-        let allSnapX: number[] = [];
-        let allSnapY: number[] = [];
+        const allSnapX: number[] = [];
+        const allSnapY: number[] = [];
 
         for (const [id, start] of dragObjStartsRef.current) {
           const obj = objects.find((o) => o.id === id);
@@ -169,7 +169,7 @@ export function useSelectionTool({
         setMarqueeRect({ x: sx, y: sy, width: ex - sx, height: ey - sy });
       }
     },
-    [isDragging, isResizing, isMarquee, objects, selectedIds, onUpdate],
+    [isDragging, isResizing, isMarquee, objects, selectedIds, onUpdate, camera, onSnapLines],
   );
 
   const handlePointerUp = useCallback(() => {

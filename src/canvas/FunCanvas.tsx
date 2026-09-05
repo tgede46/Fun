@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState, useEffect, useMemo } from "react";
-import type { FunObject, FunScene, ResizeHandle } from "./types";
+import type { FunObject, FunScene, ResizeHandle, ToolType } from "./types";
 import { DEFAULT_STROKE } from "./types";
 import { useScene } from "./hooks/useScene";
 import { useTool } from "./hooks/useTool";
@@ -26,7 +26,7 @@ import { ActionManager } from "./actions/manager";
 import { toolActions } from "./actions/toolActions";
 import { editActions } from "./actions/editActions";
 import { viewActions } from "./actions/viewActions";
-import type { ActionContext } from "./actions/types";
+import type { ActionContext, ActionName } from "./actions/types";
 
 interface FunCanvasProps {
   initialScene?: FunScene;
@@ -51,11 +51,11 @@ export function FunCanvas({
   layersOpen = false,
   onLayersOpenChange,
 }: FunCanvasProps) {
-  const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdge, deleteEdges, updateEdge, setSceneDirect } = useScene(initialScene);
+  const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdges, updateEdge, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
   const { selectedIds, selectedCount, select, selectOnly, selectInRect, clearSelection } = useSelection();
   const { push, undo, redo, canUndo, canRedo } = useHistory(scene);
-  const { camera, zoom, panStart, panMove, panEnd, screenToWorld, zoomToFit, centerView } = useZoomPan();
+  const { camera, zoom, panStart, panMove, panEnd, screenToWorld, zoomToFit } = useZoomPan();
   const svgRef = useRef<SVGSVGElement>(null);
   const [activeColor] = useState(DEFAULT_STROKE);
   const [gridEnabled] = useState(true);
@@ -309,14 +309,14 @@ export function FunCanvas({
   }, []);
 
   const executeAction = useCallback((actionName: string, source: "keyboard" | "contextMenu" = "keyboard") => {
-    const action = actionManager.getAction(actionName as any);
+    const action = actionManager.getAction(actionName as ActionName);
     if (!action) return;
 
     const result = actionManager.executeAction(action, actionContext, source);
     if (!result) return;
 
     if (result.appState?.activeTool) {
-      selectTool(result.appState.activeTool as any);
+      selectTool(result.appState.activeTool as ToolType);
     }
 
     if (actionName === "undo") {
@@ -371,7 +371,7 @@ export function FunCanvas({
     if (actionName === "resetZoom") {
       zoom(0, window.innerWidth / 2, window.innerHeight / 2);
     }
-  }, [actionContext, selectTool, undo, redo, setSceneDirect, objects, selectedIds, clipboard, addObject, push, scene, clearSelection, select, deleteObjects, zoomToFit, zoom]);
+  }, [actionContext, selectTool, undo, redo, setSceneDirect, objects, selectedIds, clipboard, addObject, push, scene, clearSelection, select, deleteObjects, zoomToFit, zoom, handleDeleteSelectedEdges]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -397,7 +397,7 @@ export function FunCanvas({
         executeAction(action.name, "keyboard");
       });
     },
-    [actionContext, clearSelection, selectTool, executeAction, edgeTool],
+    [actionContext, clearSelection, selectTool, executeAction, edgeTool, tool],
   );
 
   const handleCopy = useCallback(() => {
@@ -609,6 +609,7 @@ export function FunCanvas({
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
           onSelectAll={handleSelectAll}
+          onZoomToFit={handleZoomToFit}
           onClose={() => setContextMenu(null)}
         />
       )}
@@ -636,14 +637,13 @@ export function FunCanvas({
 }
 
 function ToolButton({
-  tool,
   label,
   icon,
   active,
   onClick,
   shortcut,
 }: {
-  tool: string;
+  tool?: string;
   label: string;
   icon: string;
   active: boolean;
@@ -686,6 +686,7 @@ function ContextMenuComponent({
   onDuplicate,
   onDelete,
   onSelectAll,
+  onZoomToFit,
   onClose,
 }: {
   x: number;
@@ -697,6 +698,7 @@ function ContextMenuComponent({
   onDuplicate: () => void;
   onDelete: () => void;
   onSelectAll: () => void;
+  onZoomToFit: () => void;
   onClose: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
@@ -731,6 +733,7 @@ function ContextMenuComponent({
       <ContextMenuItem label="Supprimer" shortcut="Suppr" onClick={onDelete} disabled={!hasSelection} />
       <div className="h-px bg-border my-1" />
       <ContextMenuItem label="Tout sélectionner" shortcut="Ctrl+A" onClick={onSelectAll} />
+      <ContextMenuItem label="Ajuster à la vue" shortcut="Shift+1" onClick={onZoomToFit} />
     </div>
   );
 }

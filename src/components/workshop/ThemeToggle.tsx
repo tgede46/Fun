@@ -3,10 +3,10 @@ import type { FunTheme } from "@/lib/theme";
 type ThemeToggleProps = {
   theme: FunTheme;
   onToggle: () => void;
-  projectPath: string;
+  projectPath?: string;
 };
 
-export function ThemeToggle({ theme, onToggle, projectPath }: ThemeToggleProps) {
+export function ThemeToggle({ theme, onToggle }: ThemeToggleProps) {
   const labels: Record<FunTheme, string> = {
     light: "clair",
     dark: "sombre",

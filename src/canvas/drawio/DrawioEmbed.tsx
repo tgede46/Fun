@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 interface DrawioEmbedProps {
   initialXml?: string | null;
@@ -9,7 +9,7 @@ interface DrawioEmbedProps {
 
 export function DrawioEmbed({ initialXml, onXmlChange }: DrawioEmbedProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [loaded, setLoaded] = useState(false);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     const iframe = iframeRef.current;
@@ -47,7 +47,7 @@ export function DrawioEmbed({ initialXml, onXmlChange }: DrawioEmbedProps) {
             { xml: initialXml, configure: 1 },
             "https://embed.diagrams.net",
           );
-          setLoaded(true);
+          loadedRef.current = true;
         } else {
           setTimeout(checkReady, 100);
         }

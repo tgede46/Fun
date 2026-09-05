@@ -4,7 +4,6 @@ export function UMLAbstractClassRenderer({ obj, selected }: { obj: UMLAbstractCl
   const strokeWidth = obj.strokeWidth;
   const inset = strokeWidth / 2;
   const fontSize = obj.fontSize ?? 14;
-  const italicFont = "italic 14px sans-serif";
 
   return (
     <g opacity={obj.opacity} data-object-id={obj.id}>

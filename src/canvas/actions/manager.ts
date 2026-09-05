@@ -55,8 +55,9 @@ export class ActionManager {
   executeAction(
     action: Action,
     context: ActionContext,
-    source: ActionSource,
+    _source?: ActionSource,
   ): ActionResult | void {
+    void _source;
     if (action.predicate && !action.predicate(context)) {
       return;
     }
@@ -64,4 +65,4 @@ export class ActionManager {
   }
 }
 
-type ActionSource = "ui" | "keyboard" | "contextMenu";
+export type ActionSource = "ui" | "keyboard" | "contextMenu";

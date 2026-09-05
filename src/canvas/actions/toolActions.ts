@@ -7,7 +7,7 @@ export const toolActions: Action[] = [
     label: "Sélection",
     icon: "↗",
     priority: 0,
-    perform: (ctx) => ({
+    perform: () => ({
       appState: { activeTool: "select" },
     }),
     keyTest: (event) => matchKey(event, KEYS.V) && !event[KEYS.CTRL_OR_CMD],

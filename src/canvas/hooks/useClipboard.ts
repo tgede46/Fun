@@ -1,14 +1,16 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { FunObject } from "../types";
 
 export function useClipboard() {
   const clipboardRef = useRef<FunObject[]>([]);
+  const [canPaste, setCanPaste] = useState(false);
 
   const copy = useCallback((objects: FunObject[]) => {
     clipboardRef.current = objects.map((obj) => ({
       ...obj,
       id: crypto.randomUUID(),
     }));
+    setCanPaste(objects.length > 0);
   }, []);
 
   const cut = useCallback((objects: FunObject[], deleteObjects: (ids: string[]) => void) => {
@@ -33,8 +35,6 @@ export function useClipboard() {
       y: obj.y + 20,
     }));
   }, []);
-
-  const canPaste = clipboardRef.current.length > 0;
 
   return { copy, cut, paste, duplicate, canPaste };
 }

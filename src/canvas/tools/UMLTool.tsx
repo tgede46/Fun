@@ -17,7 +17,7 @@ type UMLShapeKind =
   | "uml-boundary";
 
 interface UseUMLToolProps {
-  camera: Camera;
+  camera?: Camera;
   onAdd: (obj: FunObject) => void;
   kind: UMLShapeKind;
   activeColor?: string;
@@ -39,7 +39,7 @@ const DEFAULT_HEIGHTS: Record<UMLShapeKind, number> = {
   "uml-boundary": 100,
 };
 
-export function useUMLTool({ camera, onAdd, kind, activeColor = "#1e1e1e" }: UseUMLToolProps) {
+export function useUMLTool({ onAdd, kind, activeColor = "#1e1e1e" }: UseUMLToolProps) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [preview, setPreview] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
@@ -92,8 +92,6 @@ export function useUMLTool({ camera, onAdd, kind, activeColor = "#1e1e1e" }: Use
       locked: false,
       zIndex: 0,
     };
-
-    const font = "sans-serif";
 
     switch (kind) {
       case "uml-class":
@@ -224,7 +222,7 @@ export function useUMLTool({ camera, onAdd, kind, activeColor = "#1e1e1e" }: Use
           fontSize: 14,
         } as UMLClassObject);
     }
-  }, [isDrawing, kind, onAdd, preview]);
+  }, [isDrawing, kind, onAdd, preview, activeColor]);
 
   return {
     isDrawing,

@@ -81,8 +81,6 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   // États spécifiques au mode UML (drawio)
   const [drawioXml, setDrawioXml] = useState<string | null>(null);
-  const [isLoadingDrawio, setIsLoadingDrawio] = useState(false);
-  const [drawioError, setDrawioError] = useState<string | null>(null);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -350,7 +348,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   const handleCreateDrawioDiagram = useCallback(async () => {
     setIsCreatingDiagram(true);
-    setDrawioError(null);
+    setDiagramError(null);
     setSaveError(null);
 
     try {
@@ -360,7 +358,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setDrawioXml(null);
       await refreshDiagramList();
     } catch (err) {
-      setDrawioError(
+      setDiagramError(
         err instanceof Error ? err.message : "Impossible de créer le diagramme UML.",
       );
     } finally {
@@ -368,24 +366,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     }
   }, [projectPath, refreshDiagramList]);
 
-  const handleLoadDrawioDiagram = useCallback(async (path: string) => {
-    setIsLoadingDrawio(true);
-    setDrawioError(null);
 
-    try {
-      const loaded = await loadDrawioDiagram(projectPath, path);
-      setDrawioXml(loaded.content);
-      const name = path.split(/[/\\]/).pop()?.replace(/\.drawio$/, "") ?? "diagramme";
-      setDiagramName(name);
-      setActiveDiagramPath(loaded.path);
-    } catch (err) {
-      setDrawioError(
-        err instanceof Error ? err.message : "Impossible de charger le diagramme UML.",
-      );
-    } finally {
-      setIsLoadingDrawio(false);
-    }
-  }, [projectPath]);
 
   const handleSendChat = useCallback(
     async (message: string) => {

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import type { Camera, FunObject, EdgeObject } from "../types";
 import { DEFAULT_STROKE, DEFAULT_STROKE_WIDTH } from "../types";
 import { pointInObject } from "../utils/geometry";
@@ -6,18 +6,18 @@ import { pointInObject } from "../utils/geometry";
 export type EdgeKind = EdgeObject["kind"];
 
 interface UseEdgeToolProps {
-  camera: Camera;
+  camera?: Camera;
   objects: FunObject[];
   onAddEdge: (edge: EdgeObject) => void;
   activeColor?: string;
 }
 
-export function useEdgeTool({ camera, objects, onAddEdge, activeColor = DEFAULT_STROKE }: UseEdgeToolProps) {
+export function useEdgeTool({ objects, onAddEdge, activeColor = DEFAULT_STROKE }: UseEdgeToolProps) {
   const [phase, setPhase] = useState<"idle" | "source-selected">("idle");
   const [sourceId, setSourceId] = useState<string | null>(null);
+  const [sourceObj, setSourceObj] = useState<FunObject | null>(null);
   const [previewEnd, setPreviewEnd] = useState<{ x: number; y: number } | null>(null);
   const [edgeKind, setEdgeKind] = useState<EdgeKind>("association");
-  const sourceRef = useRef<FunObject | null>(null);
 
   const findObjectAt = useCallback(
     (wx: number, wy: number): FunObject | undefined => {
@@ -39,10 +39,10 @@ export function useEdgeTool({ camera, objects, onAddEdge, activeColor = DEFAULT_
 
       if (phase === "idle") {
         setSourceId(hit.id);
-        sourceRef.current = hit;
+        setSourceObj(hit);
         setPhase("source-selected");
       } else if (phase === "source-selected" && hit.id !== sourceId) {
-        const fromObj = sourceRef.current;
+        const fromObj = sourceObj;
         if (!fromObj) return;
 
         const fromX = fromObj.x + fromObj.width / 2;
@@ -69,12 +69,12 @@ export function useEdgeTool({ camera, objects, onAddEdge, activeColor = DEFAULT_
         });
 
         setSourceId(null);
-        sourceRef.current = null;
+        setSourceObj(null);
         setPreviewEnd(null);
         setPhase("idle");
       }
     },
-    [phase, sourceId, findObjectAt, onAddEdge, activeColor, edgeKind],
+    [phase, sourceId, sourceObj, findObjectAt, onAddEdge, activeColor, edgeKind],
   );
 
   const handlePointerMove = useCallback(
@@ -97,7 +97,7 @@ export function useEdgeTool({ camera, objects, onAddEdge, activeColor = DEFAULT_
 
   const cancel = useCallback(() => {
     setSourceId(null);
-    sourceRef.current = null;
+    setSourceObj(null);
     setPreviewEnd(null);
     setPhase("idle");
   }, []);
@@ -107,7 +107,7 @@ export function useEdgeTool({ camera, objects, onAddEdge, activeColor = DEFAULT_
     sourceId,
     edgeKind,
     previewEnd,
-    sourceObj: sourceRef.current,
+    sourceObj,
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,

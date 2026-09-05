@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState, useRef } from "react";
-import type { FunScene, DiagramMetadata } from "../types";
+import type { FunScene } from "../types";
 import { excalidrawToFunScene, funSceneToExcalidrawData } from "../adapters/excalidraw";
 import { drawioXmlToFunScene, funSceneToDrawioXml } from "../adapters/drawio";
 import { plantumlToFunScene } from "../adapters/plantuml";
@@ -23,6 +23,130 @@ export interface UnifiedDiagramToolProps {
   onSceneChange: (scene: FunScene) => void;
   /** Si fourni, permet d'exporter via glide/dialog natif */
   onExport?: (format: UnifiedDiagramFormat, content: string, filename: string) => void;
+}
+
+// ─── Helpers ───
+
+function downloadContent(content: string, filename: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function generatePlantUMLFromScene(scene: FunScene): string {
+  const lines: string[] = [];
+  lines.push("@startuml");
+  lines.push("");
+
+  for (const obj of scene.objects) {
+    switch (obj.type) {
+      case "uml-class": {
+        const e = obj as { name: string; stereotype?: string };
+        const stereotype = e.stereotype ? ` <<${e.stereotype}>>` : "";
+        lines.push(`class ${e.name}${stereotype} {`);
+        const methods = (obj as { methods?: string[] }).methods ?? [];
+        const attrs = (obj as { attributes?: string[] }).attributes ?? [];
+        for (const attr of attrs) {
+          lines.push(`  ${attr}`);
+        }
+        for (const method of methods) {
+          lines.push(`  ${method}`);
+        }
+        lines.push("}");
+        break;
+      }
+
+      case "uml-interface": {
+        const e = obj as { name: string };
+        lines.push(`interface ${e.name} {`);
+        const methods = (obj as { methods?: string[] }).methods ?? [];
+        for (const method of methods) {
+          lines.push(`  ${method}`);
+        }
+        lines.push("}");
+        break;
+      }
+
+      case "uml-component": {
+        const e = obj as { name: string };
+        lines.push(`component ${e.name}`);
+        break;
+      }
+
+      case "uml-database": {
+        const e = obj as { name: string };
+        lines.push(`database ${e.name}`);
+        break;
+      }
+
+      case "uml-package": {
+        const e = obj as { name: string };
+        lines.push(`package ${e.name} {`);
+        lines.push("}");
+        break;
+      }
+
+      case "uml-note": {
+        const e = obj as { text: string };
+        lines.push(`note "${e.text}"`);
+        break;
+      }
+
+      default:
+        break;
+    }
+  }
+
+  // Relations (edges)
+  for (const edge of scene.edges ?? []) {
+    const from = edge.fromId;
+    const to = edge.toId;
+    const kind = edge.kind;
+    let arrow = "--";
+
+    switch (kind) {
+      case "association":
+        arrow = "--";
+        break;
+      case "inheritance":
+        arrow = "|-->";
+        break;
+      case "implementation":
+        arrow = "|*--";
+        break;
+      case "aggregation":
+        arrow = "o--";
+        break;
+      case "composition":
+        arrow = "*--";
+        break;
+      case "dependency":
+        arrow = "..>";
+        break;
+      case "notes-link":
+        arrow = "..";
+        break;
+      default:
+        arrow = "--";
+        break;
+    }
+
+    if (edge.label) {
+      lines.push(`${from} ${arrow} ${to} : ${edge.label}`);
+    } else {
+      lines.push(`${from} ${arrow} ${to}`);
+    }
+  }
+
+  lines.push("");
+  lines.push("@enduml");
+  return lines.join("\n");
 }
 
 export function UnifiedDiagramTool({
@@ -208,130 +332,6 @@ export function UnifiedDiagramTool({
     },
     [scene, onExport]
   );
-
-  // ─── Helpers ───
-
-  function downloadContent(content: string, filename: string, mimeType: string) {
-    const blob = new Blob([content], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-
-  function generatePlantUMLFromScene(scene: FunScene): string {
-    const lines: string[] = [];
-    lines.push("@startuml");
-    lines.push("");
-
-    for (const obj of scene.objects) {
-      switch (obj.type) {
-        case "uml-class": {
-          const e = obj as { name: string; stereotype?: string };
-          const stereotype = e.stereotype ? ` <<${e.stereotype}>>` : "";
-          lines.push(`class ${e.name}${stereotype} {`);
-          const methods = (obj as { methods?: string[] }).methods ?? [];
-          const attrs = (obj as { attributes?: string[] }).attributes ?? [];
-          for (const attr of attrs) {
-            lines.push(`  ${attr}`);
-          }
-          for (const method of methods) {
-            lines.push(`  ${method}`);
-          }
-          lines.push("}");
-          break;
-        }
-
-        case "uml-interface": {
-          const e = obj as { name: string };
-          lines.push(`interface ${e.name} {`);
-          const methods = (obj as { methods?: string[] }).methods ?? [];
-          for (const method of methods) {
-            lines.push(`  ${method}`);
-          }
-          lines.push("}");
-          break;
-        }
-
-        case "uml-component": {
-          const e = obj as { name: string };
-          lines.push(`component ${e.name}`);
-          break;
-        }
-
-        case "uml-database": {
-          const e = obj as { name: string };
-          lines.push(`database ${e.name}`);
-          break;
-        }
-
-        case "uml-package": {
-          const e = obj as { name: string };
-          lines.push(`package ${e.name} {`);
-          lines.push("}");
-          break;
-        }
-
-        case "uml-note": {
-          const e = obj as { text: string };
-          lines.push(`note "${e.text}"`);
-          break;
-        }
-
-        default:
-          break;
-      }
-    }
-
-    // Relations (edges)
-    for (const edge of scene.edges ?? []) {
-      const from = edge.fromId;
-      const to = edge.toId;
-      const kind = edge.kind;
-      let arrow = "--";
-
-      switch (kind) {
-        case "association":
-          arrow = "--";
-          break;
-        case "inheritance":
-          arrow = "|-->";
-          break;
-        case "implementation":
-          arrow = "|*--";
-          break;
-        case "aggregation":
-          arrow = "o--";
-          break;
-        case "composition":
-          arrow = "*--";
-          break;
-        case "dependency":
-          arrow = "..>";
-          break;
-        case "notes-link":
-          arrow = "..";
-          break;
-        default:
-          arrow = "--";
-          break;
-      }
-
-      if (edge.label) {
-        lines.push(`${from} ${arrow} ${to} : ${edge.label}`);
-      } else {
-        lines.push(`${from} ${arrow} ${to}`);
-      }
-    }
-
-    lines.push("");
-    lines.push("@enduml");
-    return lines.join("\n");
-  }
 
   const acceptFileTypes = (mode: string) => {
     switch (mode) {

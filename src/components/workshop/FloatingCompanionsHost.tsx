@@ -114,7 +114,7 @@ export function FloatingCompanionsHost({
     return () => {
       cancelled = true;
     };
-  }, [projectPath]);
+  }, [projectPath, layoutOptions]);
 
   useEffect(() => {
     if (chat.loading) {

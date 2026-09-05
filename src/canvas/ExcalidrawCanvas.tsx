@@ -221,7 +221,7 @@ function funSceneToExcalidrawData(
   }
 
   return {
-    elements: excalidrawElements as any[],
+    elements: excalidrawElements as ExcalidrawInitialDataState["elements"],
     appState: {
       viewBackgroundColor: "#ffffff",
     },

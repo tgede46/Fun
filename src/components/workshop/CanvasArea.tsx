@@ -83,7 +83,6 @@ export function CanvasArea({
   drawioXml,
   onSelectDiagram,
   onDeleteDiagram,
-  onSaveError,
   onSceneChange,
   onCreateDrawioDiagram,
   onDrawioXmlChange,

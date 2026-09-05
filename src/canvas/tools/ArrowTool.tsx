@@ -3,12 +3,12 @@ import type { Camera, ArrowObject } from "../types";
 import { DEFAULT_STROKE, DEFAULT_STROKE_WIDTH } from "../types";
 
 interface UseArrowToolProps {
-  camera: Camera;
+  camera?: Camera;
   onAdd: (obj: ArrowObject) => void;
   activeColor?: string;
 }
 
-export function useArrowTool({ camera, onAdd, activeColor = DEFAULT_STROKE }: UseArrowToolProps) {
+export function useArrowTool({ onAdd, activeColor = DEFAULT_STROKE }: UseArrowToolProps) {
   const [isDrawing, setIsDrawing] = useState(false);
   const [previewPoints, setPreviewPoints] = useState<{ x: number; y: number }[] | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
