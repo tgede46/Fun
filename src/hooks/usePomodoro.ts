@@ -30,6 +30,7 @@ export function usePomodoro({
   const [showMeditation, setShowMeditation] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [workGeneration, setWorkGeneration] = useState(0);
+  const [compactMode, setCompactMode] = useState(false);
   const phaseEndHandledRef = useRef(false);
 
   // Durées directes depuis les props — le parent (WorkshopLayout) gère les changements
@@ -154,5 +155,7 @@ export function usePomodoro({
     saveConfig,
     isRunning: phase !== "idle",
     workGeneration,
+    compactMode,
+    setCompactMode,
   };
 }

@@ -1,6 +1,10 @@
 use super::intent::Persona;
 
-pub fn system_prompt(persona: Persona, diagram_context: Option<&str>) -> String {
+pub fn system_prompt(
+    persona: Persona,
+    diagram_context: Option<&str>,
+    selected_diagrams: &[String],
+) -> String {
     let base = match persona {
         Persona::Relecteur => {
             "Tu es Claire, relecteur de diagrammes pour Fun. Tu critiques le diagramme, pas \
@@ -28,6 +32,17 @@ pub fn system_prompt(persona: Persona, diagram_context: Option<&str>) -> String 
     };
 
     let mut prompt = base.to_string();
+
+    // Contexte multi-diagrammes (sélection multiple)
+    if !selected_diagrams.is_empty() {
+        prompt.push_str("\n\nDiagrammes sélectionnés par l'utilisateur (JSON Excalidraw):\n");
+        for (i, content) in selected_diagrams.iter().enumerate() {
+            let truncated = truncate_diagram(content, 8_000);
+            prompt.push_str(&format!("\n--- Diagramme {} ---\n{}\n", i + 1, truncated));
+        }
+    }
+
+    // Diagramme actif
     if let Some(diagram) = diagram_context {
         let truncated = truncate_diagram(diagram, 14_000);
         prompt.push_str("\n\nDiagramme courant (JSON Excalidraw):\n");

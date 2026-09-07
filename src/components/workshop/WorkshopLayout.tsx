@@ -82,6 +82,9 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   // États spécifiques au mode UML (drawio)
   const [drawioXml, setDrawioXml] = useState<string | null>(null);
 
+  // Sélection multiple de diagrammes
+  const [selectedDiagramPaths, setSelectedDiagramPaths] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     const root = document.documentElement;
     if (theme === "dark" || theme === "electro") {
@@ -101,6 +104,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setPomodoroBreak(brk);
     },
   });
+
+  const [pomodoroCompact, setPomodoroCompact] = useState(false);
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -377,10 +382,31 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       const historyWithUser = [...chatHistory, userTurn];
       setChatHistory(historyWithUser);
 
+      // Charger le contenu des diagrammes sélectionnés
+      const selectedContents: string[] = [];
+      for (const selPath of selectedDiagramPaths) {
+        try {
+          const ext = selPath.split(".").pop()?.toLowerCase();
+          if (ext === "drawio") {
+            const loaded = await loadDrawioDiagram(projectPath, selPath);
+            selectedContents.push(loaded.content);
+          } else {
+            const loaded = await invoke<{ path: string; content: string }>("load_diagram", {
+              projectPath,
+              diagramPath: selPath,
+            });
+            selectedContents.push(loaded.content);
+          }
+        } catch {
+          // Ignorer les diagrammes illisibles
+        }
+      }
+
       try {
         const result = await sendChatMessage(projectPath, {
           diagramPath: activeDiagramPath,
           diagramContent: drawioXml ?? scene ? JSON.stringify(drawioXml ?? scene) : null,
+          selectedDiagramPaths: selectedContents.length > 0 ? selectedContents : undefined,
           history: chatHistory.filter((t) => t.role !== "system"),
           userMessage: message,
         });
@@ -472,7 +498,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         setChatLoading(false);
       }
     },
-    [projectPath, activeDiagramPath, scene, drawioXml, chatHistory, refreshDiagramList],
+    [projectPath, activeDiagramPath, scene, drawioXml, chatHistory, refreshDiagramList, selectedDiagramPaths],
   );
 
   const handleGenerateFromCode = useCallback(async () => {
@@ -500,6 +526,18 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setIsGeneratingFromCode(false);
     }
   }, [projectPath, refreshDiagramList, openDiagram]);
+
+  const handleToggleSelectDiagram = useCallback((path: string) => {
+    setSelectedDiagramPaths((prev) => {
+      const next = new Set(prev);
+      if (next.has(path)) {
+        next.delete(path);
+      } else {
+        next.add(path);
+      }
+      return next;
+    });
+  }, []);
 
   // Déterminer si on peut supprimer le diagramme actif
   const canDeleteDiagram = !!activeDiagramPath;
@@ -549,6 +587,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           onLayersOpenChange={setLayersOpen}
           diagrams={diagrams}
           activeDiagramPath={activeDiagramPath}
+          selectedDiagramPaths={selectedDiagramPaths}
           diagramName={diagramName}
           scene={scene}
           error={diagramError}
@@ -556,6 +595,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           codeGenError={codeGenError}
           drawioXml={drawioXml}
           onSelectDiagram={handleSelectDiagram}
+          onToggleSelectDiagram={handleToggleSelectDiagram}
           onDeleteDiagram={(diagramPath) => {
             void handleDeleteDiagram(diagramPath);
           }}
@@ -588,6 +628,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           configOpen: pomodoro.configOpen,
           workMinutes: pomodoro.workMinutes,
           breakMinutes: pomodoro.breakMinutes,
+          secondsRemaining: pomodoro.secondsRemaining,
           saveError: pomodoro.saveError,
           setConfigOpen: pomodoro.setConfigOpen,
           setWorkMinutes: pomodoro.setWorkMinutes,
@@ -595,6 +636,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           saveConfig: pomodoro.saveConfig,
           handleStart: pomodoro.handleStart,
           handleStop: pomodoro.handleStop,
+          compactMode: pomodoroCompact,
+          setCompactMode: setPomodoroCompact,
         }}
       />
       <MeditationOverlay

@@ -13,6 +13,7 @@ type SoufflePanelProps = {
   saveError: string | null;
   lofiMuted: boolean;
   lofiVolume: number;
+  compactMode: boolean;
   onClose: () => void;
   onWorkChange: (value: number) => void;
   onBreakChange: (value: number) => void;
@@ -21,6 +22,7 @@ type SoufflePanelProps = {
   onStop: () => void;
   onLofiMutedChange: (muted: boolean) => void;
   onLofiVolumeChange: (volume: number) => void;
+  onCompactModeChange: (compact: boolean) => void;
 };
 
 function LofiToggle({
@@ -62,6 +64,7 @@ export function SoufflePanel({
   saveError,
   lofiMuted,
   lofiVolume,
+  compactMode,
   onClose,
   onWorkChange,
   onBreakChange,
@@ -70,6 +73,7 @@ export function SoufflePanel({
   onStop,
   onLofiMutedChange,
   onLofiVolumeChange,
+  onCompactModeChange,
 }: SoufflePanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -132,7 +136,7 @@ export function SoufflePanel({
           </p>
           {isRunning ? (
             <p className="mt-3 text-sm text-muted-foreground">
-              Le chrono tourne — ferme cette page pour le voir flotter dans l’atelier.
+              Le chrono tourne — ferme cette page pour le voir flotter dans l&apos;atelier.
             </p>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
@@ -140,6 +144,32 @@ export function SoufflePanel({
             </p>
           )}
         </div>
+
+        {!isRunning && (
+          <div className="flex gap-2">
+            {[
+              { label: "25 / 5", work: 25, brk: 5 },
+              { label: "50 / 10", work: 50, brk: 10 },
+              { label: "90 / 15", work: 90, brk: 15 },
+            ].map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                  workMinutes === preset.work && breakMinutes === preset.brk
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                }`}
+                onClick={() => {
+                  onWorkChange(preset.work);
+                  onBreakChange(preset.brk);
+                }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="flex flex-col gap-2">
@@ -195,7 +225,21 @@ export function SoufflePanel({
             <LofiToggle
               checked={lofiMuted}
               onChange={onLofiMutedChange}
-              label="Couper l’ambiance sonore"
+              label="Couper l'ambiance sonore"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <span className="text-sm text-foreground">Mode compact</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Barre de progression en bas du canvas
+              </p>
+            </div>
+            <LofiToggle
+              checked={compactMode}
+              onChange={onCompactModeChange}
+              label="Activer le mode compact"
             />
           </div>
 

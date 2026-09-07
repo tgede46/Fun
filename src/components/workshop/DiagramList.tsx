@@ -5,19 +5,25 @@ import type { DiagramListItem } from "@/lib/diagram";
 type DiagramListProps = {
   diagrams: DiagramListItem[];
   activePath: string | null;
+  selectedPaths?: Set<string>;
   onSelect: (path: string) => void;
+  onToggleSelect?: (path: string) => void;
   onDelete?: (path: string) => void;
 };
 
 export function DiagramList({
   diagrams,
   activePath,
+  selectedPaths,
   onSelect,
+  onToggleSelect,
   onDelete,
 }: DiagramListProps) {
   if (diagrams.length === 0) {
     return null;
   }
+
+  const hasSelection = selectedPaths && selectedPaths.size > 0;
 
   return (
     <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Diagrammes du projet">
@@ -25,10 +31,34 @@ export function DiagramList({
       <ul className="flex gap-1">
         {diagrams.map((diagram) => {
           const isActive = diagram.path === activePath;
+          const isSelected = selectedPaths?.has(diagram.path) ?? false;
           const label = formatDiagramName(diagram.name);
 
           return (
             <li key={diagram.path} className="flex items-center">
+              {onToggleSelect ? (
+                <button
+                  type="button"
+                  className={cn(
+                    "mr-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
+                    isSelected
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border text-transparent hover:border-muted-foreground",
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleSelect(diagram.path);
+                  }}
+                  aria-label={`Sélectionner ${label}`}
+                  aria-pressed={isSelected}
+                >
+                  {isSelected ? (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : null}
+                </button>
+              ) : null}
               <button
                 type="button"
                 className={cn(

@@ -46,6 +46,7 @@ export async function sendChatMessage(
   options: {
     diagramPath?: string | null;
     diagramContent?: string | null;
+    selectedDiagramPaths?: string[];
     history: ChatTurn[];
     userMessage: string;
   },
@@ -54,6 +55,7 @@ export async function sendChatMessage(
     projectPath,
     diagramPath: options.diagramPath ?? null,
     diagramContent: options.diagramContent ?? null,
+    selectedDiagramContents: options.selectedDiagramPaths ?? [],
     history: options.history,
     userMessage: options.userMessage,
   });

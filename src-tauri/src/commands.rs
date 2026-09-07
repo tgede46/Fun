@@ -376,6 +376,7 @@ pub async fn send_chat_message(
     project_path: String,
     diagram_path: Option<String>,
     diagram_content: Option<String>,
+    selected_diagram_contents: Vec<String>,
     history: Vec<ChatTurnInput>,
     user_message: String,
 ) -> Result<ai::SendChatResult, String> {
@@ -393,6 +394,7 @@ pub async fn send_chat_message(
         project_root.as_path(),
         diagram_ref.as_ref().map(|p| p.as_path()),
         diagram_content.as_deref(),
+        selected_diagram_contents,
         &history,
         &user_message,
     )

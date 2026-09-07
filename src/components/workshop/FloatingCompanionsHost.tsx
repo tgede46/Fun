@@ -16,6 +16,7 @@ import {
 } from "@/lib/settings";
 import type { PomodoroPhase } from "@/lib/pomodoro";
 import { ChatOverlay } from "./ChatOverlay";
+import { CompactTimer } from "./CompactTimer";
 import { FloatingCompanion } from "./FloatingCompanion";
 import { LofiSceneOverlay } from "./LofiSceneOverlay";
 import { SoufflePanel } from "./SoufflePanel";
@@ -33,6 +34,7 @@ type FloatingCompanionsHostProps = {
     configOpen: boolean;
     workMinutes: number;
     breakMinutes: number;
+    secondsRemaining: number;
     saveError: string | null;
     setConfigOpen: (open: boolean) => void;
     setWorkMinutes: (value: number) => void;
@@ -40,6 +42,8 @@ type FloatingCompanionsHostProps = {
     saveConfig: () => Promise<void>;
     handleStart: () => void;
     handleStop: () => void;
+    setCompactMode: (compact: boolean) => void;
+    compactMode: boolean;
   };
   chat: {
     aiStatus: AiStatus | null;
@@ -167,6 +171,18 @@ export function FloatingCompanionsHost({
   const chatThinking = chat.loading && !chatOpen;
   const chatBadge = chatUnread || (!!chat.chatError && !chatOpen);
 
+  // Progression du timer pomodoro (0 → 1)
+  const pomoTotalSeconds =
+    pomodoro.phase === "work"
+      ? pomodoro.workMinutes * 60
+      : pomodoro.phase === "break"
+        ? pomodoro.breakMinutes * 60
+        : 0;
+  const pomoProgress =
+    pomoTotalSeconds > 0 && pomodoro.isRunning
+      ? 1 - pomodoro.secondsRemaining / pomoTotalSeconds
+      : 0;
+
   return (
     <>
       <FloatingCompanion
@@ -200,6 +216,7 @@ export function FloatingCompanionsHost({
             : "Souffle — ouvrir la configuration"
         }
         liveLabel={pomodoro.isRunning ? pomodoro.timerDisplay : undefined}
+        progress={pomodoro.isRunning ? pomoProgress : undefined}
         pulsing={pomodoro.isRunning}
         layoutOptions={layoutOptions}
         onPositionChange={(next) => {
@@ -232,6 +249,7 @@ export function FloatingCompanionsHost({
         saveError={pomodoro.saveError}
         lofiMuted={lofiMuted}
         lofiVolume={lofiVolume}
+        compactMode={pomodoro.compactMode}
         onClose={() => pomodoro.setConfigOpen(false)}
         onWorkChange={pomodoro.setWorkMinutes}
         onBreakChange={pomodoro.setBreakMinutes}
@@ -246,12 +264,26 @@ export function FloatingCompanionsHost({
           setLofiVolume(volume);
           void persistLofi(lofiMuted, volume);
         }}
+        onCompactModeChange={pomodoro.setCompactMode}
       />
 
       <LofiSceneOverlay
         open={sceneOpen}
         onDismiss={() => setSceneDismissedGen(pomodoro.workGeneration)}
       />
+
+      {pomodoro.compactMode && pomodoro.isRunning ? (
+        <CompactTimer
+          phase={pomodoro.phase}
+          timerDisplay={pomodoro.timerDisplay}
+          timerLabel={pomodoro.timerLabel}
+          secondsRemaining={pomodoro.secondsRemaining}
+          workMinutes={pomodoro.workMinutes}
+          breakMinutes={pomodoro.breakMinutes}
+          onExpand={() => pomodoro.setCompactMode(false)}
+          onStop={pomodoro.handleStop}
+        />
+      ) : null}
     </>
   );
 }

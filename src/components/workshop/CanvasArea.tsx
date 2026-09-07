@@ -17,6 +17,7 @@ type CanvasAreaProps = {
   onLayersOpenChange: (open: boolean) => void;
   diagrams: DiagramListItem[];
   activeDiagramPath: string | null;
+  selectedDiagramPaths?: Set<string>;
   diagramName: string | null;
   scene: FunScene | null;
   error: string | null;
@@ -24,6 +25,7 @@ type CanvasAreaProps = {
   codeGenError: string | null;
   drawioXml: string | null;
   onSelectDiagram: (path: string) => void;
+  onToggleSelectDiagram?: (path: string) => void;
   onDeleteDiagram?: (path: string) => void;
   onSaveError: (message: string | null) => void;
   onSceneChange?: (scene: FunScene) => void;
@@ -75,6 +77,7 @@ export function CanvasArea({
   onLayersOpenChange,
   diagrams,
   activeDiagramPath,
+  selectedDiagramPaths,
   diagramName,
   scene,
   error,
@@ -82,6 +85,7 @@ export function CanvasArea({
   codeGenError,
   drawioXml,
   onSelectDiagram,
+  onToggleSelectDiagram,
   onDeleteDiagram,
   onSceneChange,
   onCreateDrawioDiagram,
@@ -91,7 +95,9 @@ export function CanvasArea({
     <DiagramList
       diagrams={diagrams}
       activePath={activeDiagramPath}
+      selectedPaths={selectedDiagramPaths}
       onSelect={onSelectDiagram}
+      onToggleSelect={onToggleSelectDiagram}
       onDelete={onDeleteDiagram}
     />
   );

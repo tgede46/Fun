@@ -15,6 +15,10 @@ import type { CompanionLayoutOptions } from "@/lib/companion-layout";
 import type { CompanionPosition } from "@/lib/settings";
 
 const DRAG_THRESHOLD_PX = 5;
+const PROGRESS_SIZE = 52;
+const STROKE_WIDTH = 3;
+const RADIUS = (PROGRESS_SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 type FloatingCompanionProps = {
   id: string;
@@ -23,8 +27,10 @@ type FloatingCompanionProps = {
   ariaLabel: string;
   onPositionChange: (position: CompanionPosition) => void;
   onBubbleClick?: () => void;
-  /** Affiché à côté de l’icône (ex. chrono en cours). */
+  /** Affiché à côté de l'icône (ex. chrono en cours). */
   liveLabel?: string;
+  /** Progression 0-1 pour l'anneau circulaire (pomodoro). */
+  progress?: number;
   badge?: boolean;
   pulsing?: boolean;
   layoutOptions: CompanionLayoutOptions;
@@ -38,6 +44,7 @@ export function FloatingCompanion({
   onPositionChange,
   onBubbleClick,
   liveLabel,
+  progress,
   badge = false,
   pulsing = false,
   layoutOptions,
@@ -53,7 +60,12 @@ export function FloatingCompanion({
     moved: boolean;
   } | null>(null);
 
-  const width = liveLabel ? COMPANION_BUBBLE_SIZE + 72 : COMPANION_BUBBLE_SIZE;
+  const hasProgressRing = progress !== undefined && progress > 0;
+  const width = hasProgressRing
+    ? PROGRESS_SIZE
+    : liveLabel
+      ? COMPANION_BUBBLE_SIZE + 72
+      : COMPANION_BUBBLE_SIZE;
   const prevLayout = useRef({
     focusMode: layoutOptions.focusMode,
     layersOpen: layoutOptions.layersOpen ?? false,
@@ -173,34 +185,87 @@ export function FloatingCompanion({
         left: pos.x,
         top: pos.y,
         width,
-        height: COMPANION_BUBBLE_SIZE,
+        height: hasProgressRing ? PROGRESS_SIZE : COMPANION_BUBBLE_SIZE,
       }}
       data-companion={id}
     >
-      <button
-        type="button"
-        className={`relative flex h-full w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-2 text-lg shadow-lg transition-colors hover:bg-accent/50 ${
-          pulsing ? "animate-pulse ring-2 ring-primary/40" : ""
-        }`}
-        aria-label={ariaLabel}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerCancel}
-      >
-        <span aria-hidden>{icon}</span>
-        {liveLabel ? (
-          <span className="font-mono text-xs tabular-nums text-foreground">
-            {liveLabel}
+      {hasProgressRing ? (
+        <button
+          type="button"
+          className={`relative flex h-full w-full items-center justify-center rounded-full bg-card shadow-lg transition-colors hover:bg-accent/50 ${
+            pulsing ? "animate-pulse ring-2 ring-primary/40" : ""
+          }`}
+          aria-label={ariaLabel}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+        >
+          <svg
+            className="absolute inset-0"
+            width={PROGRESS_SIZE}
+            height={PROGRESS_SIZE}
+            viewBox={`0 0 ${PROGRESS_SIZE} ${PROGRESS_SIZE}`}
+          >
+            <circle
+              cx={PROGRESS_SIZE / 2}
+              cy={PROGRESS_SIZE / 2}
+              r={RADIUS}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={STROKE_WIDTH}
+              className="text-border"
+            />
+            <circle
+              cx={PROGRESS_SIZE / 2}
+              cy={PROGRESS_SIZE / 2}
+              r={RADIUS}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={STROKE_WIDTH}
+              strokeDasharray={CIRCUMFERENCE}
+              strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
+              strokeLinecap="round"
+              className="text-primary transition-[stroke-dashoffset] duration-1000 ease-linear"
+              transform={`rotate(-90 ${PROGRESS_SIZE / 2} ${PROGRESS_SIZE / 2})`}
+            />
+          </svg>
+          <span className="relative z-10 text-lg" aria-hidden>
+            {icon}
           </span>
-        ) : null}
-        {badge ? (
-          <span
-            className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
-            aria-hidden
-          />
-        ) : null}
-      </button>
+          {badge ? (
+            <span
+              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
+              aria-hidden
+            />
+          ) : null}
+        </button>
+      ) : (
+        <button
+          type="button"
+          className={`relative flex h-full w-full items-center justify-center gap-2 rounded-full border border-border bg-card px-2 text-lg shadow-lg transition-colors hover:bg-accent/50 ${
+            pulsing ? "animate-pulse ring-2 ring-primary/40" : ""
+          }`}
+          aria-label={ariaLabel}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+        >
+          <span aria-hidden>{icon}</span>
+          {liveLabel ? (
+            <span className="font-mono text-xs tabular-nums text-foreground">
+              {liveLabel}
+            </span>
+          ) : null}
+          {badge ? (
+            <span
+              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
+              aria-hidden
+            />
+          ) : null}
+        </button>
+      )}
     </div>
   );
 }

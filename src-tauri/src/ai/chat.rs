@@ -29,6 +29,7 @@ pub async fn send_chat(
     project_path: &Path,
     diagram_path: Option<&Path>,
     diagram_content: Option<&str>,
+    selected_diagram_contents: Vec<String>,
     history: &[ChatTurn],
     user_message: &str,
 ) -> Result<SendChatResult, String> {
@@ -82,7 +83,7 @@ pub async fn send_chat(
         }
     }
 
-    let system = system_prompt(persona, effective_content.as_deref());
+    let system = system_prompt(persona, effective_content.as_deref(), &selected_diagram_contents);
     let mut messages: Vec<ChatMessage<'_>> = vec![ChatMessage {
         role: "system",
         content: &system,
