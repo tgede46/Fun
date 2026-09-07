@@ -3,7 +3,7 @@ import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { DiagramList } from "./DiagramList";
-import { ExcalidrawCanvas } from "@/canvas/ExcalidrawCanvas";
+import { FunCanvas } from "@/canvas/FunCanvas";
 import { DrawioEmbed } from "@/canvas/drawio/DrawioEmbed";
 
 type WorkshopMode = "sketch" | "uml";
@@ -178,7 +178,7 @@ export function CanvasArea({
           )}
         </div>
       </div>
-      <ExcalidrawCanvas
+      <FunCanvas
         initialScene={scene}
         onSceneChange={onSceneChange}
         focusMode={focusMode}

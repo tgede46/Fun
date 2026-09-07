@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { FunObject } from "../types";
 
 interface ShapeRendererProps {
@@ -6,12 +7,27 @@ interface ShapeRendererProps {
 }
 
 export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
+  const [hovered, setHovered] = useState(false);
   const strokeWidth = obj.strokeWidth;
   const inset = strokeWidth / 2;
 
+  const hoverScale = hovered && !selected ? 1.01 : 1;
+  const selectGlow = selected ? 2 : hovered ? 1 : 0;
+
   if (obj.type === "rect") {
     return (
-      <g opacity={obj.opacity} data-object-id={obj.id}>
+      <g
+        opacity={obj.opacity}
+        data-object-id={obj.id}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          transition: "transform 0.15s ease-out, filter 0.15s ease-out",
+          transform: `scale(${hoverScale})`,
+          transformOrigin: `${obj.x + obj.width / 2}px ${obj.y + obj.height / 2}px`,
+          filter: selectGlow > 0 ? `drop-shadow(0 0 ${selectGlow}px var(--fun-accent))` : undefined,
+        }}
+      >
         <rect
           x={obj.x + inset}
           y={obj.y + inset}
@@ -20,8 +36,9 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
           rx={obj.borderRadius}
           ry={obj.borderRadius}
           fill={obj.fill}
-          stroke={obj.stroke}
-          strokeWidth={strokeWidth}
+          stroke={selected ? "var(--fun-accent)" : obj.stroke}
+          strokeWidth={selected ? strokeWidth + 1 : strokeWidth}
+          style={{ transition: "stroke 0.15s, stroke-width 0.15s" }}
         />
         {selected && (
           <rect
@@ -36,6 +53,7 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
             strokeWidth={2}
             strokeDasharray="6 3"
             pointerEvents="none"
+            className="animate-[dash_0.4s_linear_infinite]"
           />
         )}
       </g>
@@ -44,15 +62,27 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
 
   if (obj.type === "ellipse") {
     return (
-      <g opacity={obj.opacity} data-object-id={obj.id}>
+      <g
+        opacity={obj.opacity}
+        data-object-id={obj.id}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          transition: "transform 0.15s ease-out, filter 0.15s ease-out",
+          transform: `scale(${hoverScale})`,
+          transformOrigin: `${obj.x + obj.width / 2}px ${obj.y + obj.height / 2}px`,
+          filter: selectGlow > 0 ? `drop-shadow(0 0 ${selectGlow}px var(--fun-accent))` : undefined,
+        }}
+      >
         <ellipse
           cx={obj.x + obj.width / 2}
           cy={obj.y + obj.height / 2}
           rx={Math.max(0, obj.width / 2 - inset)}
           ry={Math.max(0, obj.height / 2 - inset)}
           fill={obj.fill}
-          stroke={obj.stroke}
-          strokeWidth={strokeWidth}
+          stroke={selected ? "var(--fun-accent)" : obj.stroke}
+          strokeWidth={selected ? strokeWidth + 1 : strokeWidth}
+          style={{ transition: "stroke 0.15s, stroke-width 0.15s" }}
         />
         {selected && (
           <ellipse
@@ -65,6 +95,7 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
             strokeWidth={2}
             strokeDasharray="6 3"
             pointerEvents="none"
+            className="animate-[dash_0.4s_linear_infinite]"
           />
         )}
       </g>
@@ -79,12 +110,24 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
   const points = `${cx},${cy - hh} ${cx + hw},${cy} ${cx},${cy + hh} ${cx - hw},${cy}`;
 
   return (
-    <g opacity={obj.opacity} data-object-id={obj.id}>
+    <g
+      opacity={obj.opacity}
+      data-object-id={obj.id}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        transition: "transform 0.15s ease-out, filter 0.15s ease-out",
+        transform: `scale(${hoverScale})`,
+        transformOrigin: `${cx}px ${cy}px`,
+        filter: selectGlow > 0 ? `drop-shadow(0 0 ${selectGlow}px var(--fun-accent))` : undefined,
+      }}
+    >
       <polygon
         points={points}
         fill={obj.fill}
-        stroke={obj.stroke}
-        strokeWidth={strokeWidth}
+        stroke={selected ? "var(--fun-accent)" : obj.stroke}
+        strokeWidth={selected ? strokeWidth + 1 : strokeWidth}
+        style={{ transition: "stroke 0.15s, stroke-width 0.15s" }}
       />
       {selected && (
         <polygon
@@ -94,6 +137,7 @@ export function ShapeRenderer({ obj, selected }: ShapeRendererProps) {
           strokeWidth={2}
           strokeDasharray="6 3"
           pointerEvents="none"
+          className="animate-[dash_0.4s_linear_infinite]"
         />
       )}
     </g>

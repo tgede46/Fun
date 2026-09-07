@@ -151,3 +151,9 @@
     color: var(--color-primary-foreground);
   }
 }
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
