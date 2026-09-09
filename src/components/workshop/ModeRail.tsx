@@ -18,7 +18,7 @@ export function ModeRail({ activeMode = "sketch", onModeChange }: ModeRailProps)
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}
         type="button"
-        title="Sketch — Excalidraw"
+        title="Excalidraw — ouvrir ou créer un croquis"
         aria-label="Mode Sketch / Excalidraw"
         aria-pressed={activeMode === "sketch"}
         onClick={() => onModeChange?.("sketch")}
@@ -33,7 +33,7 @@ export function ModeRail({ activeMode = "sketch", onModeChange }: ModeRailProps)
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}
         type="button"
-        title="UML — draw.io"
+        title="draw.io — ouvrir ou créer un UML"
         aria-label="Mode UML"
         aria-pressed={activeMode === "uml"}
         onClick={() => onModeChange?.("uml")}
@@ -48,7 +48,7 @@ export function ModeRail({ activeMode = "sketch", onModeChange }: ModeRailProps)
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}
         type="button"
-        title="PlantUML — code texte"
+        title="PlantUML — ouvrir ou créer un diagramme code"
         aria-label="Mode PlantUML"
         aria-pressed={activeMode === "plantuml"}
         onClick={() => onModeChange?.("plantuml")}

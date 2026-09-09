@@ -438,9 +438,9 @@ export function FunCanvas({
   return (
     <div
       className="flex-1 relative min-h-0 overflow-hidden outline-none"
-      tabIndex={0}
-      onKeyDown={handleKeyDown}
-      onContextMenu={handleContextMenu}
+      tabIndex={previewMode ? -1 : 0}
+      onKeyDown={previewMode ? undefined : handleKeyDown}
+      onContextMenu={previewMode ? undefined : handleContextMenu}
     >
       <svg
         ref={svgRef}

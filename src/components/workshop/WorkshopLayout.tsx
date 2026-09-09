@@ -276,6 +276,32 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     [activeDiagramPath, openDiagram],
   );
 
+  const handleModeChange = useCallback(
+    (next: WorkshopMode) => {
+      const kind: DiagramKind =
+        next === "uml" ? "drawio" : next === "plantuml" ? "plantuml" : "sketch";
+      const currentKind = activeDiagramPath
+        ? kindFromPath(activeDiagramPath)
+        : null;
+
+      if (currentKind === kind) {
+        setMode(next);
+        return;
+      }
+
+      const match = diagrams.find(
+        (d) => (d.kind ?? kindFromPath(d.path)) === kind,
+      );
+      if (match) {
+        void openDiagram(match.path);
+        return;
+      }
+
+      void handleCreateOfKind(kind);
+    },
+    [activeDiagramPath, diagrams, handleCreateOfKind, openDiagram],
+  );
+
   const handleDeleteDiagram = useCallback((path?: string) => {
     const targetPath = path ?? activeDiagramPath;
     if (!targetPath) return;
@@ -664,9 +690,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         <ModeRail
           activeMode={mode}
           onModeChange={(next) => {
-            if (!activeDiagramPath) {
-              setMode(next);
-            }
+            void handleModeChange(next);
           }}
         />
         <CanvasArea

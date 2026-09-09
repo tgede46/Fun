@@ -62,11 +62,12 @@ export function matchKey(event: KeyboardEvent | React.KeyboardEvent, key: string
 
 export function isInputLike(element: Element | null): boolean {
   if (!element) return false;
-  const tag = element.tagName;
-  return (
-    tag === "INPUT" ||
-    tag === "TEXTAREA" ||
-    tag === "SELECT" ||
-    (element as HTMLElement).isContentEditable === true
-  );
+  if (!(element instanceof Element)) return false;
+  const el = element as HTMLElement;
+  if (el.isContentEditable) return true;
+  if (el.closest("textarea, input, select, [contenteditable='true']")) {
+    return true;
+  }
+  const tag = el.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
