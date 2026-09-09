@@ -136,6 +136,29 @@ pub async fn pick_project_parent_folder(app: AppHandle) -> Result<Option<String>
     Ok(picked.map(|path| path.to_string()))
 }
 
+/// Export interop (hors `.fun/`) — dialog natif car `<a download>` est mort en WebView Tauri.
+#[tauri::command]
+pub async fn export_text_file(
+    app: AppHandle,
+    default_filename: String,
+    content: String,
+) -> Result<bool, String> {
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Exporter le diagramme")
+        .set_file_name(&default_filename)
+        .blocking_save_file();
+
+    let Some(file_path) = picked else {
+        return Ok(false);
+    };
+
+    let path = PathBuf::from(file_path.to_string());
+    fs::write(&path, content).map_err(|err| format!("Écriture impossible : {err}"))?;
+    Ok(true)
+}
+
 fn validate_project_name(name: &str) -> Result<(), String> {
     let trimmed = name.trim();
     if trimmed.is_empty() {

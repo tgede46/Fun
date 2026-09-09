@@ -19,6 +19,11 @@ description = "Choisit l'emplacement d'un nouveau projet."
 commands.allow = ["pick_project_parent_folder"]
 
 [[permission]]
+identifier = "allow-export-text-file"
+description = "Exporte un diagramme via le dialogue d'enregistrement natif."
+commands.allow = ["export_text_file"]
+
+[[permission]]
 identifier = "allow-create-project"
 description = "Crée un dossier projet et initialise `.fun/`."
 commands.allow = ["create_project"]

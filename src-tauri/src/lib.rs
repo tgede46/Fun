@@ -31,6 +31,7 @@ pub fn run() {
             commands::create_project,
             commands::pick_project_folder,
             commands::pick_project_parent_folder,
+            commands::export_text_file,
             commands::create_drawio_diagram,
             commands::load_diagram,
             commands::save_diagram,

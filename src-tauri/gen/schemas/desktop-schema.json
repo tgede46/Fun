@@ -405,6 +405,12 @@
           "markdownDescription": "Supprime un fichier diagramme Excalidraw."
         },
         {
+          "description": "Exporte un diagramme via le dialogue d'enregistrement natif.",
+          "type": "string",
+          "const": "allow-export-text-file",
+          "markdownDescription": "Exporte un diagramme via le dialogue d'enregistrement natif."
+        },
+        {
           "description": "Génère un diagramme UML depuis le code.",
           "type": "string",
           "const": "allow-generate-diagram-from-code",

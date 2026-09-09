@@ -518,6 +518,7 @@ export function FunCanvas({
             <div className="absolute top-full left-0 mt-1 z-50">
               <UnifiedDiagramTool
                 scene={scene}
+                onClose={() => setDiagramToolOpen(false)}
                 onSceneChange={(newScene) => {
                   setSceneDirect(newScene);
                   setDiagramToolOpen(false);
