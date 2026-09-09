@@ -88,24 +88,13 @@ export function Toolbar({
         >
           {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
         </button>
-        {canDeleteDiagram && mode === "sketch" && (
+        {canDeleteDiagram && (
           <button
             type="button"
             className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
             onClick={onDeleteDiagram}
-            disabled={!canDeleteDiagram || isDeletingDiagram}
-            title="Supprime le diagramme ouvert (.fun/diagrams/)"
-          >
-            {isDeletingDiagram ? "Suppression…" : "Supprimer"}
-          </button>
-        )}
-        {canDeleteDiagram && mode === "uml" && (
-          <button
-            type="button"
-            className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
-            onClick={onDeleteDiagram}
-            disabled={!canDeleteDiagram || isDeletingDiagram}
-            title="Supprime le diagramme UML ouvert (.fun/diagrams/)"
+            disabled={isDeletingDiagram}
+            title="Supprimer le diagramme ouvert (.fun/diagrams/)"
           >
             {isDeletingDiagram ? "Suppression…" : "Supprimer"}
           </button>

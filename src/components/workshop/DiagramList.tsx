@@ -23,8 +23,6 @@ export function DiagramList({
     return null;
   }
 
-  const hasSelection = selectedPaths && selectedPaths.size > 0;
-
   return (
     <nav className="flex items-center gap-1 overflow-x-auto" aria-label="Diagrammes du projet">
       <span className="text-xs text-muted-foreground px-2 shrink-0">Diagrammes</span>
