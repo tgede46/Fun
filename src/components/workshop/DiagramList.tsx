@@ -1,6 +1,6 @@
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { cn } from "@/lib/utils";
-import type { DiagramListItem } from "@/lib/diagram";
+import type { DiagramKind, DiagramListItem } from "@/lib/diagram";
 
 type DiagramListProps = {
   diagrams: DiagramListItem[];
@@ -9,6 +9,13 @@ type DiagramListProps = {
   onSelect: (path: string) => void;
   onToggleSelect?: (path: string) => void;
   onDelete?: (path: string) => void;
+  onConvert?: (path: string, kind: DiagramKind) => void;
+};
+
+const KIND_LABEL: Record<DiagramKind, string> = {
+  sketch: "Sketch",
+  drawio: "draw.io",
+  plantuml: "PlantUML",
 };
 
 export function DiagramList({
@@ -18,6 +25,7 @@ export function DiagramList({
   onSelect,
   onToggleSelect,
   onDelete,
+  onConvert,
 }: DiagramListProps) {
   if (diagrams.length === 0) {
     return null;
@@ -31,6 +39,7 @@ export function DiagramList({
           const isActive = diagram.path === activePath;
           const isSelected = selectedPaths?.has(diagram.path) ?? false;
           const label = formatDiagramName(diagram.name);
+          const kind = diagram.kind ?? "sketch";
 
           return (
             <li key={diagram.path} className="flex items-center">
@@ -70,7 +79,38 @@ export function DiagramList({
                 title={diagram.name}
               >
                 {label}
+                <span
+                  className={cn(
+                    "ml-1 text-[10px] uppercase tracking-wide",
+                    isActive ? "opacity-80" : "opacity-60",
+                  )}
+                >
+                  {KIND_LABEL[kind]}
+                </span>
               </button>
+              {onConvert ? (
+                <select
+                  className="ml-0.5 max-w-[7.5rem] rounded-md border-0 bg-transparent py-1 text-[11px] text-muted-foreground"
+                  aria-label={`Dupliquer ${label} en…`}
+                  defaultValue=""
+                  onChange={(event) => {
+                    const next = event.target.value as DiagramKind;
+                    event.target.value = "";
+                    if (next) onConvert(diagram.path, next);
+                  }}
+                >
+                  <option value="" disabled>
+                    Dupliquer…
+                  </option>
+                  {(["sketch", "drawio", "plantuml"] as DiagramKind[])
+                    .filter((target) => target !== kind)
+                    .map((target) => (
+                      <option key={target} value={target}>
+                        en {KIND_LABEL[target]}
+                      </option>
+                    ))}
+                </select>
+              ) : null}
               {onDelete ? (
                 <button
                   type="button"

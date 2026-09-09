@@ -15,7 +15,7 @@ import {
   funSceneToExcalidrawData,
 } from "../adapters/excalidraw";
 import { drawioXmlToFunScene, funSceneToDrawioXml } from "../adapters/drawio";
-import { plantumlToFunScene } from "../adapters/plantuml";
+import { funSceneToPlantUml, plantumlToFunScene } from "../adapters/plantuml";
 
 export type UnifiedDiagramFormat = "excalidraw" | "drawio" | "plantuml" | "fun";
 
@@ -69,85 +69,6 @@ function mimeFor(format: UnifiedDiagramFormat): string {
     case "plantuml":
       return "text/plain";
   }
-}
-
-function generatePlantUMLFromScene(scene: FunScene): string {
-  const lines: string[] = ["@startuml", ""];
-
-  for (const obj of scene.objects) {
-    switch (obj.type) {
-      case "uml-class": {
-        const e = obj as { name: string; stereotype?: string };
-        const stereotype = e.stereotype ? ` <<${e.stereotype}>>` : "";
-        lines.push(`class ${e.name}${stereotype} {`);
-        for (const attr of (obj as { attributes?: string[] }).attributes ?? []) {
-          lines.push(`  ${attr}`);
-        }
-        for (const method of (obj as { methods?: string[] }).methods ?? []) {
-          lines.push(`  ${method}`);
-        }
-        lines.push("}");
-        break;
-      }
-      case "uml-interface": {
-        lines.push(`interface ${(obj as { name: string }).name} {`);
-        for (const method of (obj as { methods?: string[] }).methods ?? []) {
-          lines.push(`  ${method}`);
-        }
-        lines.push("}");
-        break;
-      }
-      case "uml-component":
-        lines.push(`component ${(obj as { name: string }).name}`);
-        break;
-      case "uml-database":
-        lines.push(`database ${(obj as { name: string }).name}`);
-        break;
-      case "uml-package":
-        lines.push(`package ${(obj as { name: string }).name} {`);
-        lines.push("}");
-        break;
-      case "uml-note":
-        lines.push(`note "${(obj as { text: string }).text}"`);
-        break;
-      default:
-        break;
-    }
-  }
-
-  for (const edge of scene.edges ?? []) {
-    let arrow = "--";
-    switch (edge.kind) {
-      case "inheritance":
-        arrow = "|-->";
-        break;
-      case "implementation":
-        arrow = "|*--";
-        break;
-      case "aggregation":
-        arrow = "o--";
-        break;
-      case "composition":
-        arrow = "*--";
-        break;
-      case "dependency":
-        arrow = "..>";
-        break;
-      case "notes-link":
-        arrow = "..";
-        break;
-      default:
-        arrow = "--";
-    }
-    if (edge.label) {
-      lines.push(`${edge.fromId} ${arrow} ${edge.toId} : ${edge.label}`);
-    } else {
-      lines.push(`${edge.fromId} ${arrow} ${edge.toId}`);
-    }
-  }
-
-  lines.push("", "@enduml");
-  return lines.join("\n");
 }
 
 function parseExcalidrawPayload(content: string, filename: string): FunScene {
@@ -227,7 +148,7 @@ function sceneToExport(
       };
     case "plantuml":
       return {
-        content: generatePlantUMLFromScene(scene),
+        content: funSceneToPlantUml(scene),
         filename: filenameFor(format),
         mimeType: mimeFor(format),
       };

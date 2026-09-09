@@ -18,5 +18,15 @@ export function formatDiagramName(name: string): string {
     return `UML ${uml[1].replace(/-/g, " ")}`;
   }
 
+  const plantuml = name.match(/^plantuml-(\d+)$/i);
+  if (plantuml) {
+    return `PlantUML ${plantuml[1]}`;
+  }
+
+  const capture = name.match(/^capture-(\d+)$/i);
+  if (capture) {
+    return `Capture ${capture[1]}`;
+  }
+
   return name.replace(/-/g, " ");
 }

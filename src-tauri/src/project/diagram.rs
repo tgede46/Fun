@@ -5,6 +5,58 @@ use std::path::{Path, PathBuf};
 const FUN_DIR: &str = ".fun";
 const DIAGRAMS_DIR: &str = "diagrams";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum DiagramKind {
+    Sketch,
+    Drawio,
+    Plantuml,
+}
+
+impl DiagramKind {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            DiagramKind::Sketch => "sketch",
+            DiagramKind::Drawio => "drawio",
+            DiagramKind::Plantuml => "plantuml",
+        }
+    }
+
+    pub fn extension(self) -> &'static str {
+        match self {
+            DiagramKind::Sketch => "excalidraw",
+            DiagramKind::Drawio => "drawio",
+            DiagramKind::Plantuml => "puml",
+        }
+    }
+
+    pub fn filename_prefix(self) -> &'static str {
+        match self {
+            DiagramKind::Sketch => "croquis",
+            DiagramKind::Drawio => "uml",
+            DiagramKind::Plantuml => "plantuml",
+        }
+    }
+
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "sketch" | "excalidraw" => Ok(DiagramKind::Sketch),
+            "drawio" | "uml" => Ok(DiagramKind::Drawio),
+            "plantuml" | "puml" => Ok(DiagramKind::Plantuml),
+            _ => Err(format!("Type de diagramme inconnu : {value}")),
+        }
+    }
+
+    pub fn from_path(path: &Path) -> Result<Self, String> {
+        match path.extension().and_then(|e| e.to_str()) {
+            Some("excalidraw") => Ok(DiagramKind::Sketch),
+            Some("drawio") => Ok(DiagramKind::Drawio),
+            Some("puml") => Ok(DiagramKind::Plantuml),
+            _ => Err("Extension de fichier invalide.".to_string()),
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 struct ExcalidrawFile {
     #[serde(rename = "type")]
@@ -33,6 +85,22 @@ pub fn empty_excalidraw_json() -> Result<String, String> {
     serde_json::to_string_pretty(&payload).map_err(|e| e.to_string())
 }
 
+pub fn empty_drawio_xml() -> String {
+    r#"<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Fun" version="24.0.0" etag="abc123" type="device"><diagram name="Page-1" id="abc123"><mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tool="default" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>"#.to_string()
+}
+
+pub fn empty_plantuml() -> String {
+    "@startuml\n@enduml\n".to_string()
+}
+
+pub fn empty_content_for_kind(kind: DiagramKind) -> Result<String, String> {
+    match kind {
+        DiagramKind::Sketch => empty_excalidraw_json(),
+        DiagramKind::Drawio => Ok(empty_drawio_xml()),
+        DiagramKind::Plantuml => Ok(empty_plantuml()),
+    }
+}
+
 fn diagrams_dir(project_root: &Path) -> PathBuf {
     project_root.join(FUN_DIR).join(DIAGRAMS_DIR)
 }
@@ -57,11 +125,7 @@ fn validate_diagram_path(project_root: &Path, diagram_path: &Path) -> Result<(),
         return Err("Chemin diagramme non autorisé.".to_string());
     }
 
-    if canonical_diagram.extension().and_then(|e| e.to_str()) != Some("excalidraw")
-        && canonical_diagram.extension().and_then(|e| e.to_str()) != Some("drawio")
-    {
-        return Err("Extension de fichier invalide.".to_string());
-    }
+    DiagramKind::from_path(&canonical_diagram)?;
 
     if !canonical_diagram.starts_with(&canonical_project) {
         return Err("Le diagramme doit appartenir au projet ouvert.".to_string());
@@ -70,18 +134,20 @@ fn validate_diagram_path(project_root: &Path, diagram_path: &Path) -> Result<(),
     Ok(())
 }
 
-fn next_croquis_filename(dir: &Path) -> String {
+fn next_numbered_filename(dir: &Path, kind: DiagramKind) -> String {
     let mut max = 0u32;
+    let prefix = format!("{}-", kind.filename_prefix());
+    let ext = kind.extension();
 
     if dir.exists() {
         if let Ok(entries) = fs::read_dir(dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
-                if path.extension().and_then(|e| e.to_str()) != Some("excalidraw") {
+                if path.extension().and_then(|e| e.to_str()) != Some(ext) {
                     continue;
                 }
                 if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                    if let Some(num_str) = stem.strip_prefix("croquis-") {
+                    if let Some(num_str) = stem.strip_prefix(&prefix) {
                         if let Ok(num) = num_str.parse::<u32>() {
                             max = max.max(num);
                         }
@@ -91,55 +157,80 @@ fn next_croquis_filename(dir: &Path) -> String {
         }
     }
 
-    format!("croquis-{}.excalidraw", max + 1)
+    format!("{}{}.{}", prefix, max + 1, ext)
+}
+
+pub fn create_diagram_of_kind(project_root: &Path, kind: DiagramKind) -> Result<PathBuf, String> {
+    create_diagram_with_content(project_root, kind, &empty_content_for_kind(kind)?)
+}
+
+pub fn create_diagram_with_content(
+    project_root: &Path,
+    kind: DiagramKind,
+    content: &str,
+) -> Result<PathBuf, String> {
+    if !project_root.is_dir() {
+        return Err("Le dossier projet est introuvable.".to_string());
+    }
+
+    validate_content_for_kind(kind, content)?;
+
+    let dir = diagrams_dir(project_root);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    for _ in 0..10 {
+        let path = dir.join(next_numbered_filename(&dir, kind));
+        if path.exists() {
+            continue;
+        }
+        fs::write(&path, content).map_err(|e| e.to_string())?;
+        return Ok(path);
+    }
+
+    Err("Impossible de générer un nom de diagramme unique.".to_string())
+}
+
+pub fn write_capture_diagram(
+    project_root: &Path,
+    kind: DiagramKind,
+    content: &str,
+) -> Result<PathBuf, String> {
+    if !project_root.is_dir() {
+        return Err("Le dossier projet est introuvable.".to_string());
+    }
+
+    validate_content_for_kind(kind, content)?;
+
+    let dir = diagrams_dir(project_root);
+    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+
+    let mut max = 0u32;
+    if dir.exists() {
+        if let Ok(entries) = fs::read_dir(&dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                    if let Some(num_str) = stem.strip_prefix("capture-") {
+                        if let Ok(num) = num_str.parse::<u32>() {
+                            max = max.max(num);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let path = dir.join(format!("capture-{}.{}", max + 1, kind.extension()));
+    fs::write(&path, content).map_err(|e| e.to_string())?;
+    Ok(path)
 }
 
 pub fn create_diagram(project_root: &Path) -> Result<PathBuf, String> {
-    if !project_root.is_dir() {
-        return Err("Le dossier projet est introuvable.".to_string());
-    }
-
-    let dir = diagrams_dir(project_root);
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-
-    let content = empty_excalidraw_json()?;
-
-    for _ in 0..10 {
-        let path = dir.join(next_croquis_filename(&dir));
-        if path.exists() {
-            continue;
-        }
-        fs::write(&path, &content).map_err(|e| e.to_string())?;
-        return Ok(path);
-    }
-
-    Err("Impossible de générer un nom de diagramme unique.".to_string())
+    create_diagram_of_kind(project_root, DiagramKind::Sketch)
 }
 
 pub fn create_drawio_diagram(project_root: &Path) -> Result<PathBuf, String> {
-    if !project_root.is_dir() {
-        return Err("Le dossier projet est introuvable.".to_string());
-    }
-
-    let dir = diagrams_dir(project_root);
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-
-    // Contenu XML minimal draw.io (créer un diagramme vide)
-    let xml = r#"<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Fun" version="24.0.0" etag="abc123" type="device"><diagram name="Page-1" id="abc123"><mxGraphModel dx="800" dy="600" grid="1" gridSize="10" guides="1" tool="default" math="0" shadow="0"><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>"#;
-
-    for _ in 0..10 {
-        let path = dir.join(format!(
-            "uml-{}.drawio",
-            chrono::Utc::now().format("%Y%m%dT%H%M%SZ")
-        ));
-        if path.exists() {
-            continue;
-        }
-        fs::write(&path, xml).map_err(|e| e.to_string())?;
-        return Ok(path);
-    }
-
-    Err("Impossible de générer un nom de diagramme unique.".to_string())
+    create_diagram_of_kind(project_root, DiagramKind::Drawio)
 }
 
 pub fn load_drawio_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
@@ -161,20 +252,34 @@ pub fn load_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, 
     fs::read_to_string(diagram_path).map_err(|e| e.to_string())
 }
 
+fn validate_content_for_kind(kind: DiagramKind, content: &str) -> Result<(), String> {
+    match kind {
+        DiagramKind::Sketch => {
+            let parsed: serde_json::Value = serde_json::from_str(content)
+                .map_err(|_| "JSON Excalidraw invalide.".to_string())?;
+            if parsed.get("type").and_then(|v| v.as_str()) != Some("excalidraw") {
+                return Err("JSON Excalidraw invalide.".to_string());
+            }
+            Ok(())
+        }
+        DiagramKind::Drawio => {
+            if !content.contains("mxfile") && !content.contains("mxGraphModel") {
+                return Err("XML draw.io invalide.".to_string());
+            }
+            Ok(())
+        }
+        DiagramKind::Plantuml => Ok(()),
+    }
+}
+
 pub fn save_diagram(
     project_root: &Path,
     diagram_path: &Path,
     content: &str,
 ) -> Result<(), String> {
     validate_diagram_path(project_root, diagram_path)?;
-
-    let parsed: serde_json::Value =
-        serde_json::from_str(content).map_err(|_| "JSON Excalidraw invalide.".to_string())?;
-
-    if parsed.get("type").and_then(|v| v.as_str()) != Some("excalidraw") {
-        return Err("JSON Excalidraw invalide.".to_string());
-    }
-
+    let kind = DiagramKind::from_path(diagram_path)?;
+    validate_content_for_kind(kind, content)?;
     fs::write(diagram_path, content).map_err(|e| e.to_string())
 }
 
@@ -198,11 +303,11 @@ pub fn validate_excalidraw_json(json: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Reset du diagramme : écrase le fichier avec un document Excalidraw vide au même chemin (AD-6).
+/// Reset du diagramme : écrase le fichier avec un document vide du même type.
 pub fn reset_diagram(project_root: &Path, diagram_path: &Path) -> Result<String, String> {
     validate_diagram_path(project_root, diagram_path)?;
-
-    let content = empty_excalidraw_json()?;
+    let kind = DiagramKind::from_path(diagram_path)?;
+    let content = empty_content_for_kind(kind)?;
     fs::write(diagram_path, &content).map_err(|e| e.to_string())?;
     Ok(content)
 }
@@ -230,6 +335,7 @@ pub fn write_uml_diagram(project_root: &Path, json: &str) -> Result<PathBuf, Str
 pub struct DiagramEntry {
     pub path: String,
     pub name: String,
+    pub kind: DiagramKind,
 }
 
 pub fn list_diagrams(project_root: &Path) -> Result<Vec<DiagramEntry>, String> {
@@ -248,13 +354,9 @@ pub fn list_diagrams(project_root: &Path) -> Result<Vec<DiagramEntry>, String> {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
 
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
-        if ext != "excalidraw" && ext != "drawio" {
+        let Ok(kind) = DiagramKind::from_path(&path) else {
             continue;
-        }
+        };
 
         let modified = entry
             .metadata()
@@ -272,6 +374,7 @@ pub fn list_diagrams(project_root: &Path) -> Result<Vec<DiagramEntry>, String> {
             DiagramEntry {
                 path: path.to_string_lossy().into_owned(),
                 name,
+                kind,
             },
         ));
     }
@@ -429,6 +532,31 @@ mod tests {
     }
 
     #[test]
+    #[test]
+    fn reset_diagram_drawio_writes_empty_xml() {
+        let project = temp_project();
+        let path = create_drawio_diagram(&project).expect("create");
+        fs::write(&path, "<mxfile><diagram>not-empty</diagram></mxfile>").expect("write");
+
+        let content = reset_diagram(&project, &path).expect("reset");
+        assert!(content.contains("mxGraphModel"));
+        assert!(content.contains("<mxCell id=\"0\"/>"));
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn reset_diagram_plantuml_writes_empty_source() {
+        let project = temp_project();
+        let path = create_diagram_of_kind(&project, DiagramKind::Plantuml).expect("create");
+        fs::write(&path, "@startuml\nA -> B\n@enduml\n").expect("write");
+
+        let content = reset_diagram(&project, &path).expect("reset");
+        assert_eq!(content, empty_plantuml());
+
+        let _ = fs::remove_dir_all(project);
+    }
+
     fn reset_diagram_overwrites_with_empty() {
         let project = temp_project();
         let diagram_path = create_diagram(&project).expect("create");

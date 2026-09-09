@@ -76,6 +76,18 @@ export async function generateDiagramFromCode(
   });
 }
 
+export async function generateDiagramFromImage(
+  projectPath: string,
+  imageBase64: string,
+  mime: string,
+): Promise<GenerateDiagramResult> {
+  return invoke<GenerateDiagramResult>("generate_diagram_from_image", {
+    projectPath,
+    imageBase64,
+    mime,
+  });
+}
+
 export type RunBenchmarkResult = {
   active_model: string;
   ran_at: string;

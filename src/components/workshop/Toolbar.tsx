@@ -13,6 +13,7 @@ type ToolbarProps = {
   onToggleTheme: () => void;
   onNewDiagram: () => void;
   onGenerateFromCode: () => void;
+  onGenerateFromImage: () => void;
   isCreatingDiagram: boolean;
   isGeneratingFromCode: boolean;
   canDeleteDiagram?: boolean;
@@ -31,6 +32,7 @@ export function Toolbar({
   onToggleTheme,
   onNewDiagram,
   onGenerateFromCode,
+  onGenerateFromImage,
   isCreatingDiagram,
   isGeneratingFromCode,
   canDeleteDiagram = false,
@@ -49,11 +51,11 @@ export function Toolbar({
         </Link>
         <span className="font-semibold text-foreground">{projectName}</span>
         <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-secondary">
-          {mode === "uml" ? "◫ UML" : "✎ Sketch"}
+          {mode === "uml" ? "◫ UML" : mode === "plantuml" ? "{ } PlantUML" : "✎ Sketch"}
         </span>
       </div>
       <div className="flex items-center gap-2">
-        {mode === "sketch" ? (
+        {mode !== "uml" ? (
           <button
             type="button"
             className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
@@ -88,6 +90,15 @@ export function Toolbar({
         >
           {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
         </button>
+        <button
+          type="button"
+          className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+          onClick={onGenerateFromImage}
+          disabled={isGeneratingFromCode}
+          title="Importer une capture ou une image et générer un diagramme"
+        >
+          Depuis une image
+        </button>
         {canDeleteDiagram && (
           <button
             type="button"
@@ -104,9 +115,9 @@ export function Toolbar({
           className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
           onClick={onNewDiagram}
           disabled={isCreatingDiagram}
-          title={mode === "uml" ? "Crée un nouveau fichier diagramme UML vide dans .fun/diagrams/" : "Crée un fichier .excalidraw vide dans .fun/diagrams/"}
+          title="Choisir le type (Sketch, draw.io, PlantUML) puis créer le fichier"
         >
-          {isCreatingDiagram ? "Création…" : mode === "uml" ? "Nouveau UML" : "Nouveau diagramme"}
+          {isCreatingDiagram ? "Création…" : "Nouveau diagramme"}
         </button>
       </div>
     </header>

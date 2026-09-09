@@ -11,9 +11,39 @@ struct ChatRequest<'a> {
 }
 
 #[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum MessageContent<'a> {
+    Text(&'a str),
+    Parts(Vec<ContentPart<'a>>),
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(tag = "type")]
+pub enum ContentPart<'a> {
+    #[serde(rename = "text")]
+    Text { text: &'a str },
+    #[serde(rename = "image_url")]
+    ImageUrl { image_url: ImageUrlRef<'a> },
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ImageUrlRef<'a> {
+    pub url: &'a str,
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct ChatMessage<'a> {
     pub role: &'a str,
-    pub content: &'a str,
+    pub content: MessageContent<'a>,
+}
+
+impl<'a> ChatMessage<'a> {
+    pub fn text(role: &'a str, content: &'a str) -> Self {
+        Self {
+            role,
+            content: MessageContent::Text(content),
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]

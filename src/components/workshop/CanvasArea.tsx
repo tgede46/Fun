@@ -1,12 +1,13 @@
-import type { DiagramListItem } from "@/lib/diagram";
+import type { DiagramKind, DiagramListItem } from "@/lib/diagram";
 import type { FunTheme } from "@/lib/theme";
 import type { FunScene } from "@/canvas/types";
 import { formatDiagramName } from "@/lib/format-diagram-name";
+import { kindFromPath } from "@/lib/diagram-convert";
 import { DiagramList } from "./DiagramList";
 import { FunCanvas } from "@/canvas/FunCanvas";
 import { DrawioEmbed } from "@/canvas/drawio/DrawioEmbed";
-
-type WorkshopMode = "sketch" | "uml";
+import { PlantUmlEditor } from "./PlantUmlEditor";
+import type { WorkshopMode } from "./ModeRail";
 
 type CanvasAreaProps = {
   projectPath: string;
@@ -20,17 +21,22 @@ type CanvasAreaProps = {
   selectedDiagramPaths?: Set<string>;
   diagramName: string | null;
   scene: FunScene | null;
+  plantumlSource: string | null;
   error: string | null;
   saveError: string | null;
   codeGenError: string | null;
+  convertMessage: string | null;
   drawioXml: string | null;
   onSelectDiagram: (path: string) => void;
   onToggleSelectDiagram?: (path: string) => void;
   onDeleteDiagram?: (path: string) => void;
+  onConvertDiagram?: (path: string, kind: DiagramKind) => void;
   onSaveError: (message: string | null) => void;
   onSceneChange?: (scene: FunScene) => void;
   onCreateDrawioDiagram: () => void;
   onDrawioXmlChange?: (xml: string) => void;
+  onPlantumlSourceChange?: (source: string) => void;
+  onPlantumlGenerate?: (scene: FunScene) => void;
 };
 
 function StatusBanner({ message, tone }: { message: string; tone: "error" | "info" }) {
@@ -48,28 +54,6 @@ function StatusBanner({ message, tone }: { message: string; tone: "error" | "inf
   );
 }
 
-function BienTotOverlay({ onCreateDiagram }: { onCreateDiagram: () => void }) {
-  return (
-    <div className="absolute inset-0 flex items-center justify-center bg-canvas/80">
-      <div className="text-center p-8">
-        <div className="text-4xl mb-4 opacity-50">
-          {"\u256B"}
-        </div>
-        <h2 className="text-xl font-semibold text-foreground mb-2">Mode UML</h2>
-        <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-          Le mode UML est en cours de d\u00e9veloppement. Utilisez draw.io int\u00e9gr\u00e9 pour cr\u00e9er vos diagrammes UML.
-        </p>
-        <button
-          onClick={onCreateDiagram}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90 transition-opacity"
-        >
-          Cr\u00e9er un nouveau diagramme UML
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export function CanvasArea({
   mode,
   focusMode,
@@ -80,17 +64,26 @@ export function CanvasArea({
   selectedDiagramPaths,
   diagramName,
   scene,
+  plantumlSource,
   error,
   saveError,
   codeGenError,
+  convertMessage,
   drawioXml,
   onSelectDiagram,
   onToggleSelectDiagram,
   onDeleteDiagram,
+  onConvertDiagram,
   onSceneChange,
   onCreateDrawioDiagram,
   onDrawioXmlChange,
+  onPlantumlSourceChange,
+  onPlantumlGenerate,
 }: CanvasAreaProps) {
+  const fileKind = activeDiagramPath ? kindFromPath(activeDiagramPath) : null;
+  const viewKind: DiagramKind =
+    fileKind ?? (mode === "uml" ? "drawio" : mode === "plantuml" ? "plantuml" : "sketch");
+
   const list = (
     <DiagramList
       diagrams={diagrams}
@@ -99,34 +92,31 @@ export function CanvasArea({
       onSelect={onSelectDiagram}
       onToggleSelect={onToggleSelectDiagram}
       onDelete={onDeleteDiagram}
+      onConvert={onConvertDiagram}
     />
   );
 
-  if (mode === "uml") {
-    const hasDiagram = activeDiagramPath != null && drawioXml != null;
+  const header = (
+    <div className="flex items-center gap-3 p-3 border-b border-border">
+      {list}
+      <p className="text-sm font-medium text-foreground truncate">
+        {diagramName ? formatDiagramName(diagramName) : null}
+      </p>
+      <div className="ml-auto">
+        {saveError ? (
+          <p className="text-xs text-destructive" role="status">
+            Sauvegarde échouée : {saveError}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground hidden sm:block">
+            Sauvegarde automatique
+          </p>
+        )}
+      </div>
+    </div>
+  );
 
-    return (
-      <section className="flex flex-col flex-1 min-w-0 bg-canvas relative" aria-label="Canvas UML">
-        <div className="p-3 border-b border-border">{list}</div>
-        <div className="flex-1 relative">
-          {/* draw.io int\u00e9gr\u00e9 */}
-          <div className="absolute inset-0">
-            <DrawioEmbed
-              initialXml={drawioXml}
-              onXmlChange={onDrawioXmlChange}
-            />
-          </div>
-
-          {/* Placeholder "Bient\u00f4t" quand pas de diagramme */}
-          {!hasDiagram && (
-            <BienTotOverlay onCreateDiagram={onCreateDrawioDiagram} />
-          )}
-        </div>
-      </section>
-    );
-  }
-
-  if (error && !scene) {
+  if (error && !scene && !drawioXml && !plantumlSource) {
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
         <div className="p-3 border-b border-border">{list}</div>
@@ -137,7 +127,7 @@ export function CanvasArea({
     );
   }
 
-  if (!scene || !activeDiagramPath) {
+  if (!activeDiagramPath) {
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
         {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
@@ -147,12 +137,17 @@ export function CanvasArea({
           <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
             {diagrams.length > 0
               ? "Choisissez un diagramme dans la liste ci-dessus, ou creez-en un nouveau."
-              : "Cliquez sur \u00ab Nouveau diagramme \u00bb dans la barre du haut pour ouvrir un canvas vierge."}
+              : "Cliquez sur « Nouveau diagramme » pour choisir Sketch, draw.io ou PlantUML."}
           </p>
-          <p className="text-xs text-muted-foreground text-center max-w-md">
-            Astuce : \u00ab Depuis le code \u00bb scanne les fichiers sources du projet et genere un diagramme
-            automatiquement (connexion IA requise).
-          </p>
+          {viewKind === "drawio" ? (
+            <button
+              type="button"
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90"
+              onClick={onCreateDrawioDiagram}
+            >
+              Créer un diagramme UML
+            </button>
+          ) : null}
         </div>
       </section>
     );
@@ -161,30 +156,34 @@ export function CanvasArea({
   return (
     <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
       {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
-      <div className="flex items-center gap-3 p-3 border-b border-border">
-        {list}
-        <p className="text-sm font-medium text-foreground truncate">
-          {diagramName ? formatDiagramName(diagramName) : null}
-        </p>
-        <div className="ml-auto">
-          {saveError ? (
-            <p className="text-xs text-destructive" role="status">
-              Sauvegarde \u00e9choue\u00e9e : {saveError}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              Sauvegarde automatique
-            </p>
-          )}
+      {convertMessage ? <StatusBanner message={convertMessage} tone="info" /> : null}
+      {header}
+      {viewKind === "drawio" ? (
+        <div className="relative flex-1">
+          <div className="absolute inset-0">
+            <DrawioEmbed initialXml={drawioXml} onXmlChange={onDrawioXmlChange} />
+          </div>
         </div>
-      </div>
-      <FunCanvas
-        initialScene={scene}
-        onSceneChange={onSceneChange}
-        focusMode={focusMode}
-        layersOpen={layersOpen}
-        onLayersOpenChange={onLayersOpenChange}
-      />
+      ) : viewKind === "plantuml" ? (
+        <PlantUmlEditor
+          source={plantumlSource ?? "@startuml\n@enduml\n"}
+          scene={scene}
+          focusMode={focusMode}
+          layersOpen={layersOpen}
+          onLayersOpenChange={onLayersOpenChange}
+          onSourceChange={(next) => onPlantumlSourceChange?.(next)}
+          onGenerate={(next) => onPlantumlGenerate?.(next)}
+        />
+      ) : scene ? (
+        <FunCanvas
+          key={activeDiagramPath}
+          initialScene={scene}
+          onSceneChange={onSceneChange}
+          focusMode={focusMode}
+          layersOpen={layersOpen}
+          onLayersOpenChange={onLayersOpenChange}
+        />
+      ) : null}
     </section>
   );
 }

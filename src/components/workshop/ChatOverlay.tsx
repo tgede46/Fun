@@ -15,6 +15,7 @@ type ChatOverlayProps = {
   loading: boolean;
   chatError: string | null;
   onSend: (message: string) => void;
+  onImageFile?: (file: File) => void;
 };
 
 export function ChatOverlay({
@@ -28,6 +29,7 @@ export function ChatOverlay({
   loading,
   chatError,
   onSend,
+  onImageFile,
 }: ChatOverlayProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -99,6 +101,7 @@ export function ChatOverlay({
             loading={loading}
             chatError={chatError}
             onSend={onSend}
+            onImageFile={onImageFile}
           />
         </div>
       </div>

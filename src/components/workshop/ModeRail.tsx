@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-export type WorkshopMode = "sketch" | "uml";
+export type WorkshopMode = "sketch" | "uml" | "plantuml";
 
 type ModeRailProps = {
   activeMode?: WorkshopMode;
@@ -39,6 +39,21 @@ export function ModeRail({ activeMode = "sketch", onModeChange }: ModeRailProps)
         onClick={() => onModeChange?.("uml")}
       >
         ◫
+      </button>
+      <button
+        className={cn(
+          "w-10 h-10 flex items-center justify-center rounded-lg text-lg transition-colors",
+          activeMode === "plantuml"
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
+        )}
+        type="button"
+        title="PlantUML — code texte"
+        aria-label="Mode PlantUML"
+        aria-pressed={activeMode === "plantuml"}
+        onClick={() => onModeChange?.("plantuml")}
+      >
+        {"{ }"}
       </button>
     </nav>
   );

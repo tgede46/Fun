@@ -12,6 +12,7 @@ type ChatSidebarProps = {
   loading: boolean;
   chatError: string | null;
   onSend: (message: string) => void;
+  onImageFile?: (file: File) => void;
   /** overlay = remplit le parent (pas de largeur fixe sidebar) */
   variant?: "sidebar" | "overlay";
 };
@@ -117,12 +118,24 @@ export function ChatSidebar({
   loading,
   chatError,
   onSend,
+  onImageFile,
   variant = "sidebar",
 }: ChatSidebarProps) {
   const [input, setInput] = useState("");
+  const [preview, setPreview] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
+
+  const acceptImage = useCallback(
+    (file: File | undefined) => {
+      if (!file || !file.type.startsWith("image/") || !onImageFile) return;
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      onImageFile(file);
+    },
+    [onImageFile],
+  );
 
   useEffect(() => {
     const container = messagesContainerRef.current;
@@ -142,6 +155,12 @@ export function ChatSidebar({
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [history, loading]);
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview);
+    };
+  }, [preview]);
 
   const canSend = input.trim().length > 0 && !loading && aiStatus?.key_configured;
 
@@ -249,18 +268,46 @@ export function ChatSidebar({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="flex items-end gap-2 p-3 border-t border-border">
+      <div
+        className="flex flex-col gap-2 p-3 border-t border-border"
+        onDragOver={(event) => {
+          if (onImageFile) event.preventDefault();
+        }}
+        onDrop={(event) => {
+          if (!onImageFile) return;
+          event.preventDefault();
+          acceptImage(event.dataTransfer.files[0]);
+        }}
+      >
+        {preview ? (
+          <img
+            src={preview}
+            alt="Image à envoyer"
+            className="max-h-20 w-fit rounded-md border border-border object-contain"
+          />
+        ) : null}
+        <div className="flex items-end gap-2">
         <textarea
           className="flex-1 resize-none rounded-lg border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
           rows={2}
           placeholder={
             aiStatus?.key_configured
-              ? "Ex. « Que penses-tu de ce diagramme ? »"
+              ? "Ex. « Que penses-tu de ce diagramme ? » — ou colle une image"
               : "Configurez la clé API pour activer le chat"
           }
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          onPaste={(event) => {
+            const item = Array.from(event.clipboardData.items).find((entry) =>
+              entry.type.startsWith("image/"),
+            );
+            const file = item?.getAsFile();
+            if (file) {
+              event.preventDefault();
+              acceptImage(file);
+            }
+          }}
           disabled={!aiStatus?.key_configured || loading}
           aria-label="Message pour l'assistant"
         />
@@ -273,6 +320,7 @@ export function ChatSidebar({
         >
           ↑
         </button>
+        </div>
       </div>
     </aside>
   );

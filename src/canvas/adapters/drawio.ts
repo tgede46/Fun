@@ -312,7 +312,45 @@ const FUN_SHAPE_MAP: Record<string, string> = {
   image: "image",
   freehand: "rectangle",
   arrow: "rectangle",
+  "uml-class": "rectangle",
+  "uml-interface": "rectangle",
+  "uml-abstract-class": "rectangle",
+  "uml-enum": "rectangle",
+  "uml-component": "rectangle",
+  "uml-node": "rectangle",
+  "uml-database": "cylinder",
+  "uml-package": "folder",
+  "uml-note": "note",
+  "uml-actor": "umlActor",
+  "uml-usecase": "ellipse",
+  "uml-state": "rectangle",
+  "uml-boundary": "rectangle",
 };
+
+function umlValue(obj: FunObject): string | undefined {
+  if (obj.type === "text" || obj.type === "uml-note") {
+    return (obj as { text: string }).text;
+  }
+  if (obj.type === "image") {
+    return (obj as { src: string }).src;
+  }
+  if ("name" in obj && typeof (obj as { name?: string }).name === "string") {
+    const named = obj as {
+      name: string;
+      stereotype?: string;
+      attributes?: string[];
+      methods?: string[];
+      values?: string[];
+    };
+    const lines = [named.name];
+    if (named.stereotype) lines.unshift(`«${named.stereotype}»`);
+    if (named.attributes?.length) lines.push(...named.attributes);
+    if (named.methods?.length) lines.push(...named.methods);
+    if (named.values?.length) lines.push(...named.values);
+    return lines.join("\n");
+  }
+  return obj.label;
+}
 
 function funObjectToDrawioCell(obj: FunObject): MxCell {
   const x = obj.x;
@@ -324,19 +362,15 @@ function funObjectToDrawioCell(obj: FunObject): MxCell {
   styleBits.push(`fillColor=${obj.fill || "none"}`);
   styleBits.push(`strokeColor=${obj.stroke || "#000000"}`);
   styleBits.push(`strokeWidth=${obj.strokeWidth || 2}`);
-  if (obj.type === "text") {
-    styleBits.push(`fontSize=${obj.fontSize || 14}`);
+  if (obj.type === "text" || obj.type.startsWith("uml-")) {
+    styleBits.push(`fontSize=${(obj as { fontSize?: number }).fontSize || 14}`);
+    styleBits.push("whiteSpace=wrap;html=1");
   }
 
   const shape = FUN_SHAPE_MAP[obj.type] ?? "rectangle";
   styleBits.push(`shape=${shape}`);
 
-  const value =
-    obj.type === "text"
-      ? (obj as { text: string }).text
-      : obj.type === "image"
-      ? (obj as { src: string }).src
-      : undefined;
+  const value = umlValue(obj);
 
   return {
     id: obj.id,
@@ -356,13 +390,35 @@ function edgeToDrawioCell(edge: EdgeObject): MxCell {
     ? edge.points.map((p) => `${p.x},${p.y}`).join(";")
     : "";
 
+  let style = "endArrow=classic";
+  switch (edge.kind) {
+    case "inheritance":
+      style = "endArrow=block;endFill=0";
+      break;
+    case "implementation":
+      style = "endArrow=block;endFill=0;dashed=1";
+      break;
+    case "aggregation":
+      style = "startArrow=diamond;startFill=0;endArrow=none";
+      break;
+    case "composition":
+      style = "startArrow=diamond;startFill=1;endArrow=none";
+      break;
+    case "dependency":
+      style = "endArrow=open;dashed=1";
+      break;
+    default:
+      break;
+  }
+
   return {
     id: edge.id,
     vertex: "0",
     edge: "1",
     source: edge.fromId,
     target: edge.toId,
-    style: "endArrow=classic",
+    value: edge.label,
+    style,
     points: pointsStr,
   };
 }
@@ -447,6 +503,7 @@ function renderDiagramContent(
       `target="${cell.target ?? ""}"`,
       cell.style ? `style="${cell.style}"` : "",
       cell.points ? `points="${cell.points}"` : "",
+      cell.value !== undefined ? `value="${escapeXml(cell.value)}"` : "",
     ]
       .filter(Boolean)
       .join(" ");

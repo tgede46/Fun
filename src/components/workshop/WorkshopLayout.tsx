@@ -1,19 +1,26 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  createDiagramOfKind,
+  createDiagramWithContent,
   createDrawioDiagram,
   deleteDiagram,
-  loadDrawioDiagram,
+  deserializeFunScene,
   listDiagrams,
+  loadDiagram,
   saveDiagram,
   saveDrawioDiagram,
   serializeFunScene,
+  type DiagramKind,
   type DiagramListItem,
 } from "@/lib/diagram";
+import { convertDiagramContent, kindFromPath, sceneFromContent } from "@/lib/diagram-convert";
+import { fileToResizedJpeg } from "@/lib/image-resize";
 import {
   getAiStatus,
   generateDiagramFromCode,
+  generateDiagramFromImage,
   runBenchmark,
   sendChatMessage,
   type AiStatus,
@@ -33,15 +40,11 @@ import { CanvasArea } from "./CanvasArea";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { FloatingCompanionsHost } from "./FloatingCompanionsHost";
 import { MeditationOverlay } from "./MeditationOverlay";
-import { ModeRail } from "./ModeRail";
+import { ModeRail, type WorkshopMode } from "./ModeRail";
+import { NewDiagramDialog } from "./NewDiagramDialog";
 import { Toolbar } from "./Toolbar";
 import { usePomodoro } from "@/hooks/usePomodoro";
 import type { FunScene } from "@/canvas/types";
-import { createEmptyScene } from "@/canvas/utils/serialization";
-import { invoke } from "@tauri-apps/api/core";
-
-type WorkshopMode = "sketch" | "uml";
-
 type WorkshopLayoutProps = {
   projectName: string;
   projectPath: string;
@@ -81,6 +84,10 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   // États spécifiques au mode UML (drawio)
   const [drawioXml, setDrawioXml] = useState<string | null>(null);
+  const [plantumlSource, setPlantumlSource] = useState<string | null>(null);
+  const [newDiagramOpen, setNewDiagramOpen] = useState(false);
+  const [convertMessage, setConvertMessage] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Sélection multiple de diagrammes
   const [selectedDiagramPaths, setSelectedDiagramPaths] = useState<Set<string>>(new Set());
@@ -196,30 +203,34 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     };
   }, [projectPath, aiStatus?.key_configured]);
 
-  // Open diagram (handle both excalidraw and drawio)
   const openDiagram = useCallback(
     async (path: string) => {
       setDiagramError(null);
       setSaveError(null);
 
       try {
-        const ext = path.split(".").pop()?.toLowerCase();
-        let loaded: { path: string; content: string };
+        const kind = kindFromPath(path);
+        const loaded = await loadDiagram(projectPath, path);
 
-        if (ext === "drawio") {
-          loaded = await loadDrawioDiagram(projectPath, path);
+        if (kind === "drawio") {
           setDrawioXml(loaded.content);
           setScene(null);
-        } else {
-          loaded = await invoke<{ path: string; content: string }>("load_diagram", {
-            projectPath,
-            diagramPath: path,
-          });
+          setPlantumlSource(null);
+          setMode("uml");
+        } else if (kind === "plantuml") {
+          setPlantumlSource(loaded.content);
+          setScene(sceneFromContent("plantuml", loaded.content));
           setDrawioXml(null);
-          setScene(createEmptyScene());
+          setMode("plantuml");
+        } else {
+          setScene(await deserializeFunScene(loaded.content));
+          setDrawioXml(null);
+          setPlantumlSource(null);
+          setMode("sketch");
         }
 
-        const name = path.split(/[/\\]/).pop()?.replace(/\.(excalidraw|drawio)$/, "") ?? "diagramme";
+        const name =
+          path.split(/[/\\]/).pop()?.replace(/\.(excalidraw|drawio|puml)$/, "") ?? "diagramme";
         setActiveDiagramPath(loaded.path);
         setDiagramName(name);
       } catch (err) {
@@ -231,37 +242,31 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     [projectPath],
   );
 
-  const handleNewDiagram = useCallback(async () => {
-    setIsCreatingDiagram(true);
-    setDiagramError(null);
-    setSaveError(null);
+  const handleCreateOfKind = useCallback(
+    async (kind: DiagramKind) => {
+      setIsCreatingDiagram(true);
+      setDiagramError(null);
+      setSaveError(null);
+      setNewDiagramOpen(false);
 
-    try {
-      // Créer selon le mode actuel
-      if (mode === "uml") {
-        const result = await createDrawioDiagram(projectPath);
-        setDrawioXml(null); // Sera chargé par openDiagram
-        setScene(null);
-        setActiveDiagramPath(result.path);
-        setDiagramName(result.name);
-      } else {
-        const result = await invoke<{ path: string; name: string }>("create_diagram", {
-          projectPath,
-        });
-        setDrawioXml(null);
-        setScene(createEmptyScene());
-        setActiveDiagramPath(result.path);
-        setDiagramName(result.name);
+      try {
+        const result = await createDiagramOfKind(projectPath, kind);
+        await refreshDiagramList();
+        await openDiagram(result.path);
+      } catch (err) {
+        setDiagramError(
+          err instanceof Error ? err.message : "Impossible de créer le diagramme.",
+        );
+      } finally {
+        setIsCreatingDiagram(false);
       }
-      await refreshDiagramList();
-    } catch (err) {
-      setDiagramError(
-        err instanceof Error ? err.message : "Impossible de créer le diagramme.",
-      );
-    } finally {
-      setIsCreatingDiagram(false);
-    }
-  }, [projectPath, refreshDiagramList, mode]);
+    },
+    [openDiagram, projectPath, refreshDiagramList],
+  );
+
+  const handleNewDiagram = useCallback(() => {
+    setNewDiagramOpen(true);
+  }, []);
 
   const handleSelectDiagram = useCallback(
     (path: string) => {
@@ -300,6 +305,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         setDiagramName(null);
         setScene(null);
         setDrawioXml(null);
+        setPlantumlSource(null);
       }
 
       setDeletePending(null);
@@ -327,13 +333,54 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   const handleSceneChange = useCallback(
     (newScene: FunScene) => {
       setScene(newScene);
-      if (activeDiagramPath && !drawioXml) {
+      if (activeDiagramPath && kindFromPath(activeDiagramPath) === "sketch") {
         void saveDiagram(projectPath, activeDiagramPath, serializeFunScene(newScene)).catch((err) => {
           setSaveError(formatInvokeError(err, "Sauvegarde échouée."));
         });
       }
     },
-    [projectPath, activeDiagramPath, drawioXml],
+    [projectPath, activeDiagramPath],
+  );
+
+  const handlePlantumlSourceChange = useCallback(
+    (source: string) => {
+      setPlantumlSource(source);
+      if (activeDiagramPath && kindFromPath(activeDiagramPath) === "plantuml") {
+        void saveDiagram(projectPath, activeDiagramPath, source).catch((err) => {
+          setSaveError(formatInvokeError(err, "Sauvegarde échouée."));
+        });
+      }
+    },
+    [activeDiagramPath, projectPath],
+  );
+
+  const handleConvertDiagram = useCallback(
+    async (path: string, targetKind: DiagramKind) => {
+      setConvertMessage(null);
+      try {
+        const loaded = await loadDiagram(projectPath, path);
+        const sourceKind = kindFromPath(path);
+        const converted = convertDiagramContent(sourceKind, targetKind, loaded.content);
+        const created = await createDiagramWithContent(
+          projectPath,
+          targetKind,
+          converted.content,
+        );
+        await refreshDiagramList();
+        await openDiagram(created.path);
+        const lost = Math.round(converted.lostRatio * 100);
+        setConvertMessage(
+          lost > 50
+            ? `Converti · ${converted.scene.objects.length} objet(s) — perte ${lost} %. Complète avec l’IA si besoin.`
+            : `Converti · ${converted.scene.objects.length} objet(s)`,
+        );
+      } catch (err) {
+        setDiagramError(
+          err instanceof Error ? err.message : "Conversion impossible.",
+        );
+      }
+    },
+    [openDiagram, projectPath, refreshDiagramList],
   );
 
   // Sauvegarde automatique du XML drawio
@@ -358,10 +405,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
     try {
       const result = await createDrawioDiagram(projectPath);
-      setActiveDiagramPath(result.path);
-      setDiagramName(result.name);
-      setDrawioXml(null);
       await refreshDiagramList();
+      await openDiagram(result.path);
     } catch (err) {
       setDiagramError(
         err instanceof Error ? err.message : "Impossible de créer le diagramme UML.",
@@ -369,7 +414,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
     } finally {
       setIsCreatingDiagram(false);
     }
-  }, [projectPath, refreshDiagramList]);
+  }, [openDiagram, projectPath, refreshDiagramList]);
 
 
 
@@ -386,17 +431,8 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       const selectedContents: string[] = [];
       for (const selPath of selectedDiagramPaths) {
         try {
-          const ext = selPath.split(".").pop()?.toLowerCase();
-          if (ext === "drawio") {
-            const loaded = await loadDrawioDiagram(projectPath, selPath);
-            selectedContents.push(loaded.content);
-          } else {
-            const loaded = await invoke<{ path: string; content: string }>("load_diagram", {
-              projectPath,
-              diagramPath: selPath,
-            });
-            selectedContents.push(loaded.content);
-          }
+          const loaded = await loadDiagram(projectPath, selPath);
+          selectedContents.push(loaded.content);
         } catch {
           // Ignorer les diagrammes illisibles
         }
@@ -405,7 +441,10 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       try {
         const result = await sendChatMessage(projectPath, {
           diagramPath: activeDiagramPath,
-          diagramContent: drawioXml ?? scene ? JSON.stringify(drawioXml ?? scene) : null,
+          diagramContent:
+            plantumlSource ??
+            drawioXml ??
+            (scene ? JSON.stringify(scene) : null),
           selectedDiagramPaths: selectedContents.length > 0 ? selectedContents : undefined,
           history: chatHistory.filter((t) => t.role !== "system"),
           userMessage: message,
@@ -422,24 +461,29 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
         if (result.opened_diagram_path) {
           await refreshDiagramList();
-          setActiveDiagramPath(result.opened_diagram_path);
-          setDiagramName(result.opened_diagram_name);
-          setScene(createEmptyScene());
-          setDrawioXml(null);
+          await openDiagram(result.opened_diagram_path);
         }
 
         if (result.diagram_update && targetPath) {
-          setScene(createEmptyScene());
-          setDrawioXml(null);
-
-          if (targetPath) {
-            try {
-              await saveDiagram(projectPath, targetPath, result.diagram_update);
-            } catch (err) {
-              setSaveError(
-                formatInvokeError(err, "Diagramme affiché mais sauvegarde échouée."),
-              );
+          try {
+            await saveDiagram(projectPath, targetPath, result.diagram_update);
+            const kind = kindFromPath(targetPath);
+            if (kind === "plantuml") {
+              setPlantumlSource(result.diagram_update);
+              setScene(sceneFromContent("plantuml", result.diagram_update));
+              setDrawioXml(null);
+            } else if (kind === "drawio") {
+              setDrawioXml(result.diagram_update);
+              setScene(null);
+            } else {
+              setScene(await deserializeFunScene(result.diagram_update));
+              setDrawioXml(null);
+              setPlantumlSource(null);
             }
+          } catch (err) {
+            setSaveError(
+              formatInvokeError(err, "Diagramme affiché mais sauvegarde échouée."),
+            );
           }
 
           nextHistory.push({
@@ -460,8 +504,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         }
 
         if (result.diagram_reset && targetPath) {
-          setScene(createEmptyScene());
-          setDrawioXml(null);
+          await openDiagram(targetPath);
           nextHistory.push({
             role: "system",
             content: "Canvas réinitialisé.",
@@ -498,7 +541,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         setChatLoading(false);
       }
     },
-    [projectPath, activeDiagramPath, scene, drawioXml, chatHistory, refreshDiagramList, selectedDiagramPaths],
+    [projectPath, activeDiagramPath, scene, drawioXml, plantumlSource, chatHistory, refreshDiagramList, selectedDiagramPaths, openDiagram],
   );
 
   const handleGenerateFromCode = useCallback(async () => {
@@ -526,6 +569,38 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       setIsGeneratingFromCode(false);
     }
   }, [projectPath, refreshDiagramList, openDiagram]);
+
+  const handleImageFile = useCallback(
+    async (file: File) => {
+      setIsGeneratingFromCode(true);
+      setCodeGenError(null);
+      try {
+        const resized = await fileToResizedJpeg(file);
+        const result = await generateDiagramFromImage(
+          projectPath,
+          resized.base64,
+          resized.mime,
+        );
+        URL.revokeObjectURL(resized.previewUrl);
+        await refreshDiagramList();
+        await openDiagram(result.path);
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            role: "system",
+            content: `Diagramme « ${result.name} » généré depuis l'image.`,
+          },
+        ]);
+      } catch (err) {
+        setCodeGenError(
+          formatInvokeError(err, "Impossible de générer le diagramme depuis l'image."),
+        );
+      } finally {
+        setIsGeneratingFromCode(false);
+      }
+    },
+    [openDiagram, projectPath, refreshDiagramList],
+  );
 
   const handleToggleSelectDiagram = useCallback((path: string) => {
     setSelectedDiagramPaths((prev) => {
@@ -568,6 +643,9 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         onGenerateFromCode={() => {
           void handleGenerateFromCode();
         }}
+        onGenerateFromImage={() => {
+          imageInputRef.current?.click();
+        }}
         isCreatingDiagram={isCreatingDiagram}
         isGeneratingFromCode={isGeneratingFromCode}
         canDeleteDiagram={canDeleteDiagram}
@@ -577,7 +655,14 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         }}
       />
       <div className="flex flex-1 min-h-0">
-        <ModeRail activeMode={mode} onModeChange={setMode} />
+        <ModeRail
+          activeMode={mode}
+          onModeChange={(next) => {
+            if (!activeDiagramPath) {
+              setMode(next);
+            }
+          }}
+        />
         <CanvasArea
           projectPath={projectPath}
           theme={theme}
@@ -590,19 +675,28 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           selectedDiagramPaths={selectedDiagramPaths}
           diagramName={diagramName}
           scene={scene}
+          plantumlSource={plantumlSource}
           error={diagramError}
           saveError={saveError}
           codeGenError={codeGenError}
+          convertMessage={convertMessage}
           drawioXml={drawioXml}
           onSelectDiagram={handleSelectDiagram}
           onToggleSelectDiagram={handleToggleSelectDiagram}
           onDeleteDiagram={(diagramPath) => {
             void handleDeleteDiagram(diagramPath);
           }}
+          onConvertDiagram={(path, kind) => {
+            void handleConvertDiagram(path, kind);
+          }}
           onSaveError={setSaveError}
           onSceneChange={handleSceneChange}
           onCreateDrawioDiagram={handleCreateDrawioDiagram}
           onDrawioXmlChange={handleDrawioXmlChange}
+          onPlantumlSourceChange={handlePlantumlSourceChange}
+          onPlantumlGenerate={(next) => {
+            setScene({ ...next, id: crypto.randomUUID() });
+          }}
         />
       </div>
       <FloatingCompanionsHost
@@ -615,9 +709,12 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           benchmarkState,
           benchmarkMessage,
           history: chatHistory,
-          loading: chatLoading,
+          loading: chatLoading || isGeneratingFromCode,
           chatError,
           onSend: handleSendChat,
+          onImageFile: (file) => {
+            void handleImageFile(file);
+          },
         }}
         pomodoro={{
           timerLabel: pomodoro.timerLabel,
@@ -643,6 +740,24 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       <MeditationOverlay
         open={pomodoro.showMeditation}
         onDismiss={pomodoro.dismissMeditation}
+      />
+      <NewDiagramDialog
+        open={newDiagramOpen}
+        onClose={() => setNewDiagramOpen(false)}
+        onChoose={(kind) => {
+          void handleCreateOfKind(kind);
+        }}
+      />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/gif"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (file) void handleImageFile(file);
+        }}
       />
       <ConfirmDialog
         open={deletePending != null}

@@ -13,6 +13,7 @@
  */
 
 import type { FunObject, FunScene, EdgeObject, DiagramMetadata, BaseObject } from "../types";
+import { autoLayoutScene } from "../utils/autoLayout";
 
 // ─── Types internes ───
 
@@ -58,8 +59,12 @@ function parsePumlDefs(puml: string): { entities: PumlEntity[]; relations: PumlR
     if (blockStart) {
       const [, typeRaw, , nameRaw] = blockStart;
       const type = normalizePumlType(typeRaw);
-      const name = nameRaw.trim();
-      currentBlock = { type, name, lines: [] };
+      const name = nameRaw.trim().replace(/[{}]$/g, "").trim();
+      if (line.includes("{") && !line.includes("}")) {
+        currentBlock = { type, name, lines: [] };
+      } else {
+        entities.push(buildEntityFromBlock({ type, name, lines: [] }, nextId()));
+      }
       continue;
     }
 
@@ -105,6 +110,10 @@ function parsePumlDefs(puml: string): { entities: PumlEntity[]; relations: PumlR
       notes.push(`note_${targetRaw.trim()}: ${textRaw.trim()}`);
       continue;
     }
+  }
+
+  if (currentBlock) {
+    entities.push(buildEntityFromBlock(currentBlock, nextId()));
   }
 
   return { entities, relations, notes };
@@ -400,9 +409,119 @@ export function plantumlToFunScene(
     }
   }
 
-  return {
+  return autoLayoutScene({
     objects,
     edges,
     metadata: { sourceFormat: "plantuml", ...metadata },
-  };
+  });
+}
+
+function objectExportName(obj: FunObject): string {
+  if ("name" in obj && typeof (obj as { name?: string }).name === "string") {
+    return (obj as { name: string }).name;
+  }
+  if (obj.type === "text") return (obj as { text: string }).text;
+  if (obj.type === "uml-note") return (obj as { text: string }).text;
+  return obj.id;
+}
+
+export function funSceneToPlantUml(scene: FunScene): string {
+  const lines: string[] = ["@startuml", ""];
+  const names = new Map<string, string>();
+
+  for (const obj of scene.objects) {
+    names.set(obj.id, objectExportName(obj));
+    switch (obj.type) {
+      case "uml-class": {
+        const e = obj as { name: string; stereotype?: string; attributes?: string[]; methods?: string[] };
+        const stereotype = e.stereotype ? ` <<${e.stereotype}>>` : "";
+        lines.push(`class ${e.name}${stereotype} {`);
+        for (const attr of e.attributes ?? []) lines.push(`  ${attr}`);
+        for (const method of e.methods ?? []) lines.push(`  ${method}`);
+        lines.push("}");
+        break;
+      }
+      case "uml-interface": {
+        const e = obj as { name: string; methods?: string[] };
+        lines.push(`interface ${e.name} {`);
+        for (const method of e.methods ?? []) lines.push(`  ${method}`);
+        lines.push("}");
+        break;
+      }
+      case "uml-abstract-class":
+        lines.push(`abstract class ${(obj as { name: string }).name}`);
+        break;
+      case "uml-enum":
+        lines.push(`enum ${(obj as { name: string }).name}`);
+        break;
+      case "uml-component":
+        lines.push(`component ${(obj as { name: string }).name}`);
+        break;
+      case "uml-database":
+        lines.push(`database ${(obj as { name: string }).name}`);
+        break;
+      case "uml-package":
+        lines.push(`package ${(obj as { name: string }).name} {`);
+        lines.push("}");
+        break;
+      case "uml-actor":
+        lines.push(`actor ${(obj as { name: string }).name}`);
+        break;
+      case "uml-usecase":
+        lines.push(`usecase ${(obj as { name: string }).name}`);
+        break;
+      case "uml-state":
+        lines.push(`state ${(obj as { name: string }).name}`);
+        break;
+      case "uml-note":
+        lines.push(`note "${(obj as { text: string }).text}"`);
+        break;
+      case "text":
+        lines.push(`class ${(obj as { text: string }).text || obj.id}`);
+        break;
+      case "rect":
+      case "ellipse":
+      case "diamond":
+        lines.push(`class ${obj.label || obj.id}`);
+        break;
+      default:
+        break;
+    }
+  }
+
+  for (const edge of scene.edges ?? []) {
+    let arrow = "--";
+    switch (edge.kind) {
+      case "inheritance":
+        arrow = "--|>";
+        break;
+      case "implementation":
+        arrow = "..|>";
+        break;
+      case "aggregation":
+        arrow = "o--";
+        break;
+      case "composition":
+        arrow = "*--";
+        break;
+      case "dependency":
+        arrow = "..>";
+        break;
+      case "notes-link":
+        arrow = "..";
+        break;
+      default:
+        arrow = "-->";
+    }
+    const from = names.get(edge.fromId) ?? edge.fromId;
+    const to = names.get(edge.toId) ?? edge.toId;
+    if (edge.label) {
+      lines.push(`${from} ${arrow} ${to} : ${edge.label}`);
+    } else {
+      lines.push(`${from} ${arrow} ${to}`);
+    }
+  }
+
+  lines.push("", "@enduml");
+  return lines.join("\n");
 }

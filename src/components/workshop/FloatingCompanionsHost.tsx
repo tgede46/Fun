@@ -54,6 +54,7 @@ type FloatingCompanionsHostProps = {
     loading: boolean;
     chatError: string | null;
     onSend: (message: string) => void;
+    onImageFile?: (file: File) => void;
   };
 };
 
@@ -237,6 +238,7 @@ export function FloatingCompanionsHost({
         loading={chat.loading}
         chatError={chat.chatError}
         onSend={chat.onSend}
+        onImageFile={chat.onImageFile}
       />
 
       <SoufflePanel

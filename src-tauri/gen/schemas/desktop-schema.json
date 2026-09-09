@@ -393,6 +393,12 @@
           "markdownDescription": "Crée un diagramme Excalidraw vide sous `.fun/diagrams/`."
         },
         {
+          "description": "Crée un diagramme draw.io vide sous `.fun/diagrams/`.",
+          "type": "string",
+          "const": "allow-create-drawio-diagram",
+          "markdownDescription": "Crée un diagramme draw.io vide sous `.fun/diagrams/`."
+        },
+        {
           "description": "Crée un dossier projet et initialise `.fun/`.",
           "type": "string",
           "const": "allow-create-project",
@@ -415,6 +421,12 @@
           "type": "string",
           "const": "allow-generate-diagram-from-code",
           "markdownDescription": "Génère un diagramme UML depuis le code."
+        },
+        {
+          "description": "Génère un diagramme depuis une image via un modèle vision gratuit.",
+          "type": "string",
+          "const": "allow-generate-diagram-from-image",
+          "markdownDescription": "Génère un diagramme depuis une image via un modèle vision gratuit."
         },
         {
           "description": "Lit le statut IA (clé configurée, modèle actif).",

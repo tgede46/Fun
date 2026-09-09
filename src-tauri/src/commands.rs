@@ -71,6 +71,7 @@ pub struct CustomColorsResult {
 pub struct DiagramListItem {
     pub path: String,
     pub name: String,
+    pub kind: String,
 }
 
 fn companion_to_result(
@@ -232,6 +233,58 @@ pub fn create_drawio_diagram(project_path: String) -> Result<CreateDiagramResult
 }
 
 #[tauri::command]
+pub fn create_diagram_of_kind(
+    project_path: String,
+    kind: String,
+) -> Result<CreateDiagramResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let parsed = diagram::DiagramKind::parse(&kind)?;
+    let diagram_path = diagram::create_diagram_of_kind(project_root.as_path(), parsed)?;
+    let name = diagram_path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("diagramme")
+        .to_string();
+
+    Ok(CreateDiagramResult {
+        path: diagram_path.to_string_lossy().into_owned(),
+        name,
+        is_drawio: if parsed == diagram::DiagramKind::Drawio {
+            Some(true)
+        } else {
+            None
+        },
+    })
+}
+
+#[tauri::command]
+pub fn create_diagram_with_content(
+    project_path: String,
+    kind: String,
+    content: String,
+) -> Result<CreateDiagramResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let parsed = diagram::DiagramKind::parse(&kind)?;
+    let diagram_path =
+        diagram::create_diagram_with_content(project_root.as_path(), parsed, &content)?;
+    let name = diagram_path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("diagramme")
+        .to_string();
+
+    Ok(CreateDiagramResult {
+        path: diagram_path.to_string_lossy().into_owned(),
+        name,
+        is_drawio: if parsed == diagram::DiagramKind::Drawio {
+            Some(true)
+        } else {
+            None
+        },
+    })
+}
+
+#[tauri::command]
 pub fn load_drawio_diagram(project_path: String, diagram_path: String) -> Result<LoadDiagramResult, String> {
     let project_root = PathBuf::from(&project_path);
     let path = PathBuf::from(&diagram_path);
@@ -286,6 +339,7 @@ pub fn list_diagrams(project_path: String) -> Result<Vec<DiagramListItem>, Strin
         .map(|entry| DiagramListItem {
             path: entry.path,
             name: entry.name,
+            kind: entry.kind.as_str().to_string(),
         })
         .collect())
 }
@@ -441,6 +495,27 @@ pub async fn generate_diagram_from_code(
         .file_stem()
         .and_then(|n| n.to_str())
         .unwrap_or("uml")
+        .to_string();
+
+    Ok(GenerateDiagramResult {
+        path: path.to_string_lossy().into_owned(),
+        name,
+    })
+}
+
+#[tauri::command]
+pub async fn generate_diagram_from_image(
+    project_path: String,
+    image_base64: String,
+    mime: String,
+) -> Result<GenerateDiagramResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let path =
+        ai::generate_diagram_from_image(project_root.as_path(), &image_base64, &mime).await?;
+    let name = path
+        .file_stem()
+        .and_then(|n| n.to_str())
+        .unwrap_or("capture")
         .to_string();
 
     Ok(GenerateDiagramResult {

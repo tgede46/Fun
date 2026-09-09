@@ -49,35 +49,35 @@ pub struct BenchmarkResult {
 }
 
 fn prompt_chat_smoke() -> Vec<ChatMessage<'static>> {
-    vec![ChatMessage {
-        role: "user",
-        content: "Réponds juste \"pong\" sans rien ajouter.",
-    }]
+    vec![ChatMessage::text(
+        "user",
+        "Réponds juste \"pong\" sans rien ajouter.",
+    )]
 }
 
 fn prompt_json_diagram() -> Vec<ChatMessage<'static>> {
-    vec![ChatMessage {
-        role: "user",
-        content: concat!(
+    vec![ChatMessage::text(
+        "user",
+        concat!(
             "Génère un objet JSON Excalidraw minimaliste qui contient un seul élément ",
             "(type rectangle). Réponds UNIQUEMENT avec le JSON, pas de texte autour.",
             "\n\nFormat attendu:\n",
             r#"{"type":"excalidraw","version":2,"elements":[{"id":"box1","type":"rectangle","x":0,"y":0,"width":100,"height":50}],"appState":{},"files":{}}"#,
         ),
-    }]
+    )]
 }
 
 fn prompt_code_to_uml() -> Vec<ChatMessage<'static>> {
-    vec![ChatMessage {
-        role: "user",
-        content: concat!(
+    vec![ChatMessage::text(
+        "user",
+        concat!(
             "Décris cette classe Python en JSON Excalidraw (un rectangle avec le nom de la classe). ",
             "Classe: Animal avec attributs name et age. ",
             "Réponds UNIQUEMENT avec le JSON, pas de texte autour.",
             "\n\nFormat attendu:\n",
             r#"{"type":"excalidraw","version":2,"elements":[{"id":"cls1","type":"rectangle","x":0,"y":0,"width":200,"height":100}],"appState":{},"files":{}}"#,
         ),
-    }]
+    )]
 }
 
 fn is_valid_excalidraw_json(text: &str) -> bool {

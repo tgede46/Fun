@@ -1,4 +1,5 @@
-use super::client::{chat_completion_resolved, ChatMessage};
+use super::client::{chat_completion_resolved, ChatMessage, ContentPart, ImageUrlRef, MessageContent};
+use super::model::DEFAULT_FREE_MODEL;
 use super::intent::{detect_persona, is_diagram_draw_request, is_reset_request, Persona};
 use super::personas::system_prompt;
 use crate::ai::model::resolve_active_model_for_project;
@@ -83,11 +84,19 @@ pub async fn send_chat(
         }
     }
 
-    let system = system_prompt(persona, effective_content.as_deref(), &selected_diagram_contents);
-    let mut messages: Vec<ChatMessage<'_>> = vec![ChatMessage {
-        role: "system",
-        content: &system,
-    }];
+    let plantuml_mode = effective_path
+        .as_ref()
+        .and_then(|p| p.extension())
+        .and_then(|e| e.to_str())
+        == Some("puml");
+
+    let system = system_prompt(
+        persona,
+        effective_content.as_deref(),
+        &selected_diagram_contents,
+        plantuml_mode,
+    );
+    let mut messages: Vec<ChatMessage<'_>> = vec![ChatMessage::text("system", &system)];
 
     for turn in history {
         let role = if turn.role == "assistant" {
@@ -95,19 +104,13 @@ pub async fn send_chat(
         } else {
             "user"
         };
-        messages.push(ChatMessage {
-            role,
-            content: &turn.content,
-        });
+        messages.push(ChatMessage::text(role, &turn.content));
     }
 
-    messages.push(ChatMessage {
-        role: "user",
-        content: user_message,
-    });
+    messages.push(ChatMessage::text("user", user_message));
 
     let raw = chat_completion_resolved(&api_key, &active.model_id, messages).await?;
-    let (text, diagram_update) = parse_assistant_response(persona, &raw);
+    let (text, diagram_update) = parse_assistant_response(persona, &raw, plantuml_mode);
 
     if let (Some(json), Some(path)) = (&diagram_update, effective_path.as_ref()) {
         diagram::save_diagram(project_path, path, json)?;
@@ -124,8 +127,19 @@ pub async fn send_chat(
     })
 }
 
-fn parse_assistant_response(persona: Persona, raw: &str) -> (String, Option<String>) {
+fn parse_assistant_response(
+    persona: Persona,
+    raw: &str,
+    plantuml_mode: bool,
+) -> (String, Option<String>) {
     if persona != Persona::Editeur {
+        return (raw.trim().to_string(), None);
+    }
+
+    if plantuml_mode {
+        if let Some(puml) = extract_plantuml_source(raw) {
+            return (prose_before_fence(raw), Some(puml));
+        }
         return (raw.trim().to_string(), None);
     }
 
@@ -202,14 +216,11 @@ pub async fn generate_diagram_from_code(project_root: &Path) -> Result<PathBuf, 
     );
 
     let messages = vec![
-        ChatMessage {
-            role: "system",
-            content: "Tu es Atlas, architecte code→diagramme pour Fun. JSON Excalidraw strict.",
-        },
-        ChatMessage {
-            role: "user",
-            content: &prompt,
-        },
+        ChatMessage::text(
+            "system",
+            "Tu es Atlas, architecte code→diagramme pour Fun. JSON Excalidraw strict.",
+        ),
+        ChatMessage::text("user", &prompt),
     ];
 
     let raw = chat_completion_resolved(&api_key, &active.model_id, messages).await?;
@@ -218,6 +229,88 @@ pub async fn generate_diagram_from_code(project_root: &Path) -> Result<PathBuf, 
 
     let path = diagram::write_uml_diagram(project_root, &json)?;
     Ok(path)
+}
+
+pub async fn generate_diagram_from_image(
+    project_root: &Path,
+    image_base64: &str,
+    mime: &str,
+) -> Result<PathBuf, String> {
+    let api_key = load_api_key()?.ok_or_else(|| {
+        "Définissez OPENROUTER_API_KEY dans le fichier .env.".to_string()
+    })?;
+
+    let safe_mime = match mime.trim().to_ascii_lowercase().as_str() {
+        "image/png" | "image/jpeg" | "image/jpg" | "image/webp" | "image/gif" => {
+            if mime == "image/jpg" {
+                "image/jpeg"
+            } else {
+                mime.trim()
+            }
+        }
+        _ => "image/png",
+    };
+
+    let data_url = format!("data:{safe_mime};base64,{image_base64}");
+    let prompt = "Observe ce schéma ou cette capture. Produis UNIQUEMENT un source PlantUML \
+                  valide qui reproduit la structure (classes, flux, acteurs, notes). \
+                  Commence par @startuml et termine par @enduml. Pas de prose, pas de JSON, \
+                  pas de Markdown autour.";
+
+    let messages = vec![
+        ChatMessage::text(
+            "system",
+            "Tu es Atlas. Tu reconstruis un diagramme à partir d'une image. Sortie PlantUML stricte.",
+        ),
+        ChatMessage {
+            role: "user",
+            content: MessageContent::Parts(vec![
+                ContentPart::Text { text: prompt },
+                ContentPart::ImageUrl {
+                    image_url: ImageUrlRef { url: &data_url },
+                },
+            ]),
+        },
+    ];
+
+    let raw = chat_completion_resolved(&api_key, DEFAULT_FREE_MODEL, messages)
+        .await
+        .map_err(|err| {
+            if err.to_lowercase().contains("image")
+                || err.to_lowercase().contains("no endpoints")
+            {
+                "Aucun modèle vision gratuit disponible pour cette image. Réessaie plus tard."
+                    .to_string()
+            } else {
+                err
+            }
+        })?;
+
+    let puml = extract_plantuml_source(&raw)
+        .ok_or_else(|| "Génération échouée — PlantUML invalide.".to_string())?;
+
+    diagram::write_capture_diagram(project_root, diagram::DiagramKind::Plantuml, &puml)
+}
+
+fn extract_plantuml_source(raw: &str) -> Option<String> {
+    for marker in ["```plantuml", "```puml", "```"] {
+        if let Some(start_idx) = raw.find(marker) {
+            let rest = raw[start_idx + marker.len()..].trim_start();
+            if let Some(end) = rest.find("```") {
+                let candidate = rest[..end].trim();
+                if candidate.contains("@startuml") {
+                    return Some(candidate.to_string());
+                }
+            }
+        }
+    }
+
+    let trimmed = raw.trim();
+    if trimmed.contains("@startuml") && trimmed.contains("@enduml") {
+        return Some(trimmed.to_string());
+    }
+
+    None
 }
 
 fn extract_json_payload(raw: &str) -> Result<String, String> {
@@ -247,7 +340,7 @@ mod tests {
     #[test]
     fn parse_editeur_extracts_excalidraw_fence() {
         let raw = format!("Voici la démo.\n```excalidraw-json\n{SAMPLE_JSON}\n```");
-        let (text, json) = parse_assistant_response(Persona::Editeur, &raw);
+        let (text, json) = parse_assistant_response(Persona::Editeur, &raw, false);
         assert!(json.is_some());
         assert!(text.contains("démo"));
     }
@@ -255,14 +348,23 @@ mod tests {
     #[test]
     fn parse_assistant_ignores_json() {
         let raw = format!("```excalidraw-json\n{SAMPLE_JSON}\n```");
-        let (_, json) = parse_assistant_response(Persona::Assistant, &raw);
+        let (_, json) = parse_assistant_response(Persona::Assistant, &raw, false);
         assert!(json.is_none());
+    }
+
+    #[test]
+    #[test]
+    fn parse_editeur_extracts_plantuml_fence() {
+        let raw = "Voici.\n```plantuml\n@startuml\nA --> B\n@enduml\n```";
+        let (text, src) = parse_assistant_response(Persona::Editeur, raw, true);
+        assert!(src.unwrap().contains("@startuml"));
+        assert!(text.contains("Voici"));
     }
 
     #[test]
     fn parse_editeur_rejects_mermaid() {
         let raw = "```mermaid\nflowchart TD\n  A-->B\n```";
-        let (text, json) = parse_assistant_response(Persona::Editeur, raw);
+        let (text, json) = parse_assistant_response(Persona::Editeur, raw, false);
         assert!(json.is_none());
         assert!(text.contains("Mermaid"));
     }

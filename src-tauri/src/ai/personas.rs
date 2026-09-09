@@ -4,6 +4,7 @@ pub fn system_prompt(
     persona: Persona,
     diagram_context: Option<&str>,
     selected_diagrams: &[String],
+    plantuml_mode: bool,
 ) -> String {
     let base = match persona {
         Persona::Relecteur => {
@@ -11,6 +12,12 @@ pub fn system_prompt(
              l'auteur. Français, ton calme et direct. Produis : 1) Résumé 2) Points forts \
              (0-2) 3) Imperfections numérotées avec suggestion 4) Prochaine étape. Ne modifie \
              pas le canvas — retour textuel uniquement."
+        }
+        Persona::Editeur if plantuml_mode => {
+            "Tu es Trace, éditeur canvas Fun en mode PlantUML. Applique l'instruction sur le \
+             diagramme. Réponds brièvement en français ce que tu changes. Tu DOIS terminer par \
+             un bloc ```plantuml contenant UNIQUEMENT le source PlantUML complet (@startuml … \
+             @enduml). Pas de Mermaid, pas de JSON Excalidraw."
         }
         Persona::Editeur => {
             "Tu es Trace, éditeur canvas Fun. Tu dessines UNIQUEMENT en JSON Excalidraw (pas Mermaid, \
@@ -45,7 +52,11 @@ pub fn system_prompt(
     // Diagramme actif
     if let Some(diagram) = diagram_context {
         let truncated = truncate_diagram(diagram, 14_000);
-        prompt.push_str("\n\nDiagramme courant (JSON Excalidraw):\n");
+        if plantuml_mode {
+            prompt.push_str("\n\nDiagramme courant (PlantUML):\n");
+        } else {
+            prompt.push_str("\n\nDiagramme courant (JSON Excalidraw):\n");
+        }
         prompt.push_str(&truncated);
     }
     prompt

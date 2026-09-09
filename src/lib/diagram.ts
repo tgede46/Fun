@@ -1,10 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
-import type { FunScene, FunObject } from "@/canvas/types";
+import type { FunScene } from "@/canvas/types";
 import {
   parseExcalidrawContent,
   prepareExcalidrawScene,
 } from "@/lib/excalidraw-sanitize";
+
+export type DiagramKind = "sketch" | "drawio" | "plantuml";
 
 export type CreateDiagramResult = {
   path: string;
@@ -20,6 +22,7 @@ export type LoadDiagramResult = {
 export type DiagramListItem = {
   path: string;
   name: string;
+  kind?: DiagramKind;
 };
 
 export type { ExcalidrawInitialDataState };
@@ -35,6 +38,28 @@ export async function createDrawioDiagram(
   projectPath: string,
 ): Promise<CreateDiagramResult> {
   return invoke<CreateDiagramResult>("create_drawio_diagram", { projectPath });
+}
+
+export async function createDiagramOfKind(
+  projectPath: string,
+  kind: DiagramKind,
+): Promise<CreateDiagramResult> {
+  return invoke<CreateDiagramResult>("create_diagram_of_kind", {
+    projectPath,
+    kind,
+  });
+}
+
+export async function createDiagramWithContent(
+  projectPath: string,
+  kind: DiagramKind,
+  content: string,
+): Promise<CreateDiagramResult> {
+  return invoke<CreateDiagramResult>("create_diagram_with_content", {
+    projectPath,
+    kind,
+    content,
+  });
 }
 
 export async function loadDiagram(
@@ -205,69 +230,15 @@ export function serializeFunScene(scene: FunScene): string {
 }
 
 export async function deserializeFunScene(rawContent: string): Promise<FunScene> {
-  const parsed = JSON.parse(rawContent);
-
-  const excalidrawData = {
-    elements: parsed.elements ?? [],
-    appState: parsed.appState ?? { viewBackgroundColor: "#ffffff" },
-    files: parsed.files ?? {},
-  };
-
-  const excalidrawElements = await parseExcalidrawContent(
-    JSON.stringify(excalidrawData),
-  );
-
-  const excalidrawObjects: FunObject[] = (excalidrawElements.elements ?? []).map(
-    (el: Record<string, unknown>) => {
-      const rawType = el.type === "freedraw" ? "freehand" : el.type;
-      const type = rawType as "freehand" | "rect" | "ellipse" | "diamond" | "text";
-      return {
-        id: el.id as string,
-        type,
-        x: el.x as number,
-        y: el.y as number,
-        width: el.width as number,
-        height: el.height as number,
-        fill: (el.backgroundColor as string) ?? "transparent",
-        stroke: (el.strokeColor as string) ?? "#1a1a1a",
-        strokeWidth: (el.strokeWidth as number) ?? 2,
-        opacity: (el.opacity as number) ?? 100,
-        locked: (el.locked as boolean) ?? false,
-        zIndex: 0,
-        points: el.points as { x: number; y: number }[],
-        text: el.text as string,
-        fontSize: el.fontSize as number,
-        borderRadius: 0,
-      } as FunObject;
-    },
-  );
-
-  const edges = (parsed.edges ?? []).map((edge: Record<string, unknown>) => ({
-    id: edge.id as string,
-    type: "edge" as const,
-    x: 0,
-    y: 0,
-    width: 0,
-    height: 0,
-    fill: "transparent",
-    stroke: (edge.stroke as string) ?? "#1e1e1e",
-    strokeWidth: (edge.strokeWidth as number) ?? 2,
-    opacity: 1,
-    locked: false,
-    zIndex: 0,
-    fromId: edge.fromId as string,
-    toId: edge.toId as string,
-    kind: edge.kind as string,
-    label: edge.label as string | undefined,
-    points: edge.points as { x: number; y: number }[] | undefined,
-  }));
-
+  const { sceneFromContent } = await import("@/lib/diagram-convert");
+  const scene = sceneFromContent("sketch", rawContent);
   return {
     id: crypto.randomUUID(),
-    objects: excalidrawObjects,
-    edges,
-    camera: { x: 0, y: 0, zoom: 1 },
+    objects: scene.objects,
+    edges: scene.edges ?? [],
+    camera: scene.camera ?? { x: 0, y: 0, zoom: 1 },
     grid: true,
     version: 1,
+    metadata: scene.metadata,
   };
 }

@@ -31,7 +31,17 @@ commands.allow = ["create_project"]
 [[permission]]
 identifier = "allow-create-diagram"
 description = "Crée un diagramme Excalidraw vide sous `.fun/diagrams/`."
-commands.allow = ["create_diagram"]
+commands.allow = ["create_diagram", "create_diagram_of_kind", "create_diagram_with_content"]
+
+[[permission]]
+identifier = "allow-create-drawio-diagram"
+description = "Crée un diagramme draw.io vide sous `.fun/diagrams/`."
+commands.allow = ["create_drawio_diagram"]
+
+[[permission]]
+identifier = "allow-generate-diagram-from-image"
+description = "Génère un diagramme depuis une image via un modèle vision gratuit."
+commands.allow = ["generate_diagram_from_image"]
 
 [[permission]]
 identifier = "allow-load-diagram"
