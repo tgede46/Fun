@@ -51,7 +51,7 @@ export function Toolbar({
         </Link>
         <span className="font-semibold text-foreground">{projectName}</span>
         <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-secondary">
-          {mode === "uml" ? "◫ UML" : mode === "plantuml" ? "{ } PlantUML" : "✎ Sketch"}
+          {mode === "uml" ? "◫ UML" : mode === "plantuml" ? "{ } PlantUML" : "✎ Excalidraw"}
         </span>
       </div>
       <div className="flex items-center gap-2">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
-import type { FunScene, FunObject } from "./types";
+import type { FunScene, FunObject, EdgeObject } from "./types";
 import type {
   ExcalidrawInitialDataState,
   ExcalidrawImperativeAPI,
@@ -9,6 +9,7 @@ import type {
   BinaryFiles,
 } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
+import { funSceneToExcalidrawData } from "./adapters/excalidraw";
 
 const ExcalidrawWrapper = async () => {
   const mod = await import("@excalidraw/excalidraw");
@@ -19,8 +20,6 @@ interface ExcalidrawCanvasProps {
   initialScene?: FunScene;
   onSceneChange?: (scene: FunScene) => void;
   focusMode?: boolean;
-  layersOpen?: boolean;
-  onLayersOpenChange?: (open: boolean) => void;
 }
 
 interface ExcalidrawBaseElement {
@@ -50,7 +49,6 @@ function excalidrawElementsToFunObjects(
 
   for (const el of elements) {
     if (el.isDeleted) continue;
-    if (el.groupIds && el.groupIds.length > 0) continue;
 
     const base = {
       id: el.id,
@@ -130,105 +128,6 @@ function excalidrawElementsToFunObjects(
   return result;
 }
 
-function funSceneToExcalidrawData(
-  scene: FunScene,
-): ExcalidrawInitialDataState {
-  const objects = scene.objects;
-
-  if (objects.length === 0) {
-    return { elements: [], appState: {}, files: {} };
-  }
-
-  const excalidrawElements: unknown[] = [];
-
-  for (const obj of objects) {
-    const base = {
-      id: obj.id,
-      x: obj.x,
-      y: obj.y,
-      width: obj.width,
-      height: obj.height,
-      strokeColor: obj.stroke,
-      backgroundColor: obj.fill,
-      strokeWidth: obj.strokeWidth,
-      opacity: obj.opacity * 100,
-      locked: obj.locked,
-    };
-
-    if (obj.type === "freehand") {
-      excalidrawElements.push({
-        ...base,
-        type: "freedraw" as const,
-        points: obj.points.map((p) => [p.x, p.y] as [number, number]),
-      });
-      continue;
-    }
-
-    if (obj.type === "text") {
-      excalidrawElements.push({
-        ...base,
-        type: "text" as const,
-        text: obj.text,
-        fontSize: obj.fontSize,
-        textAlign: "left" as const,
-        verticalAlign: "top" as const,
-        fontFamily: 1,
-        lineHeight: 1.25,
-        containerId: null,
-        originalText: obj.text,
-        autoResize: true,
-      });
-      continue;
-    }
-
-    if (obj.type === "arrow") {
-      excalidrawElements.push({
-        ...base,
-        type: "arrow" as const,
-        points: obj.points.map((p) => [p.x, p.y] as [number, number]),
-        startBinding: null,
-        endBinding: null,
-        startArrowhead: null,
-        endArrowhead: "triangle",
-      });
-      continue;
-    }
-
-    if (obj.type === "image") {
-      excalidrawElements.push({
-        ...base,
-        type: "image" as const,
-        src: obj.src,
-        fileId: null,
-        crop: null,
-      });
-      continue;
-    }
-
-    const typeMap: Record<string, string> = {
-      rect: "rectangle",
-      ellipse: "ellipse",
-      diamond: "diamond",
-    };
-
-    excalidrawElements.push({
-      ...base,
-      type: (typeMap[obj.type] ?? obj.type) as
-        | "rectangle"
-        | "ellipse"
-        | "diamond",
-    });
-  }
-
-  return {
-    elements: excalidrawElements as ExcalidrawInitialDataState["elements"],
-    appState: {
-      viewBackgroundColor: "#ffffff",
-    },
-    files: {},
-  };
-}
-
 export function ExcalidrawCanvas({
   initialScene,
   onSceneChange,
@@ -238,28 +137,54 @@ export function ExcalidrawCanvas({
     typeof import("@excalidraw/excalidraw").Excalidraw | null
   >(null);
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
+  const edgesRef = useRef<EdgeObject[]>(initialScene?.edges ?? []);
+  const sceneIdRef = useRef(initialScene?.id ?? crypto.randomUUID());
+  const skipNextChangeRef = useRef(true);
 
   useEffect(() => {
-    ExcalidrawWrapper().then(setExcalidrawComponent);
+    void ExcalidrawWrapper().then(setExcalidrawComponent);
   }, []);
 
-  const initialData = useMemo(() => {
+  useEffect(() => {
+    edgesRef.current = initialScene?.edges ?? [];
+    if (initialScene?.id) sceneIdRef.current = initialScene.id;
+    skipNextChangeRef.current = true;
+  }, [initialScene]);
+
+  const initialData = useMemo((): ExcalidrawInitialDataState => {
     if (!initialScene) {
-      return { elements: [], appState: {}, files: {} };
+      return {
+        elements: [],
+        appState: { viewBackgroundColor: "#ffffff" },
+        files: {},
+      };
     }
-    return funSceneToExcalidrawData(initialScene);
+    const data = funSceneToExcalidrawData(initialScene);
+    return {
+      ...data,
+      appState: {
+        ...(data.appState ?? {}),
+        viewBackgroundColor: "#ffffff",
+      },
+    };
   }, [initialScene]);
 
   const handleChange = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-    (elements: readonly any[], appState: AppState, files: BinaryFiles) => {
+    // Excalidraw types évoluent — on mappe vers FunObject sans coller au type Ordered*
+    (elements: readonly unknown[], appState: AppState, _files: BinaryFiles) => {
       if (!onSceneChange) return;
+      if (skipNextChangeRef.current) {
+        skipNextChangeRef.current = false;
+        return;
+      }
 
-      const funObjects = excalidrawElementsToFunObjects(elements);
-
+      const funObjects = excalidrawElementsToFunObjects(
+        elements as readonly ExcalidrawBaseElement[],
+      );
       const scene: FunScene = {
-        id: initialScene?.id ?? crypto.randomUUID(),
+        id: sceneIdRef.current,
         objects: funObjects,
+        edges: edgesRef.current,
         camera: {
           x: appState.scrollX ?? 0,
           y: appState.scrollY ?? 0,
@@ -267,11 +192,12 @@ export function ExcalidrawCanvas({
         },
         grid: true,
         version: 1,
+        metadata: { sourceFormat: "excalidraw" },
       };
 
       onSceneChange(scene);
     },
-    [onSceneChange, initialScene?.id],
+    [onSceneChange],
   );
 
   const handleExcalidrawAPI = useCallback((api: ExcalidrawImperativeAPI) => {
@@ -280,28 +206,29 @@ export function ExcalidrawCanvas({
 
   if (!ExcalidrawComponent) {
     return (
-      <div className="flex-1 flex items-center justify-center text-muted-foreground">
-        Chargement du canvas...
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        Chargement d’Excalidraw…
       </div>
     );
   }
 
   return (
-    <div className="flex-1 relative">
+    <div className="excalidraw-fun-host h-full w-full [&_.excalidraw]:h-full [&_.excalidraw]:w-full">
       <ExcalidrawComponent
         initialData={initialData}
         onChange={handleChange}
         excalidrawAPI={handleExcalidrawAPI}
         viewModeEnabled={focusMode}
-        gridModeEnabled={true}
+        gridModeEnabled
+        langCode="fr-FR"
         theme="light"
-        name="Fun Canvas"
+        name="Fun Sketch"
         UIOptions={{
           canvasActions: {
             changeViewBackgroundColor: true,
-            clearCanvas: false,
-            export: false,
-            loadScene: false,
+            clearCanvas: true,
+            export: { saveFileToDisk: true },
+            loadScene: true,
             saveToActiveFile: false,
             toggleTheme: false,
             saveAsImage: true,

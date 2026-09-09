@@ -13,7 +13,7 @@ type DiagramListProps = {
 };
 
 const KIND_LABEL: Record<DiagramKind, string> = {
-  sketch: "Sketch",
+  sketch: "Excalidraw",
   drawio: "draw.io",
   plantuml: "PlantUML",
 };

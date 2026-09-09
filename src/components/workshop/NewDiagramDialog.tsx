@@ -9,7 +9,7 @@ type NewDiagramDialogProps = {
 };
 
 const OPTIONS: { kind: DiagramKind; title: string; hint: string }[] = [
-  { kind: "sketch", title: "Sketch", hint: "Dessin libre sur le canvas Fun" },
+  { kind: "sketch", title: "Excalidraw (Sketch)", hint: "Vrai éditeur Excalidraw — fichier .excalidraw" },
   { kind: "drawio", title: "UML draw.io", hint: "Éditeur draw.io intégré" },
   { kind: "plantuml", title: "PlantUML", hint: "Code texte → rendu canvas" },
 ];

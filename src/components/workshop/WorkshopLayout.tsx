@@ -368,12 +368,18 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         );
         await refreshDiagramList();
         await openDiagram(created.path);
-        const lost = Math.round(converted.lostRatio * 100);
-        setConvertMessage(
-          lost > 50
-            ? `Converti · ${converted.scene.objects.length} objet(s) — perte ${lost} %. Complète avec l’IA si besoin.`
-            : `Converti · ${converted.scene.objects.length} objet(s)`,
-        );
+        if (converted.sourceEmpty) {
+          setConvertMessage(
+            "Source vide — copie créée. Dessine d’abord, puis duplique.",
+          );
+        } else {
+          const lost = Math.round(converted.lostRatio * 100);
+          setConvertMessage(
+            lost > 50
+              ? `Converti · ${converted.scene.objects.length} objet(s) — perte ${lost} %. Complète avec l’IA si besoin.`
+              : `Converti · ${converted.scene.objects.length} objet(s)`,
+          );
+        }
       } catch (err) {
         setDiagramError(
           err instanceof Error ? err.message : "Conversion impossible.",

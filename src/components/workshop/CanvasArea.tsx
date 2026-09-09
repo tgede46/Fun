@@ -4,7 +4,7 @@ import type { FunScene } from "@/canvas/types";
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { kindFromPath } from "@/lib/diagram-convert";
 import { DiagramList } from "./DiagramList";
-import { FunCanvas } from "@/canvas/FunCanvas";
+import { ExcalidrawCanvas } from "@/canvas/ExcalidrawCanvas";
 import { DrawioEmbed } from "@/canvas/drawio/DrawioEmbed";
 import { PlantUmlEditor } from "./PlantUmlEditor";
 import type { WorkshopMode } from "./ModeRail";
@@ -175,14 +175,16 @@ export function CanvasArea({
           onGenerate={(next) => onPlantumlGenerate?.(next)}
         />
       ) : scene ? (
-        <FunCanvas
-          key={activeDiagramPath}
-          initialScene={scene}
-          onSceneChange={onSceneChange}
-          focusMode={focusMode}
-          layersOpen={layersOpen}
-          onLayersOpenChange={onLayersOpenChange}
-        />
+        <div className="relative min-h-0 flex-1">
+          <div className="absolute inset-0">
+            <ExcalidrawCanvas
+              key={activeDiagramPath}
+              initialScene={scene}
+              onSceneChange={onSceneChange}
+              focusMode={focusMode}
+            />
+          </div>
+        </div>
       ) : null}
     </section>
   );

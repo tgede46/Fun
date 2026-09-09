@@ -29,6 +29,12 @@ export function PlantUmlEditor({
   const handleGenerate = () => {
     try {
       const next = plantumlToFunScene(source, { sourceFormat: "plantuml" });
+      if (next.objects.length === 0) {
+        setError(
+          "Aucune entité reconnue. Exemple :\n@startuml\nclass A\nclass B\nA --> B\n@enduml",
+        );
+        return;
+      }
       setError(null);
       onGenerate(next);
     } catch (err) {
@@ -57,7 +63,9 @@ export function PlantUmlEditor({
           aria-label="Source PlantUML"
         />
         {error ? (
-          <p className="border-t border-border px-3 py-2 text-xs text-destructive">{error}</p>
+          <p className="whitespace-pre-wrap border-t border-border px-3 py-2 text-xs text-destructive">
+            {error}
+          </p>
         ) : (
           <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
             Écris le code, puis clique Générer pour le voir sur le canvas.
@@ -72,6 +80,7 @@ export function PlantUmlEditor({
             focusMode={focusMode}
             layersOpen={layersOpen}
             onLayersOpenChange={onLayersOpenChange}
+            previewMode
           />
         ) : (
           <div className="flex h-full items-center justify-center p-6 text-sm text-muted-foreground">

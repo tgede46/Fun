@@ -70,6 +70,23 @@ function parseXmlToGraphModel(xml: string): MxGraphModel | null {
       attrMap[a.name] = a.value;
     });
 
+    // draw.io stocke x/y/w/h dans <mxGeometry>, pas en attributs de mxCell
+    const geometry = cell.querySelector("mxGeometry");
+    const x = geometry?.getAttribute("x") ?? attrMap.x;
+    const y = geometry?.getAttribute("y") ?? attrMap.y;
+    const width = geometry?.getAttribute("width") ?? attrMap.width;
+    const height = geometry?.getAttribute("height") ?? attrMap.height;
+
+    let points = attrMap.points;
+    if (!points && geometry) {
+      const array = geometry.querySelector("Array[as='points'], array[as='points']");
+      if (array) {
+        const pts = Array.from(array.querySelectorAll("mxPoint, mxpoint"))
+          .map((p) => `${p.getAttribute("x") ?? 0},${p.getAttribute("y") ?? 0}`);
+        if (pts.length) points = pts.join(";");
+      }
+    }
+
     cells.push({
       id: attrMap.id ?? "",
       value: attrMap.value,
@@ -77,12 +94,12 @@ function parseXmlToGraphModel(xml: string): MxGraphModel | null {
       edge: attrMap.edge as "1" | "0" | undefined,
       source: attrMap.source,
       target: attrMap.target,
-      x: attrMap.x,
-      y: attrMap.y,
-      width: attrMap.width,
-      height: attrMap.height,
+      x: x ?? undefined,
+      y: y ?? undefined,
+      width: width ?? undefined,
+      height: height ?? undefined,
       style: attrMap.style,
-      points: attrMap.points,
+      points,
     });
   });
 
@@ -464,52 +481,42 @@ function renderDiagramContent(
   nl: string,
   indentStr: string
 ): string {
-  const cells: string[] = [];
+  const lines: string[] = [];
+  const i1 = indentStr;
+  const i2 = `${indentStr}  `;
+  const i3 = `${indentStr}    `;
+  const i4 = `${indentStr}      `;
 
-  // Tout ça va dans un mxGraphModel déguisé — pour MVP on produit une structure minimale
-  cells.push(`${indentStr}<mxGraphModel>${nl}`);
-  cells.push(`${indentStr}${indentStr}<root>${nl}`);
-  cells.push(`${indentStr}${indentStr}${indentStr}<mxCell id="0"/>${nl}`);
-  cells.push(`${indentStr}${indentStr}${indentStr}<mxCell id="1" parent="0"/>${nl}`);
-  cells.push(`${indentStr}${indentStr}</root>${nl}`);
+  lines.push(`${i1}<mxGraphModel>${nl}`);
+  lines.push(`${i2}<root>${nl}`);
+  lines.push(`${i3}<mxCell id="0"/>${nl}`);
+  lines.push(`${i3}<mxCell id="1" parent="0"/>${nl}`);
 
-  // Nœuds
   for (const obj of objects) {
     const cell = funObjectToDrawioCell(obj);
-    const attrs = [
-      `id="${cell.id}"`,
-      `vertex="1"`,
-      `edge="0"`,
-      cell.x !== undefined ? `x="${cell.x}"` : "",
-      cell.y !== undefined ? `y="${cell.y}"` : "",
-      cell.width !== undefined ? `width="${cell.width}"` : "",
-      cell.height !== undefined ? `height="${cell.height}"` : "",
-      cell.style ? `style="${cell.style}"` : "",
-      cell.value !== undefined ? `value="${escapeXml(cell.value)}"` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    cells.push(`${indentStr}${indentStr}<mxCell ${attrs}/>${nl}`);
+    const valueAttr =
+      cell.value !== undefined ? ` value="${escapeXml(cell.value)}"` : "";
+    lines.push(
+      `${i3}<mxCell id="${escapeXml(cell.id)}" vertex="1" parent="1"${valueAttr} style="${escapeXml(cell.style)}">${nl}`,
+    );
+    lines.push(
+      `${i4}<mxGeometry x="${cell.x ?? 0}" y="${cell.y ?? 0}" width="${cell.width ?? 100}" height="${cell.height ?? 60}" as="geometry"/>${nl}`,
+    );
+    lines.push(`${i3}</mxCell>${nl}`);
   }
 
-  // Arêtes
   for (const edge of edges) {
     const cell = edgeToDrawioCell(edge);
-    const attrs = [
-      `id="${cell.id}"`,
-      `vertex="0"`,
-      `edge="1"`,
-      `source="${cell.source ?? ""}"`,
-      `target="${cell.target ?? ""}"`,
-      cell.style ? `style="${cell.style}"` : "",
-      cell.points ? `points="${cell.points}"` : "",
-      cell.value !== undefined ? `value="${escapeXml(cell.value)}"` : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-    cells.push(`${indentStr}${indentStr}<mxCell ${attrs}/>${nl}`);
+    const valueAttr =
+      cell.value !== undefined ? ` value="${escapeXml(cell.value)}"` : "";
+    lines.push(
+      `${i3}<mxCell id="${escapeXml(cell.id)}" edge="1" parent="1" source="${escapeXml(cell.source)}" target="${escapeXml(cell.target)}"${valueAttr} style="${escapeXml(cell.style)}">${nl}`,
+    );
+    lines.push(`${i4}<mxGeometry relative="1" as="geometry"/>${nl}`);
+    lines.push(`${i3}</mxCell>${nl}`);
   }
 
-  cells.push(`${indentStr}</mxGraphModel>${nl}`);
-  return cells.join("");
+  lines.push(`${i2}</root>${nl}`);
+  lines.push(`${i1}</mxGraphModel>${nl}`);
+  return lines.join("");
 }

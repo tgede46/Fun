@@ -18,8 +18,8 @@ export function ModeRail({ activeMode = "sketch", onModeChange }: ModeRailProps)
             : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
         )}
         type="button"
-        title="Sketch — dessin libre Excalidraw"
-        aria-label="Mode Sketch"
+        title="Sketch — Excalidraw"
+        aria-label="Mode Sketch / Excalidraw"
         aria-pressed={activeMode === "sketch"}
         onClick={() => onModeChange?.("sketch")}
       >

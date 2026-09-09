@@ -53,11 +53,14 @@ export function convertDiagramContent(
   sourceKind: DiagramKind,
   targetKind: DiagramKind,
   content: string,
-): { content: string; scene: FunScene; lostRatio: number } {
+): { content: string; scene: FunScene; lostRatio: number; sourceEmpty: boolean } {
   const scene = sceneFromContent(sourceKind, content);
-  const sourceCount = Math.max(scene.objects.length, 1);
+  const sourceCount = scene.objects.length;
   const target = contentFromScene(targetKind, scene);
+  if (sourceCount === 0) {
+    return { content: target, scene, lostRatio: 0, sourceEmpty: true };
+  }
   const roundTrip = sceneFromContent(targetKind, target);
-  const lostRatio = 1 - roundTrip.objects.length / sourceCount;
-  return { content: target, scene, lostRatio };
+  const lostRatio = Math.max(0, 1 - roundTrip.objects.length / sourceCount);
+  return { content: target, scene, lostRatio, sourceEmpty: false };
 }

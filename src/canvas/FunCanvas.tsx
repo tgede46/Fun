@@ -34,6 +34,8 @@ interface FunCanvasProps {
   focusMode?: boolean;
   layersOpen?: boolean;
   onLayersOpenChange?: (open: boolean) => void;
+  /** Aperçu (PlantUML) — pas d’Import/Export ni barre d’outils dessin. */
+  previewMode?: boolean;
 }
 
 interface ContextMenu {
@@ -50,6 +52,7 @@ export function FunCanvas({
   focusMode = false,
   layersOpen = false,
   onLayersOpenChange,
+  previewMode = false,
 }: FunCanvasProps) {
   const { scene, objects, edges, addObject, addEdge, updateObject, deleteObjects, deleteEdges, updateEdge, setSceneDirect } = useScene(initialScene);
   const { tool, selectTool } = useTool();
@@ -466,6 +469,7 @@ export function FunCanvas({
       </svg>
 
       {/* Toolbar */}
+      {!previewMode ? (
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-0.5 bg-card border border-border rounded-xl p-1.5 shadow-lg">
         <ToolButton tool="select" label="Sélection" icon="↗" active={tool === "select"} onClick={() => selectTool("select")} shortcut="V" />
         <div className="w-px h-5 bg-border mx-0.5" />
@@ -480,10 +484,12 @@ export function FunCanvas({
         <div className="w-px h-5 bg-border mx-0.5" />
         <ToolButton tool="edge" label="Connecteur" icon="⤳" active={tool === "edge"} onClick={() => selectTool("edge")} shortcut="E" />
       </div>
+      ) : null}
 
       {/* Top bar */}
       <div className="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
         {/* Undo/Redo */}
+        {!previewMode ? (
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 shadow-sm pointer-events-auto">
           <button
             type="button"
@@ -504,8 +510,10 @@ export function FunCanvas({
             ↷
           </button>
         </div>
+        ) : <div />}
 
         {/* Import/Export */}
+        {!previewMode ? (
         <div className="relative pointer-events-auto">
           <button
             type="button"
@@ -527,10 +535,15 @@ export function FunCanvas({
             </div>
           )}
         </div>
+        ) : (
+          <p className="pointer-events-none rounded-lg border border-border bg-card/90 px-2 py-1 text-[11px] text-muted-foreground">
+            Aperçu PlantUML — modifie le code à gauche, puis Générer
+          </p>
+        )}
 
         {/* Zoom + Layers */}
         <div className="flex items-center gap-2 pointer-events-auto">
-          {!focusMode ? (
+          {!previewMode && !focusMode ? (
             <button
               type="button"
               className={`w-7 h-7 flex items-center justify-center rounded text-sm transition-colors ${
@@ -575,7 +588,7 @@ export function FunCanvas({
         </div>
       </div>
 
-      {!focusMode ? (
+      {!previewMode && !focusMode ? (
         <>
           <Inspector
             selectedObjects={objects.filter((o) => selectedIds.has(o.id))}
@@ -592,11 +605,11 @@ export function FunCanvas({
             />
           ) : null}
         </>
-      ) : (
+      ) : !previewMode && focusMode ? (
         <div className="absolute right-3 top-3 rounded-lg border border-border bg-card/90 px-3 py-1.5 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
           Mode focus — calques et propriétés masqués
         </div>
-      )}
+      ) : null}
 
       {/* Context menu */}
       {contextMenu && (

@@ -7,24 +7,44 @@ interface DrawioEmbedProps {
   onXmlChange?: (xml: string) => void;
 }
 
+/** Protocol embed.diagrams.net : attendre `init`, puis `action: load`. */
 export function DrawioEmbed({ initialXml, onXmlChange }: DrawioEmbedProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const loadedRef = useRef(false);
+  const xmlRef = useRef(initialXml);
+  xmlRef.current = initialXml;
 
   useEffect(() => {
     const iframe = iframeRef.current;
     if (!iframe) return;
 
     const handleMessage = (e: MessageEvent) => {
-      if (typeof e.data !== "string") return;
+      if (e.source !== iframe.contentWindow) return;
+      if (typeof e.data !== "string" || !e.data) return;
 
       try {
-        const msg = JSON.parse(e.data);
-        if (msg.event === "export" && msg.xml) {
+        const msg = JSON.parse(e.data) as {
+          event?: string;
+          xml?: string;
+        };
+
+        if (msg.event === "init") {
+          const xml = xmlRef.current;
+          iframe.contentWindow?.postMessage(
+            JSON.stringify(
+              xml
+                ? { action: "load", xml, autosave: 1 }
+                : { action: "load", autosave: 1 },
+            ),
+            "*",
+          );
+          return;
+        }
+
+        if ((msg.event === "export" || msg.event === "save" || msg.event === "autosave") && msg.xml) {
           onXmlChange?.(msg.xml);
         }
       } catch {
-        // ignore non-JSON messages
+        // ignore
       }
     };
 
@@ -32,40 +52,21 @@ export function DrawioEmbed({ initialXml, onXmlChange }: DrawioEmbedProps) {
     return () => window.removeEventListener("message", handleMessage);
   }, [onXmlChange]);
 
-  // Charger le XML initial après le montage de l'iframe
+  // Recharger si le XML change après init (ex. conversion)
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe || !initialXml) return;
-
-    // Attendre que l'iframe soit prêt
-    const checkReady = () => {
-      try {
-        const doc = iframe.contentDocument;
-        if (doc && doc.body) {
-          // Envoyer le XML à draw.io via postMessage
-          iframe.contentWindow?.postMessage(
-            { xml: initialXml, configure: 1 },
-            "https://embed.diagrams.net",
-          );
-          loadedRef.current = true;
-        } else {
-          setTimeout(checkReady, 100);
-        }
-      } catch {
-        setTimeout(checkReady, 100);
-      }
-    };
-
-    // Attendre un peu pour l'initialisation
-    const timer = setTimeout(checkReady, 500);
-    return () => clearTimeout(timer);
+    if (!iframe?.contentWindow || !initialXml) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({ action: "load", xml: initialXml, autosave: 1 }),
+      "*",
+    );
   }, [initialXml]);
 
   return (
     <iframe
       ref={iframeRef}
-      src="https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&configure=1&dark=0"
-      className="flex-1 w-full border-0"
+      src="https://embed.diagrams.net/?embed=1&ui=atlas&spin=1&proto=json&libraries=1&saveAndExit=0&noSaveBtn=1&noExitBtn=1"
+      className="absolute inset-0 h-full w-full border-0"
       title="draw.io UML Editor"
       allow="clipboard-read; clipboard-write"
     />
