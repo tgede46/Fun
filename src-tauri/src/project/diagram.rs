@@ -505,6 +505,14 @@ mod tests {
     }
 
     #[test]
+    fn list_diagrams_empty_when_no_files() {
+        let project = temp_project();
+        let list = list_diagrams(&project).expect("list");
+        assert!(list.is_empty());
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
     fn validate_excalidraw_json_accepts_valid() {
         let json = r#"{ "type": "excalidraw", "version": 2, "elements": [], "appState": {}, "files": {} }"#;
         assert!(validate_excalidraw_json(json).is_ok());
@@ -532,7 +540,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn reset_diagram_drawio_writes_empty_xml() {
         let project = temp_project();
         let path = create_drawio_diagram(&project).expect("create");
@@ -557,6 +564,7 @@ mod tests {
         let _ = fs::remove_dir_all(project);
     }
 
+    #[test]
     fn reset_diagram_overwrites_with_empty() {
         let project = temp_project();
         let diagram_path = create_diagram(&project).expect("create");

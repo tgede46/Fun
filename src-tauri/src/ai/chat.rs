@@ -353,7 +353,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn parse_editeur_extracts_plantuml_fence() {
         let raw = "Voici.\n```plantuml\n@startuml\nA --> B\n@enduml\n```";
         let (text, src) = parse_assistant_response(Persona::Editeur, raw, true);

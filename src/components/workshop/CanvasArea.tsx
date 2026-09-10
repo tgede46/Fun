@@ -133,11 +133,11 @@ export function CanvasArea({
         {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
         <div className="p-3 border-b border-border">{list}</div>
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
-          <p className="text-lg font-semibold text-foreground">Commencer a dessiner</p>
+          <p className="text-lg font-semibold text-foreground">Commencer à dessiner</p>
           <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
             {diagrams.length > 0
-              ? "Choisissez un diagramme dans la liste ci-dessus, ou creez-en un nouveau."
-              : "Cliquez sur « Nouveau diagramme » pour choisir Sketch, draw.io ou PlantUML."}
+              ? "Choisissez un diagramme dans la liste ci-dessus, ou créez-en un nouveau."
+              : "Nouveau diagramme — cliquez sur le bouton de la barre d’outils pour choisir Sketch, draw.io ou PlantUML."}
           </p>
           {viewKind === "drawio" ? (
             <button

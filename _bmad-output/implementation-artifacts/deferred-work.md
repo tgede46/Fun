@@ -1,15 +1,12 @@
-- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-home-recent-projects.md`
-  summary: Ajouter tests automatisés (React + Rust) pour la matrice I/O accueil/recents.
-  evidence: Revue verification-gap — aucun test framework au MVP ; `npm run build` ne couvre pas les flux Tauri.
+# Deferred work
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-home-recent-projects.md`
-  summary: Valider le path projet côté atelier pour navigation directe `/workshop?path=`.
-  evidence: Edge-case hunter — atelier affiche tout path sans `remember_recent_project` ni validation disque.
+Items Story 1.2 clos par `spec-1-2-hardening-tests-canonical-atomic-font.md` (status: done).
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-home-recent-projects.md`
-  summary: Écriture atomique du store JSON recents.
-  evidence: Edge-case hunter — crash pendant `fs::write` peut corrompre le fichier.
+Aucun item ouvert.
 
-- source_spec: `_bmad-output/implementation-artifacts/spec-1-2-home-recent-projects.md`
-  summary: Appliquer Excalifont sur les cartes accueil selon DESIGN.md.
-  evidence: Revue blind-hunter — globals.css utilise Segoe UI, pas la typo UX.
+## Clos
+
+- Tests automatisés (React + Rust) matrice I/O accueil/recents — `src/test/home-screen.test.tsx`, `src-tauri/src/recent.rs`.
+- Validation path atelier `/workshop?path=` via `open_project` (Story 1.3) — `src/app/workshop/page.tsx`.
+- Écriture atomique du store JSON recents — `recent.rs` tmp + rename.
+- Excalifont sur les cartes accueil — héritage `--fun-typography-ui-family`.

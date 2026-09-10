@@ -221,6 +221,18 @@ mod tests {
     }
 
     #[test]
+    fn set_theme_electro_persists_to_settings_json() {
+        let project = temp_project();
+        let updated = set_theme(&project, FunTheme::Electro).expect("set");
+        assert_eq!(updated.theme, FunTheme::Electro);
+
+        let reloaded = read_settings(&project).expect("reload");
+        assert_eq!(reloaded.theme, FunTheme::Electro);
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
     fn set_companion_position_persists() {
         let project = temp_project();
         let updated =
