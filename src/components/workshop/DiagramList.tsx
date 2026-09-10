@@ -1,6 +1,7 @@
 import { formatDiagramName } from "@/lib/format-diagram-name";
 import { cn } from "@/lib/utils";
 import type { DiagramKind, DiagramListItem } from "@/lib/diagram";
+import { diagramPathsEqual, kindFromPath } from "@/lib/diagram-convert";
 
 type DiagramListProps = {
   diagrams: DiagramListItem[];
@@ -36,10 +37,11 @@ export function DiagramList({
       <span className="text-xs text-muted-foreground px-2 shrink-0">Diagrammes</span>
       <ul className="flex gap-1">
         {diagrams.map((diagram) => {
-          const isActive = diagram.path === activePath;
-          const isSelected = selectedPaths?.has(diagram.path) ?? false;
+          const isActive = diagramPathsEqual(diagram.path, activePath);
+          const isSelected =
+            [...(selectedPaths ?? [])].some((p) => diagramPathsEqual(p, diagram.path));
           const label = formatDiagramName(diagram.name);
-          const kind = diagram.kind ?? "sketch";
+          const kind = diagram.kind ?? kindFromPath(diagram.path);
 
           return (
             <li key={diagram.path} className="flex items-center">

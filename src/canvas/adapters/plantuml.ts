@@ -35,9 +35,259 @@ interface PumlRelation {
   points?: { x: number; y: number }[];
 }
 
+// ─── Détection activité ───
+
+function looksLikeActivityDiagram(puml: string): boolean {
+  const body = puml
+    .replace(/@startuml[^\n]*/gi, "")
+    .replace(/@enduml/gi, "");
+  if (/\b(class|interface|enum|component|actor|usecase)\s+\S+/i.test(body)) {
+    return false;
+  }
+  return (
+    /^\s*(start|stop|end)\s*$/im.test(body) ||
+    /^\s*:[^;]+;/m.test(body) ||
+    /^\s*if\s*\(/im.test(body) ||
+    /^\s*(while|repeat)\b/im.test(body)
+  );
+}
+
+/** Parse diagrammes d'activité PlantUML (start / :action; / if / while / stop). */
+function parseActivityDiagram(puml: string): {
+  entities: PumlEntity[];
+  relations: PumlRelation[];
+  notes: string[];
+} {
+  const lines = puml.split(/\r?\n/);
+  const entities: PumlEntity[] = [];
+  const relations: PumlRelation[] = [];
+  let uuidCounter = 0;
+  const nextId = () => `puml-act-${++uuidCounter}`;
+  const nameCount = new Map<string, number>();
+
+  const uniqueName = (raw: string) => {
+    const base = raw.replace(/\\n/g, "\n").trim() || "étape";
+    const n = (nameCount.get(base) ?? 0) + 1;
+    nameCount.set(base, n);
+    return n === 1 ? base : `${base} (${n})`;
+  };
+
+  const addEntity = (
+    type: PumlEntity["type"],
+    label: string,
+  ): PumlEntity => {
+    const entity: PumlEntity = {
+      id: nextId(),
+      type,
+      name: uniqueName(label),
+      attributes: [],
+      methods: [],
+    };
+    entities.push(entity);
+    return entity;
+  };
+
+  let lastName: string | null = null;
+  let pendingLabel: string | undefined;
+  type IfFrame = {
+    kind: "if";
+    decisionName: string;
+    thenEnd: string | null;
+    elseStarted: boolean;
+  };
+  type RepeatFrame = { kind: "repeat"; startName: string };
+  type WhileFrame = {
+    kind: "while";
+    decisionName: string;
+    bodyLabel?: string;
+  };
+  const stack: Array<IfFrame | RepeatFrame | WhileFrame> = [];
+
+  const link = (toName: string) => {
+    if (lastName) {
+      relations.push({
+        from: lastName,
+        to: toName,
+        kind: "transition",
+        label: pendingLabel,
+      });
+    }
+    pendingLabel = undefined;
+    lastName = toName;
+  };
+
+  for (const rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line || line.startsWith("'") || line.startsWith("@startuml") || line.startsWith("@enduml")) {
+      continue;
+    }
+    // Continuer une action multi-ligne : ":foo\nbar;" → déjà sur une ligne souvent avec \n
+    if (line.endsWith("\\")) {
+      continue;
+    }
+
+    // Étiquette de transition seule : ->non;
+    const aloneArrow = line.match(/^->\s*([^;]*);?\s*$/);
+    if (aloneArrow) {
+      pendingLabel = aloneArrow[1].trim() || undefined;
+      continue;
+    }
+
+    if (/^start$/i.test(line)) {
+      const node = addEntity("state", "start");
+      lastName = node.name;
+      continue;
+    }
+
+    if (/^(stop|end)$/i.test(line)) {
+      const node = addEntity("state", line.toLowerCase());
+      link(node.name);
+      continue;
+    }
+
+    // :Action;
+    const actionMatch = line.match(/^:(.+);$/);
+    if (actionMatch) {
+      const node = addEntity("state", actionMatch[1].trim());
+      link(node.name);
+      continue;
+    }
+
+    // if (cond) then (yes)
+    const ifMatch = line.match(
+      /^if\s*\((.+)\)\s*then(?:\s*\(([^)]*)\))?\s*$/i,
+    );
+    if (ifMatch) {
+      const node = addEntity("state", ifMatch[1].trim());
+      link(node.name);
+      stack.push({
+        kind: "if",
+        decisionName: node.name,
+        thenEnd: null,
+        elseStarted: false,
+      });
+      pendingLabel = ifMatch[2]?.trim() || "oui";
+      continue;
+    }
+
+    // else (no)
+    const elseMatch = line.match(/^else(?:\s*\(([^)]*)\))?\s*$/i);
+    if (elseMatch) {
+      const frame = [...stack].reverse().find((f) => f.kind === "if") as
+        | IfFrame
+        | undefined;
+      if (frame) {
+        frame.thenEnd = lastName;
+        frame.elseStarted = true;
+        lastName = frame.decisionName;
+        pendingLabel = elseMatch[1]?.trim() || "non";
+      }
+      continue;
+    }
+
+    if (/^endif$/i.test(line)) {
+      const idx = stack.map((f) => f.kind).lastIndexOf("if");
+      if (idx >= 0) {
+        const frame = stack[idx] as IfFrame;
+        stack.splice(idx, 1);
+        // Point de fusion : si les deux branches existent, on garde lastName
+        // (branche else). La branche then reste reliée à son stop/fin.
+        if (frame.thenEnd && frame.elseStarted && lastName) {
+          // noop — graphe déjà correct
+        } else if (frame.thenEnd && !frame.elseStarted) {
+          lastName = frame.thenEnd;
+        }
+      }
+      continue;
+    }
+
+    // while (cond) is (yes)
+    const whileMatch = line.match(
+      /^while\s*\((.+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
+    );
+    if (whileMatch) {
+      const node = addEntity("state", whileMatch[1].trim());
+      link(node.name);
+      stack.push({
+        kind: "while",
+        decisionName: node.name,
+        bodyLabel: whileMatch[2]?.trim() || "oui",
+      });
+      pendingLabel = whileMatch[2]?.trim() || "oui";
+      continue;
+    }
+
+    // endwhile (no)
+    const endwhileMatch = line.match(/^endwhile(?:\s*\(([^)]*)\))?\s*$/i);
+    if (endwhileMatch) {
+      const idx = stack.map((f) => f.kind).lastIndexOf("while");
+      if (idx >= 0) {
+        const frame = stack[idx] as WhileFrame;
+        stack.splice(idx, 1);
+        if (lastName) {
+          relations.push({
+            from: lastName,
+            to: frame.decisionName,
+            kind: "transition",
+            label: frame.bodyLabel,
+          });
+        }
+        lastName = frame.decisionName;
+        pendingLabel = endwhileMatch[1]?.trim() || "non";
+      }
+      continue;
+    }
+
+    if (/^repeat$/i.test(line)) {
+      // Ancre de début de boucle = dernier nœud (ou nœud dédié)
+      if (!lastName) {
+        const node = addEntity("state", "repeat");
+        lastName = node.name;
+      }
+      stack.push({ kind: "repeat", startName: lastName });
+      continue;
+    }
+
+    // repeat while (cond) is (yes)
+    const repeatWhileMatch = line.match(
+      /^repeat\s+while\s*\((.+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
+    );
+    if (repeatWhileMatch) {
+      const node = addEntity("state", repeatWhileMatch[1].trim());
+      link(node.name);
+      const idx = stack.map((f) => f.kind).lastIndexOf("repeat");
+      if (idx >= 0) {
+        const frame = stack[idx] as RepeatFrame;
+        stack.splice(idx, 1);
+        relations.push({
+          from: node.name,
+          to: frame.startName,
+          kind: "transition",
+          label: repeatWhileMatch[2]?.trim() || "oui",
+        });
+      }
+      pendingLabel = undefined;
+      // sortie de boucle : la suite part de la décision
+      lastName = node.name;
+      continue;
+    }
+
+    // fork / end fork — chaînage simple
+    if (/^fork$/i.test(line) || /^end\s*fork$/i.test(line)) {
+      continue;
+    }
+  }
+
+  return { entities, relations, notes: [] };
+}
+
 // ─── Parseur PlantUML (MVP simple) ───
 
 function parsePumlDefs(puml: string): { entities: PumlEntity[]; relations: PumlRelation[]; notes: string[] } {
+  if (looksLikeActivityDiagram(puml)) {
+    return parseActivityDiagram(puml);
+  }
+
   const lines = puml.split(/\r?\n/);
   const entities: PumlEntity[] = [];
   const relations: PumlRelation[] = [];

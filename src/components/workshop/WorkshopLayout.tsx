@@ -15,7 +15,7 @@ import {
   type DiagramKind,
   type DiagramListItem,
 } from "@/lib/diagram";
-import { convertDiagramContent, kindFromPath, sceneFromContent } from "@/lib/diagram-convert";
+import { convertDiagramContent, diagramPathsEqual, kindFromPath, kindToWorkshopMode, sceneFromContent } from "@/lib/diagram-convert";
 import { fileToResizedJpeg } from "@/lib/image-resize";
 import {
   getAiStatus,
@@ -270,30 +270,46 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   const handleSelectDiagram = useCallback(
     (path: string) => {
-      if (path === activeDiagramPath) return;
+      if (diagramPathsEqual(path, activeDiagramPath)) return;
       void openDiagram(path);
     },
     [activeDiagramPath, openDiagram],
   );
 
+  /** Mode UI = type du fichier ouvert (évite onglet PlantUML + canvas draw.io). */
+  const effectiveMode: WorkshopMode = activeDiagramPath
+    ? kindToWorkshopMode(kindFromPath(activeDiagramPath))
+    : mode;
+
   const handleModeChange = useCallback(
     (next: WorkshopMode) => {
       const kind: DiagramKind =
         next === "uml" ? "drawio" : next === "plantuml" ? "plantuml" : "sketch";
+      const ofKind = diagrams.filter(
+        (d) => (d.kind ?? kindFromPath(d.path)) === kind,
+      );
       const currentKind = activeDiagramPath
         ? kindFromPath(activeDiagramPath)
         : null;
 
       if (currentKind === kind) {
+        // Déjà sur ce type : cycle vers le prochain onglet du même type
+        if (ofKind.length > 1 && activeDiagramPath) {
+          const idx = ofKind.findIndex((d) =>
+            diagramPathsEqual(d.path, activeDiagramPath),
+          );
+          const nextDiagram = ofKind[(idx + 1) % ofKind.length];
+          if (nextDiagram && !diagramPathsEqual(nextDiagram.path, activeDiagramPath)) {
+            void openDiagram(nextDiagram.path);
+            return;
+          }
+        }
         setMode(next);
         return;
       }
 
-      const match = diagrams.find(
-        (d) => (d.kind ?? kindFromPath(d.path)) === kind,
-      );
-      if (match) {
-        void openDiagram(match.path);
+      if (ofKind[0]) {
+        void openDiagram(ofKind[0].path);
         return;
       }
 
@@ -656,7 +672,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         projectPath={projectPath}
         theme={theme}
         themeError={themeError}
-        mode={mode}
+        mode={effectiveMode}
         focusMode={focusMode}
         onToggleFocusMode={() => {
           setFocusMode((prev) => {
@@ -688,7 +704,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
       />
       <div className="flex flex-1 min-h-0">
         <ModeRail
-          activeMode={mode}
+          activeMode={effectiveMode}
           onModeChange={(next) => {
             void handleModeChange(next);
           }}
@@ -696,7 +712,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         <CanvasArea
           projectPath={projectPath}
           theme={theme}
-          mode={mode}
+          mode={effectiveMode}
           focusMode={focusMode}
           layersOpen={layersOpen}
           onLayersOpenChange={setLayersOpen}

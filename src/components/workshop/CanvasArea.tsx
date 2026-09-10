@@ -161,11 +161,16 @@ export function CanvasArea({
       {viewKind === "drawio" ? (
         <div className="relative flex-1">
           <div className="absolute inset-0">
-            <DrawioEmbed initialXml={drawioXml} onXmlChange={onDrawioXmlChange} />
+            <DrawioEmbed
+              key={activeDiagramPath}
+              initialXml={drawioXml}
+              onXmlChange={onDrawioXmlChange}
+            />
           </div>
         </div>
       ) : viewKind === "plantuml" ? (
         <PlantUmlEditor
+          key={activeDiagramPath}
           source={plantumlSource ?? "@startuml\n@enduml\n"}
           scene={scene}
           focusMode={focusMode}
