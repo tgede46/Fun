@@ -2,6 +2,7 @@ use chrono::Utc;
 use serde::Serialize;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 use super::chunk::chunk_document;
 use super::scan::{collect_corpus, corpus_content_hash};
@@ -10,6 +11,8 @@ use super::types::{IndexManifest, StoredIndex, SCHEMA_VERSION};
 const FUN_DIR: &str = ".fun";
 const RAG_DIR: &str = "rag";
 const INDEX_FILE: &str = "index.json";
+
+static INDEX_LOCK: Mutex<()> = Mutex::new(());
 
 #[derive(Debug, Clone, Serialize)]
 pub struct RagIndexStatus {
@@ -38,7 +41,10 @@ pub fn write_stored_index(project_root: &Path, index: &StoredIndex) -> Result<()
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let path = index_path(project_root);
     let pretty = serde_json::to_string_pretty(index).map_err(|e| e.to_string())?;
-    fs::write(path, pretty).map_err(|e| e.to_string())
+    let tmp = path.with_extension("json.tmp");
+    fs::write(&tmp, &pretty).map_err(|e| e.to_string())?;
+    fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 pub fn is_index_stale(project_root: &Path, stored: &StoredIndex) -> bool {
@@ -52,9 +58,12 @@ pub fn is_index_stale(project_root: &Path, stored: &StoredIndex) -> bool {
 }
 
 pub fn rebuild_index(project_root: &Path) -> Result<StoredIndex, String> {
+    let _guard = INDEX_LOCK
+        .lock()
+        .map_err(|_| "Verrou index RAG empoisonné.".to_string())?;
+
     let docs = collect_corpus(project_root)?;
     let content_hash = corpus_content_hash(&docs);
-    let sources_indexed = docs.len();
 
     let mut chunks = Vec::new();
     for doc in &docs {
@@ -72,7 +81,6 @@ pub fn rebuild_index(project_root: &Path) -> Result<StoredIndex, String> {
     };
 
     write_stored_index(project_root, &index)?;
-    let _ = sources_indexed;
     Ok(index)
 }
 
@@ -136,6 +144,16 @@ mod tests {
         let first = rebuild_index(&root).unwrap();
         let second = load_or_rebuild(&root).unwrap();
         assert_eq!(first.manifest.content_hash, second.manifest.content_hash);
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn load_or_rebuild_rebuilds_when_stale() {
+        let root = tmp_project();
+        let first = rebuild_index(&root).unwrap();
+        fs::write(root.join("adr-note.md"), "# ADR nouvelle frontière tauri next\n").unwrap();
+        let second = load_or_rebuild(&root).unwrap();
+        assert_ne!(first.manifest.content_hash, second.manifest.content_hash);
         let _ = fs::remove_dir_all(&root);
     }
 }

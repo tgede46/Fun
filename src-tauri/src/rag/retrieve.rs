@@ -102,14 +102,16 @@ pub fn format_rag_section(chunks: &[RetrievedChunk]) -> String {
     for chunk in chunks {
         let header = format!("\n--- {} ---\n", chunk.path);
         let header_len = header.chars().count();
-        let remaining = MAX_RAG_CHARS.saturating_sub(used + header_len);
+        let suffix_budget = 12; // « … [tronqué] »
+        let remaining = MAX_RAG_CHARS.saturating_sub(used + header_len + suffix_budget);
         if remaining < 40 {
             break;
         }
         let body: String = chunk.text.chars().take(remaining).collect();
+        let truncated = body.chars().count() < chunk.text.chars().count();
         out.push_str(&header);
         out.push_str(&body);
-        if body.chars().count() < chunk.text.chars().count() {
+        if truncated {
             out.push_str("\n… [tronqué]");
         }
         out.push('\n');
@@ -117,6 +119,10 @@ pub fn format_rag_section(chunks: &[RetrievedChunk]) -> String {
         if used >= MAX_RAG_CHARS {
             break;
         }
+    }
+
+    if out.chars().count() > MAX_RAG_CHARS {
+        out = out.chars().take(MAX_RAG_CHARS).collect();
     }
 
     out
@@ -139,7 +145,7 @@ mod tests {
     use crate::rag::index::rebuild_index;
     use crate::rag::types::{Chunk, IndexManifest, SourceKind, StoredIndex};
     use std::fs;
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
     use std::time::{SystemTime, UNIX_EPOCH};
 
     fn tmp_project() -> PathBuf {
@@ -210,7 +216,7 @@ mod tests {
             score: 1.0,
         }];
         let section = format_rag_section(&chunks);
-        assert!(section.chars().count() <= MAX_RAG_CHARS + 80);
+        assert!(section.chars().count() <= MAX_RAG_CHARS);
         assert!(section.contains("Contexte architecture"));
     }
 
@@ -224,8 +230,57 @@ mod tests {
             "périmètre projet dossier fun architecture",
             TOP_K,
         );
-        // knowledge pack should match architecture terms
-        assert!(!hits.is_empty() || index.chunks.iter().any(|c| c.path.contains("knowledge")));
+        assert!(!hits.is_empty());
+        assert!(hits.iter().any(|h| h.path.contains("knowledge")));
+        let _ = fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn retrieve_respects_top_k() {
+        let mut chunks = Vec::new();
+        for i in 0..12 {
+            chunks.push(Chunk {
+                id: format!("{i}"),
+                path: format!("k{i}.md"),
+                kind: SourceKind::KnowledgePack,
+                text: format!("architecture logicielle tauri next frontieres patterns {i}"),
+            });
+        }
+        let index = StoredIndex {
+            manifest: IndexManifest {
+                schema_version: 1,
+                built_at: "now".into(),
+                content_hash: "x".into(),
+                chunk_count: chunks.len(),
+            },
+            chunks,
+        };
+        let hits = retrieve_for_query(&index, "architecture logicielle tauri patterns", TOP_K);
+        assert_eq!(hits.len(), TOP_K);
+    }
+
+    #[test]
+    fn ensure_index_fails_gracefully_on_bad_root() {
+        let hits = ensure_index_and_retrieve(
+            Path::new("/tmp/fun_rag_missing_dir_xyz"),
+            "architecture logicielle tauri",
+        );
+        assert!(hits.is_empty());
+    }
+
+    #[test]
+    fn prompt_seam_injects_architecture_section() {
+        let root = tmp_project();
+        let chunks = ensure_index_and_retrieve(&root, "frontière webview tauri openrouter");
+        assert!(!chunks.is_empty());
+        let prompt = crate::ai::personas::system_prompt(
+            crate::ai::intent::Persona::Assistant,
+            None,
+            &[],
+            false,
+            &chunks,
+        );
+        assert!(prompt.contains("Contexte architecture"));
         let _ = fs::remove_dir_all(&root);
     }
 

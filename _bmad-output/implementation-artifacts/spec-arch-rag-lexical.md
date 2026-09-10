@@ -2,7 +2,7 @@
 title: 'RAG lexical architecture — Chat + Trace + Claire'
 type: feature
 created: '2026-09-10'
-status: in-progress
+status: done
 review_loop_iteration: 0
 baseline_commit: '82c6c7d008920e7f52e1a3f67c6885c75bb3d763'
 context:
@@ -70,13 +70,13 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `src-tauri/src/rag/` -- Module lexical : chunker, index inverted, `retrieve(query, top_k)`, persist `.fun/rag/` -- cœur du RAG
-- [ ] `src-tauri/resources/knowledge/` -- Seed pack architecture (C4 + patterns + AD Fun distillés, FR) -- corpus B
-- [ ] `src-tauri/src/ai/personas.rs` -- Section « Contexte architecture » + cap chars ; Trace format intact -- injection
-- [ ] `src-tauri/src/ai/chat.rs` -- Appeler retrieve avant `system_prompt` pour Assistant/Trace/Claire -- câblage
-- [ ] `src-tauri/src/project/init.rs` + `ai_config`-like helpers -- Créer `.fun/rag/` ; rebuild stale -- cycle de vie
-- [ ] `src-tauri/src/commands.rs` + permissions -- `get_rag_index_status` + `rebuild_rag_index` (debug/ops) -- observabilité
-- [ ] `src-tauri/src/rag/` tests -- Couvrir matrice I/O (empty corpus, stale, top-k, truncate) -- vérif
+- [x] `src-tauri/src/rag/` -- Module lexical : chunker, index inverted, `retrieve(query, top_k)`, persist `.fun/rag/` -- cœur du RAG
+- [x] `src-tauri/resources/knowledge/` -- Seed pack architecture (C4 + patterns + AD Fun distillés, FR) -- corpus B
+- [x] `src-tauri/src/ai/personas.rs` -- Section « Contexte architecture » + cap chars ; Trace format intact -- injection
+- [x] `src-tauri/src/ai/chat.rs` -- Appeler retrieve avant `system_prompt` pour Assistant/Trace/Claire -- câblage
+- [x] `src-tauri/src/project/init.rs` + `ai_config`-like helpers -- Créer `.fun/rag/` ; rebuild stale -- cycle de vie
+- [x] `src-tauri/src/commands.rs` + permissions -- `get_rag_index_status` + `rebuild_rag_index` (debug/ops) -- observabilité
+- [x] `src-tauri/src/rag/` tests -- Couvrir matrice I/O (empty corpus, stale, top-k, truncate) -- vérif
 
 **Acceptance Criteria:**
 - Given un Projet indexé et une clé OpenRouter, when l’utilisateur envoie un message chat (Assistant, Trace ou Claire), then le prompt système inclut des extraits architecture/code pertinents (FR) sans casser le format Trace.
@@ -114,3 +114,37 @@ Contexte architecture (extrait Projet + knowledge Fun) :
 - Ouvrir un Projet, chatter « quelle est la frontière Tauri/Next ? » → réponse ancrée knowledge AD-1
 - Demander à Trace une modif canvas → bloc ```excalidraw-json toujours présent
 - Vérifier `.fun/rag/` créé ; aucune écriture hors `.fun/`
+
+## Suggested Review Order
+
+**Injection chat**
+
+- Point d'entrée : retrieve lexical avant chaque prompt système
+  [`chat.rs:93`](../../src-tauri/src/ai/chat.rs#L93)
+
+- Section RAG après persona, avant diagrammes (Trace prioritaire)
+  [`personas.rs:48`](../../src-tauri/src/ai/personas.rs#L48)
+
+**Cœur RAG**
+
+- Load/rebuild + top-k ; échec → chat sans RAG
+  [`retrieve.rs:132`](../../src-tauri/src/rag/retrieve.rs#L132)
+
+- Corpus knowledge + `.fun` + sources Projet
+  [`scan.rs:26`](../../src-tauri/src/rag/scan.rs#L26)
+
+- Écriture atomique `.fun/rag/index.json` sous verrou
+  [`index.rs:39`](../../src-tauri/src/rag/index.rs#L39)
+
+**Knowledge pack**
+
+- Docs architecture Fun embarqués (AD-1, C4, patterns)
+  [`knowledge.rs:10`](../../src-tauri/src/rag/knowledge.rs#L10)
+
+**Périphériques**
+
+- Dossiers `.fun/rag` + `.fun/knowledge` à l'init Projet
+  [`init.rs:99`](../../src-tauri/src/project/init.rs#L99)
+
+- Commands ops `get_rag_index_status` / `rebuild_rag_index`
+  [`commands.rs:542`](../../src-tauri/src/commands.rs#L542)

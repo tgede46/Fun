@@ -7,6 +7,7 @@ use super::types::SourceKind;
 const FUN_DIR: &str = ".fun";
 const MAX_SOURCE_FILES: usize = 40;
 const MAX_BYTES_PER_FILE: usize = 8_000;
+const MAX_OVERLAY_DOCS: usize = 100;
 
 const SOURCE_EXTENSIONS: &[&str] = &[
     "rs", "ts", "tsx", "js", "jsx", "py", "java", "go", "kt", "cs", "cpp", "c", "h", "rb",
@@ -42,6 +43,7 @@ pub fn collect_corpus(project_root: &Path) -> Result<Vec<ScannedDoc>, String> {
     // Overlay `.fun/knowledge/`
     let user_knowledge = project_root.join(FUN_DIR).join("knowledge");
     if user_knowledge.is_dir() {
+        let before = docs.len();
         collect_tree(
             project_root,
             &user_knowledge,
@@ -49,6 +51,9 @@ pub fn collect_corpus(project_root: &Path) -> Result<Vec<ScannedDoc>, String> {
             &mut docs,
             true,
         )?;
+        if docs.len() - before > MAX_OVERLAY_DOCS {
+            docs.truncate(before + MAX_OVERLAY_DOCS);
+        }
     }
 
     // Artefacts `.fun/` (diagrammes, settings, ai) — pas le cache rag
@@ -71,7 +76,10 @@ pub fn collect_corpus(project_root: &Path) -> Result<Vec<ScannedDoc>, String> {
             .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
             .map(|d| d.as_secs())
             .unwrap_or(0);
-        let content = fs::read_to_string(&path).unwrap_or_default();
+        let content = match fs::read_to_string(&path) {
+            Ok(c) if !c.trim().is_empty() => c,
+            _ => continue,
+        };
         let rel = path
             .strip_prefix(project_root)
             .unwrap_or(&path)
@@ -96,10 +104,7 @@ pub fn corpus_content_hash(docs: &[ScannedDoc]) -> String {
         doc.path.hash(&mut hasher);
         doc.kind.as_str().hash(&mut hasher);
         doc.mtime_secs.hash(&mut hasher);
-        doc.text.len().hash(&mut hasher);
-        // Échantillon pour détecter changements sans hasher tout le texte
-        let sample: String = doc.text.chars().take(64).collect();
-        sample.hash(&mut hasher);
+        doc.text.hash(&mut hasher);
     }
     format!("{:x}", hasher.finish())
 }
@@ -176,6 +181,11 @@ fn collect_tree(
 }
 
 fn push_file(project_root: &Path, path: &Path, kind: SourceKind, out: &mut Vec<ScannedDoc>) {
+    if out.iter().filter(|d| d.kind == kind).count() >= MAX_OVERLAY_DOCS
+        && matches!(kind, SourceKind::FunArtifact | SourceKind::UserKnowledge)
+    {
+        return;
+    }
     let meta = fs::metadata(path).ok();
     let mtime = meta
         .as_ref()
@@ -183,7 +193,10 @@ fn push_file(project_root: &Path, path: &Path, kind: SourceKind, out: &mut Vec<S
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let content = fs::read_to_string(path).unwrap_or_default();
+    let content = match fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
     if content.trim().is_empty() {
         return;
     }
@@ -211,7 +224,20 @@ fn collect_sources(
         let name = entry.file_name().to_string_lossy().to_string();
 
         if path.is_dir() {
-            if name == FUN_DIR || name.starts_with('.') || name == "node_modules" || name == "target"
+            if name == FUN_DIR
+                || name.starts_with('.')
+                || matches!(
+                    name.as_str(),
+                    "node_modules" | "target" | "dist" | "build" | "vendor"
+                )
+            {
+                continue;
+            }
+            // Éviter les cycles de symlinks
+            if path
+                .symlink_metadata()
+                .ok()
+                .is_some_and(|m| m.file_type().is_symlink())
             {
                 continue;
             }
@@ -219,11 +245,14 @@ fn collect_sources(
             continue;
         }
 
-        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-        if !SOURCE_EXTENSIONS.contains(&ext) {
+        let ext = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if !SOURCE_EXTENSIONS.contains(&ext.as_str()) {
             continue;
         }
-        // md/json/toml projet hors .fun : utile pour ADR utilisateur à la racine
         let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
         out.push((path, size));
     }

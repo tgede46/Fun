@@ -7,6 +7,6 @@ mod retrieve;
 mod scan;
 mod types;
 
-pub use index::{get_index_status, rebuild_index, RagIndexStatus};
+pub use index::{get_index_status, rebuild_index};
 pub use retrieve::{ensure_index_and_retrieve, format_rag_section};
 pub use types::{RetrievedChunk, SourceKind};
