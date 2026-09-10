@@ -33,6 +33,8 @@
     "allow-set-pomodoro-durations",
     "allow-notify-pomodoro-phase",
     "allow-notify-chat-complete",
-    "allow-run-benchmark"
+    "allow-run-benchmark",
+    "allow-get-rag-index-status",
+    "allow-rebuild-rag-index"
   ]
 }
