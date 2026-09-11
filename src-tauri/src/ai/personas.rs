@@ -81,7 +81,8 @@ fn truncate_diagram(content: &str, max_chars: usize) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rag::{RetrievedChunk, SourceKind};
+    use crate::rag::types::SourceKind;
+    use crate::rag::RetrievedChunk;
     use crate::ai::intent::Persona;
 
     #[test]
