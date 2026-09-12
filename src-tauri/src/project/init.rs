@@ -96,6 +96,16 @@ pub fn ensure_fun_structure(project_root: &Path) -> Result<bool, String> {
         fs::create_dir_all(&diagrams).map_err(|e| e.to_string())?;
     }
 
+    // Cache RAG lexical + overlay knowledge utilisateur
+    let rag = fun_path.join("rag");
+    if !rag.exists() {
+        fs::create_dir_all(&rag).map_err(|e| e.to_string())?;
+    }
+    let knowledge = fun_path.join("knowledge");
+    if !knowledge.exists() {
+        fs::create_dir_all(&knowledge).map_err(|e| e.to_string())?;
+    }
+
     write_if_missing(
         &fun_path.join("project.json"),
         &default_project_json(project_root)?,

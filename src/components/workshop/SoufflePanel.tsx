@@ -126,174 +126,186 @@ export function SoufflePanel({
         </button>
       </header>
 
-      <main className="mx-auto flex w-full max-w-lg flex-1 flex-col gap-6 overflow-y-auto px-6 pb-10 pt-8">
-        <div className="rounded-2xl border border-border bg-card/90 px-8 py-8 text-center shadow-sm backdrop-blur-sm">
-          <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-            {timerLabel}
-          </p>
-          <p className="font-mono text-5xl tracking-tight text-foreground tabular-nums">
-            {timerDisplay}
-          </p>
-          {isRunning ? (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Le chrono tourne — ferme cette page pour le voir flotter dans l&apos;atelier.
+      {/* Scroll pleine largeur : évite la barre claire collée au bord de la colonne max-w-lg */}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent]">
+        <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-6 pb-10 pt-8">
+          <div className="rounded-2xl border border-border bg-card/90 px-8 py-8 text-center shadow-sm backdrop-blur-sm">
+            <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              {timerLabel}
             </p>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Les durées seront enregistrées au démarrage.
+            <p className="font-mono text-5xl tracking-tight text-foreground tabular-nums">
+              {timerDisplay}
             </p>
+            {isRunning ? (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Le chrono tourne — ferme cette page pour le voir flotter dans
+                l&apos;atelier.
+              </p>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground">
+                Les durées seront enregistrées au démarrage.
+              </p>
+            )}
+          </div>
+
+          {!isRunning && (
+            <div className="flex gap-2">
+              {[
+                { label: "25 / 5", work: 25, brk: 5 },
+                { label: "50 / 10", work: 50, brk: 10 },
+                { label: "90 / 15", work: 90, brk: 15 },
+              ].map((preset) => (
+                <button
+                  key={preset.label}
+                  type="button"
+                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
+                    workMinutes === preset.work && breakMinutes === preset.brk
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                  }`}
+                  onClick={() => {
+                    onWorkChange(preset.work);
+                    onBreakChange(preset.brk);
+                  }}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
           )}
-        </div>
 
-        {!isRunning && (
-          <div className="flex gap-2">
-            {[
-              { label: "25 / 5", work: 25, brk: 5 },
-              { label: "50 / 10", work: 50, brk: 10 },
-              { label: "90 / 15", work: 90, brk: 15 },
-            ].map((preset) => (
-              <button
-                key={preset.label}
-                type="button"
-                className={`flex-1 rounded-xl border px-3 py-2 text-sm font-medium transition-colors ${
-                  workMinutes === preset.work && breakMinutes === preset.brk
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                }`}
-                onClick={() => {
-                  onWorkChange(preset.work);
-                  onBreakChange(preset.brk);
-                }}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted-foreground">Travail (min)</span>
-            <input
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 font-mono text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              type="number"
-              min={1}
-              max={180}
-              value={workMinutes}
-              disabled={isRunning}
-              onChange={(e) => onWorkChange(Number(e.target.value))}
-            />
-          </label>
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted-foreground">Pause (min)</span>
-            <input
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 font-mono text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              type="number"
-              min={1}
-              max={60}
-              value={breakMinutes}
-              disabled={isRunning}
-              onChange={(e) => onBreakChange(Number(e.target.value))}
-            />
-          </label>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card/90 p-5 space-y-4 backdrop-blur-sm">
-          <div>
-            <p className="text-sm font-medium text-foreground">Ambiance lofi</p>
-            <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-              Musique et scène visuelle légère au démarrage de la phase travail.
-              Tu peux masquer la scène dans l’atelier sans couper le chrono.
-            </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-muted-foreground">Travail (min)</span>
+              <input
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 font-mono text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                type="number"
+                min={1}
+                max={180}
+                value={workMinutes}
+                disabled={isRunning}
+                onChange={(e) => onWorkChange(Number(e.target.value))}
+              />
+            </label>
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-muted-foreground">Pause (min)</span>
+              <input
+                className="w-full rounded-xl border border-border bg-card px-4 py-3 font-mono text-base text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                type="number"
+                min={1}
+                max={60}
+                value={breakMinutes}
+                disabled={isRunning}
+                onChange={(e) => onBreakChange(Number(e.target.value))}
+              />
+            </label>
           </div>
 
-          <div
-            className="relative h-20 overflow-hidden rounded-xl border border-border/60"
-            aria-hidden
-          >
-            <div
-              className="absolute inset-0 opacity-80"
-              style={{ background: LOFI_SCENE_BACKGROUND }}
-            />
-            <p className="absolute bottom-2 left-3 text-[11px] font-medium text-foreground/80">
-              Aperçu de la scène
-            </p>
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm text-foreground">Muet</span>
-            <LofiToggle
-              checked={lofiMuted}
-              onChange={onLofiMutedChange}
-              label="Couper l'ambiance sonore"
-            />
-          </div>
-
-          <div className="flex items-center justify-between gap-3">
+          <div className="space-y-4 rounded-2xl border border-border bg-card/90 p-5 backdrop-blur-sm">
             <div>
-              <span className="text-sm text-foreground">Mode compact</span>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Barre de progression en bas du canvas
+              <p className="text-sm font-medium text-foreground">Ambiance lofi</p>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Musique et scène visuelle légère au démarrage de la phase
+                travail. Tu peux masquer la scène dans l’atelier sans couper le
+                chrono.
               </p>
             </div>
-            <LofiToggle
-              checked={compactMode}
-              onChange={onCompactModeChange}
-              label="Activer le mode compact"
-            />
+
+            <div
+              className="relative h-24 overflow-hidden rounded-xl border border-border/60 bg-[#1a1814]"
+              aria-hidden
+            >
+              <div
+                className="absolute inset-0"
+                style={{ background: LOFI_SCENE_BACKGROUND }}
+              />
+              <div
+                className="absolute inset-0 opacity-50"
+                style={{
+                  background:
+                    "radial-gradient(circle at 30% 70%, rgba(180,140,90,0.45), transparent 45%), radial-gradient(circle at 75% 25%, rgba(80,120,140,0.4), transparent 40%)",
+                }}
+              />
+              <p className="absolute bottom-2 left-3 text-[11px] font-medium text-foreground/90">
+                Aperçu de la scène
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-sm text-foreground">Muet</span>
+              <LofiToggle
+                checked={lofiMuted}
+                onChange={onLofiMutedChange}
+                label="Couper l'ambiance sonore"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <span className="text-sm text-foreground">Mode compact</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Barre de progression en bas du canvas
+                </p>
+              </div>
+              <LofiToggle
+                checked={compactMode}
+                onChange={onCompactModeChange}
+                label="Activer le mode compact"
+              />
+            </div>
+
+            <label className="flex flex-col gap-2">
+              <span className="text-sm text-muted-foreground">
+                Volume ({lofiVolume}%)
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={lofiVolume}
+                disabled={lofiMuted}
+                onChange={(e) => onLofiVolumeChange(Number(e.target.value))}
+                className="h-2 w-full cursor-pointer accent-primary disabled:opacity-40"
+              />
+            </label>
           </div>
 
-          <label className="flex flex-col gap-2">
-            <span className="text-sm text-muted-foreground">
-              Volume ({lofiVolume}%)
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={lofiVolume}
-              disabled={lofiMuted}
-              onChange={(e) => onLofiVolumeChange(Number(e.target.value))}
-              className="h-2 w-full cursor-pointer accent-primary disabled:opacity-40"
-            />
-          </label>
-        </div>
+          {saveError ? (
+            <p className="text-sm text-destructive" role="status">
+              {saveError}
+            </p>
+          ) : null}
 
-        {saveError ? (
-          <p className="text-sm text-destructive" role="status">
-            {saveError}
-          </p>
-        ) : null}
-
-        <div className="flex flex-col gap-3">
-          {!isRunning ? (
-            <>
+          <div className="flex flex-col gap-3">
+            {!isRunning ? (
+              <>
+                <button
+                  className="w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  type="button"
+                  onClick={() => void onStart()}
+                >
+                  Démarrer
+                </button>
+                <button
+                  className="w-full rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+                  type="button"
+                  onClick={() => void onSaveConfig()}
+                >
+                  Enregistrer sans démarrer
+                </button>
+              </>
+            ) : (
               <button
-                className="w-full rounded-xl bg-primary px-4 py-3.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                className="w-full rounded-xl border border-border px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
                 type="button"
-                onClick={() => void onStart()}
+                onClick={onStop}
               >
-                Démarrer
+                Arrêter le chrono
               </button>
-              <button
-                className="w-full rounded-xl border border-border px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-                type="button"
-                onClick={() => void onSaveConfig()}
-              >
-                Enregistrer sans démarrer
-              </button>
-            </>
-          ) : (
-            <button
-              className="w-full rounded-xl border border-border px-4 py-3.5 text-sm font-medium text-foreground transition-colors hover:bg-accent/50"
-              type="button"
-              onClick={onStop}
-            >
-              Arrêter le chrono
-            </button>
-          )}
-        </div>
-      </main>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

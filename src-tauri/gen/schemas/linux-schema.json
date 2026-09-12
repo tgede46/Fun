@@ -447,6 +447,12 @@
           "markdownDescription": "Lit les paramètres du projet."
         },
         {
+          "description": "Lit le statut de l'index RAG lexical du projet.",
+          "type": "string",
+          "const": "allow-get-rag-index-status",
+          "markdownDescription": "Lit le statut de l'index RAG lexical du projet."
+        },
+        {
           "description": "Charge la liste des projets récents.",
           "type": "string",
           "const": "allow-get-recent-projects",
@@ -493,6 +499,12 @@
           "type": "string",
           "const": "allow-pick-project-parent-folder",
           "markdownDescription": "Choisit l'emplacement d'un nouveau projet."
+        },
+        {
+          "description": "Reconstruit l'index RAG lexical sous `.fun/rag/`.",
+          "type": "string",
+          "const": "allow-rebuild-rag-index",
+          "markdownDescription": "Reconstruit l'index RAG lexical sous `.fun/rag/`."
         },
         {
           "description": "Réinitialise le diagramme courant.",

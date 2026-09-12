@@ -104,7 +104,7 @@ export function PlantUmlEditor({
       const next = plantumlToFunScene(source, { sourceFormat: "plantuml" });
       if (next.objects.length === 0) {
         setError(
-          "Aucune entité reconnue. Exemple :\n@startuml\nclass A\nclass B\nA --> B\n@enduml",
+          "Aucune entité reconnue.\nClasses : class A / class B / A --> B\nActivité : start / :Action; / if (...) / stop",
         );
         return;
       }

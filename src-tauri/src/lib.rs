@@ -2,6 +2,7 @@ mod ai;
 mod commands;
 mod notify;
 mod project;
+mod rag;
 mod recent;
 mod state;
 
@@ -54,6 +55,8 @@ pub fn run() {
             commands::generate_diagram_from_code,
             commands::generate_diagram_from_image,
             commands::run_benchmark,
+            commands::get_rag_index_status,
+            commands::rebuild_rag_index,
             notify::notify_pomodoro_phase,
             notify::notify_chat_complete,
             notify::set_pomodoro_durations,

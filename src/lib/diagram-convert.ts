@@ -12,6 +12,19 @@ export function kindFromPath(path: string): DiagramKind {
   return "sketch";
 }
 
+/** Compare deux chemins diagramme (Windows / Linux). */
+export function diagramPathsEqual(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "");
+  return norm(a) === norm(b);
+}
+
+export function kindToWorkshopMode(kind: DiagramKind): "sketch" | "uml" | "plantuml" {
+  if (kind === "drawio") return "uml";
+  if (kind === "plantuml") return "plantuml";
+  return "sketch";
+}
+
 export function sceneFromContent(kind: DiagramKind, content: string): FunScene {
   switch (kind) {
     case "drawio":

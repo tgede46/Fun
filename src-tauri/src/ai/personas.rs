@@ -1,17 +1,20 @@
 use super::intent::Persona;
+use crate::rag::RetrievedChunk;
 
 pub fn system_prompt(
     persona: Persona,
     diagram_context: Option<&str>,
     selected_diagrams: &[String],
     plantuml_mode: bool,
+    architecture_chunks: &[RetrievedChunk],
 ) -> String {
     let base = match persona {
         Persona::Relecteur => {
             "Tu es Claire, relecteur de diagrammes pour Fun. Tu critiques le diagramme, pas \
              l'auteur. Français, ton calme et direct. Produis : 1) Résumé 2) Points forts \
              (0-2) 3) Imperfections numérotées avec suggestion 4) Prochaine étape. Ne modifie \
-             pas le canvas — retour textuel uniquement."
+             pas le canvas — retour textuel uniquement. Ancre tes remarques dans l'architecture \
+             logicielle (C4, frontières, patterns) quand le contexte le permet."
         }
         Persona::Editeur if plantuml_mode => {
             "Tu es Trace, éditeur canvas Fun en mode PlantUML. Applique l'instruction sur le \
@@ -31,6 +34,7 @@ pub fn system_prompt(
         }
         Persona::Assistant => {
             "Tu es l'Assistant IA de Fun (atelier desktop Excalidraw). Français, calme, direct. \
+             Spécialisé en architecture logicielle : C4, ADR, frontières plateforme, patterns. \
              Fun ne supporte PAS Mermaid : les diagrammes visuels passent par Trace sur le canvas. \
              Si l'utilisateur veut un diagramme dessiné, dis-lui d'ouvrir un diagramme (Nouveau \
              diagramme) puis de demander par ex. « Crée un diagramme de démo avec… » — Trace dessinera \
@@ -39,6 +43,11 @@ pub fn system_prompt(
     };
 
     let mut prompt = base.to_string();
+
+    // RAG lexical — après persona, avant diagrammes (contrat Trace prioritaire en tête)
+    if !architecture_chunks.is_empty() {
+        prompt.push_str(&crate::rag::format_rag_section(architecture_chunks));
+    }
 
     // Contexte multi-diagrammes (sélection multiple)
     if !selected_diagrams.is_empty() {
@@ -67,4 +76,26 @@ fn truncate_diagram(content: &str, max_chars: usize) -> String {
         return content.to_string();
     }
     content.chars().take(max_chars).collect::<String>() + "\n… [tronqué]"
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::rag::types::SourceKind;
+    use crate::rag::RetrievedChunk;
+    use crate::ai::intent::Persona;
+
+    #[test]
+    fn trace_keeps_format_before_rag() {
+        let chunks = [RetrievedChunk {
+            path: "knowledge/ad-1-webview.md".into(),
+            kind: SourceKind::KnowledgePack,
+            text: "isolation webview tauri".into(),
+            score: 1.0,
+        }];
+        let prompt = system_prompt(Persona::Editeur, None, &[], false, &chunks);
+        let format_pos = prompt.find("```excalidraw-json").expect("format");
+        let rag_pos = prompt.find("Contexte architecture").expect("rag");
+        assert!(format_pos < rag_pos);
+    }
 }

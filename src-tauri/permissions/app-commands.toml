@@ -132,3 +132,13 @@ commands.allow = ["is_permission_granted"]
 identifier = "allow-run-benchmark"
 description = "Lance le benchmark IA et met à jour le modèle actif."
 commands.allow = ["run_benchmark"]
+
+[[permission]]
+identifier = "allow-get-rag-index-status"
+description = "Lit le statut de l'index RAG lexical du projet."
+commands.allow = ["get_rag_index_status"]
+
+[[permission]]
+identifier = "allow-rebuild-rag-index"
+description = "Reconstruit l'index RAG lexical sous `.fun/rag/`."
+commands.allow = ["rebuild_rag_index"]

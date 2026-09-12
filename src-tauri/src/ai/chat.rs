@@ -90,11 +90,15 @@ pub async fn send_chat(
         .and_then(|e| e.to_str())
         == Some("puml");
 
+    let architecture_chunks =
+        crate::rag::ensure_index_and_retrieve(project_path, user_message);
+
     let system = system_prompt(
         persona,
         effective_content.as_deref(),
         &selected_diagram_contents,
         plantuml_mode,
+        &architecture_chunks,
     );
     let mut messages: Vec<ChatMessage<'_>> = vec![ChatMessage::text("system", &system)];
 
@@ -352,7 +356,6 @@ mod tests {
         assert!(json.is_none());
     }
 
-    #[test]
     #[test]
     fn parse_editeur_extracts_plantuml_fence() {
         let raw = "Voici.\n```plantuml\n@startuml\nA --> B\n@enduml\n```";

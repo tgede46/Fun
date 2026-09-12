@@ -531,6 +531,38 @@ pub struct RunBenchmarkResult {
     pub scores: std::collections::HashMap<String, ai::ModelScore>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct RagIndexStatusResult {
+    pub built_at: String,
+    pub stale: bool,
+    pub chunk_count: usize,
+    pub sources_indexed: usize,
+}
+
+#[tauri::command]
+pub fn get_rag_index_status(project_path: String) -> Result<RagIndexStatusResult, String> {
+    let status = crate::rag::get_index_status(PathBuf::from(project_path).as_path())?;
+    Ok(RagIndexStatusResult {
+        built_at: status.built_at,
+        stale: status.stale,
+        chunk_count: status.chunk_count,
+        sources_indexed: status.sources_indexed,
+    })
+}
+
+#[tauri::command]
+pub fn rebuild_rag_index(project_path: String) -> Result<RagIndexStatusResult, String> {
+    let root = PathBuf::from(&project_path);
+    crate::rag::rebuild_index(root.as_path())?;
+    let status = crate::rag::get_index_status(root.as_path())?;
+    Ok(RagIndexStatusResult {
+        built_at: status.built_at,
+        stale: status.stale,
+        chunk_count: status.chunk_count,
+        sources_indexed: status.sources_indexed,
+    })
+}
+
 #[tauri::command]
 pub async fn run_benchmark(project_path: String) -> Result<RunBenchmarkResult, String> {
     let api_key = ai::load_api_key()?.ok_or("Clé OpenRouter non configurée.")?;
