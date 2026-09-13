@@ -10,9 +10,12 @@ import {
 import { useLofiAmbient } from "@/hooks/useLofiAmbient";
 import {
   getProjectSettings,
+  parseTimerDisplay,
   setCompanionPosition,
   setLofiPrefs,
+  setTimerDisplay,
   type CompanionPosition,
+  type TimerDisplayStyle,
 } from "@/lib/settings";
 import type { PomodoroPhase } from "@/lib/pomodoro";
 import { ChatOverlay } from "./ChatOverlay";
@@ -80,6 +83,7 @@ export function FloatingCompanionsHost({
   const [chatUnread, setChatUnread] = useState(false);
   const [lofiMuted, setLofiMuted] = useState(false);
   const [lofiVolume, setLofiVolume] = useState(40);
+  const [timerStyle, setTimerStyle] = useState<TimerDisplayStyle>("ring_time");
   const [sceneDismissedGen, setSceneDismissedGen] = useState<number | null>(null);
   const wasLoadingRef = useRef(false);
 
@@ -111,6 +115,7 @@ export function FloatingCompanionsHost({
         setPomoPos(clampCompanionPosition(pomo.x, pomo.y, 116, layoutOptions));
         setLofiMuted(settings.lofi_muted ?? false);
         setLofiVolume(settings.lofi_volume ?? 40);
+        setTimerStyle(parseTimerDisplay(settings.timer_display));
       } catch {
         // Defaults already applied.
       }
@@ -169,6 +174,18 @@ export function FloatingCompanionsHost({
     [projectPath],
   );
 
+  const persistTimerStyle = useCallback(
+    async (style: TimerDisplayStyle) => {
+      setTimerStyle(style);
+      try {
+        await setTimerDisplay(projectPath, style);
+      } catch {
+        // keep local
+      }
+    },
+    [projectPath],
+  );
+
   const chatThinking = chat.loading && !chatOpen;
   const chatBadge = chatUnread || (!!chat.chatError && !chatOpen);
 
@@ -218,6 +235,7 @@ export function FloatingCompanionsHost({
         }
         liveLabel={pomodoro.isRunning ? pomodoro.timerDisplay : undefined}
         progress={pomodoro.isRunning ? pomoProgress : undefined}
+        timerStyle={timerStyle}
         pulsing={pomodoro.isRunning}
         layoutOptions={layoutOptions}
         onPositionChange={(next) => {
@@ -252,6 +270,7 @@ export function FloatingCompanionsHost({
         lofiMuted={lofiMuted}
         lofiVolume={lofiVolume}
         compactMode={pomodoro.compactMode}
+        timerStyle={timerStyle}
         onClose={() => pomodoro.setConfigOpen(false)}
         onWorkChange={pomodoro.setWorkMinutes}
         onBreakChange={pomodoro.setBreakMinutes}
@@ -267,6 +286,9 @@ export function FloatingCompanionsHost({
           void persistLofi(lofiMuted, volume);
         }}
         onCompactModeChange={pomodoro.setCompactMode}
+        onTimerStyleChange={(style) => {
+          void persistTimerStyle(style);
+        }}
       />
 
       <LofiSceneOverlay

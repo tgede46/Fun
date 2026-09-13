@@ -47,6 +47,7 @@ pub struct ProjectSettingsResult {
     pub companion_pomo: Option<CompanionPositionResult>,
     pub lofi_muted: bool,
     pub lofi_volume: u8,
+    pub timer_display: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -98,6 +99,7 @@ pub fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
         companion_pomo: companion_to_result(settings.companion_pomo),
         lofi_muted: settings.lofi_muted,
         lofi_volume: settings.lofi_volume,
+        timer_display: settings.timer_display,
     }
 }
 
@@ -406,6 +408,16 @@ pub fn set_lofi_prefs(
 ) -> Result<ProjectSettingsResult, String> {
     let project_root = PathBuf::from(&project_path);
     let updated = settings::set_lofi_prefs(project_root.as_path(), muted, volume)?;
+    Ok(settings_to_result(updated))
+}
+
+#[tauri::command]
+pub fn set_timer_display(
+    project_path: String,
+    timer_display: String,
+) -> Result<ProjectSettingsResult, String> {
+    let project_root = PathBuf::from(&project_path);
+    let updated = settings::set_timer_display(project_root.as_path(), &timer_display)?;
     Ok(settings_to_result(updated))
 }
 

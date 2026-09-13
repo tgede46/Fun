@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { LOFI_PAGE_WASH, LOFI_SCENE_BACKGROUND } from "@/lib/lofi-scene";
+import {
+  TIMER_DISPLAY_OPTIONS,
+  type TimerDisplayStyle,
+} from "@/lib/settings";
 
 type SoufflePanelProps = {
   open: boolean;
@@ -14,6 +18,7 @@ type SoufflePanelProps = {
   lofiMuted: boolean;
   lofiVolume: number;
   compactMode: boolean;
+  timerStyle: TimerDisplayStyle;
   onClose: () => void;
   onWorkChange: (value: number) => void;
   onBreakChange: (value: number) => void;
@@ -23,6 +28,7 @@ type SoufflePanelProps = {
   onLofiMutedChange: (muted: boolean) => void;
   onLofiVolumeChange: (volume: number) => void;
   onCompactModeChange: (compact: boolean) => void;
+  onTimerStyleChange: (style: TimerDisplayStyle) => void;
 };
 
 function LofiToggle({
@@ -54,6 +60,56 @@ function LofiToggle({
   );
 }
 
+function TimerStylePreview({
+  style,
+  selected,
+}: {
+  style: TimerDisplayStyle;
+  selected: boolean;
+}) {
+  const ring = (
+    <span
+      className={`absolute inset-0 rounded-full border-2 ${
+        selected ? "border-primary" : "border-border"
+      }`}
+      style={{
+        clipPath: "polygon(50% 0%, 100% 0%, 100% 100%, 50% 100%)",
+      }}
+    />
+  );
+
+  if (style === "pill") {
+    return (
+      <span
+        className={`flex h-8 w-16 items-center justify-center gap-1 rounded-full border text-[10px] ${
+          selected ? "border-primary bg-primary/15" : "border-border bg-background/60"
+        }`}
+      >
+        <span aria-hidden>🍅</span>
+        <span className="font-mono tabular-nums">24:18</span>
+      </span>
+    );
+  }
+
+  if (style === "ring_tomato") {
+    return (
+      <span className="relative flex h-10 w-10 items-center justify-center">
+        {ring}
+        <span className="relative text-base" aria-hidden>
+          🍅
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="relative flex h-10 w-10 items-center justify-center">
+      {ring}
+      <span className="relative font-mono text-[9px] tabular-nums">24:18</span>
+    </span>
+  );
+}
+
 export function SoufflePanel({
   open,
   timerLabel,
@@ -65,6 +121,7 @@ export function SoufflePanel({
   lofiMuted,
   lofiVolume,
   compactMode,
+  timerStyle,
   onClose,
   onWorkChange,
   onBreakChange,
@@ -74,6 +131,7 @@ export function SoufflePanel({
   onLofiMutedChange,
   onLofiVolumeChange,
   onCompactModeChange,
+  onTimerStyleChange,
 }: SoufflePanelProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -275,6 +333,43 @@ export function SoufflePanel({
               {saveError}
             </p>
           ) : null}
+
+          {!isRunning && (
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">
+                  Affichage du compteur
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Choisis comment le chrono apparaît dans l’atelier.
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {TIMER_DISPLAY_OPTIONS.map((option) => {
+                  const selected = timerStyle === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      aria-pressed={selected}
+                      className={`flex flex-col items-center gap-2 rounded-xl border px-2 py-3 text-center transition-colors ${
+                        selected
+                          ? "border-primary bg-primary/10 text-foreground"
+                          : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                      }`}
+                      onClick={() => onTimerStyleChange(option.id)}
+                    >
+                      <TimerStylePreview style={option.id} selected={selected} />
+                      <span className="text-xs font-medium">{option.label}</span>
+                      <span className="text-[10px] leading-tight text-muted-foreground">
+                        {option.hint}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           <div className="flex flex-col gap-3">
             {!isRunning ? (

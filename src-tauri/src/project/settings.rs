@@ -74,6 +74,9 @@ pub struct ProjectSettings {
     pub lofi_muted: bool,
     #[serde(default = "default_lofi_volume")]
     pub lofi_volume: u8,
+    /// Affichage du compteur flottant : ring_time | ring_tomato | pill
+    #[serde(default = "default_timer_display")]
+    pub timer_display: String,
 }
 
 fn default_lofi_muted() -> bool {
@@ -82,6 +85,10 @@ fn default_lofi_muted() -> bool {
 
 fn default_lofi_volume() -> u8 {
     40
+}
+
+fn default_timer_display() -> String {
+    "ring_time".to_string()
 }
 
 impl Default for ProjectSettings {
@@ -95,6 +102,7 @@ impl Default for ProjectSettings {
             companion_pomo: None,
             lofi_muted: false,
             lofi_volume: 40,
+            timer_display: default_timer_display(),
         }
     }
 }
@@ -185,6 +193,20 @@ pub fn set_lofi_prefs(
     Ok(settings)
 }
 
+pub fn set_timer_display(
+    project_root: &Path,
+    timer_display: &str,
+) -> Result<ProjectSettings, String> {
+    let normalized = match timer_display {
+        "ring_time" | "ring_tomato" | "pill" => timer_display.to_string(),
+        _ => return Err("Style de compteur invalide.".to_string()),
+    };
+    let mut settings = read_settings(project_root)?;
+    settings.timer_display = normalized;
+    write_settings(project_root, &settings)?;
+    Ok(settings)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -247,6 +269,18 @@ mod tests {
             reloaded.companion_chat,
             Some(CompanionPosition { x: 120, y: 340 })
         );
+
+        let _ = fs::remove_dir_all(project);
+    }
+
+    #[test]
+    fn set_timer_display_persists() {
+        let project = temp_project();
+        let updated = set_timer_display(&project, "pill").expect("set");
+        assert_eq!(updated.timer_display, "pill");
+
+        let reloaded = read_settings(&project).expect("reload");
+        assert_eq!(reloaded.timer_display, "pill");
 
         let _ = fs::remove_dir_all(project);
     }
