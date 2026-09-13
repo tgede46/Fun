@@ -555,6 +555,12 @@
           "markdownDescription": "Persiste le thème atelier dans settings.json."
         },
         {
+          "description": "Persiste le style d'affichage du compteur Souffle.",
+          "type": "string",
+          "const": "allow-set-timer-display",
+          "markdownDescription": "Persiste le style d'affichage du compteur Souffle."
+        },
+        {
           "description": "Vérifier l'état de permission de notification.",
           "type": "string",
           "const": "notification:allow-is-permission-granted",

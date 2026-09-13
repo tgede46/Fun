@@ -48,6 +48,7 @@ pub fn run() {
             commands::set_custom_colors,
             commands::set_companion_position,
             commands::set_lofi_prefs,
+            commands::set_timer_display,
             commands::get_openrouter_key_configured,
             commands::get_ai_status,
             commands::send_chat_message,
