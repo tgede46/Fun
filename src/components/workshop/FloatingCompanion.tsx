@@ -32,7 +32,9 @@ type FloatingCompanionProps = {
   progress?: number;
   /** Style du compteur pendant un run (défaut ring_time). */
   timerStyle?: TimerDisplayStyle;
+  /** Badge done (primary) ou error (destructive). */
   badge?: boolean;
+  badgeTone?: "primary" | "destructive";
   pulsing?: boolean;
   layoutOptions: CompanionLayoutOptions;
 };
@@ -91,6 +93,7 @@ export function FloatingCompanion({
   progress,
   timerStyle = "ring_time",
   badge = false,
+  badgeTone = "primary",
   pulsing = false,
   layoutOptions,
 }: FloatingCompanionProps) {
@@ -242,6 +245,17 @@ export function FloatingCompanion({
   };
 
   const pulseClass = pulsing ? "animate-pulse ring-2 ring-primary/40" : "";
+  const errorRing =
+    badge && badgeTone === "destructive" ? "ring-2 ring-destructive/70" : "";
+  const badgeClass =
+    badgeTone === "destructive" ? "bg-destructive" : "bg-primary";
+
+  const BadgeDot = badge ? (
+    <span
+      className={`absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full ${badgeClass}`}
+      aria-hidden
+    />
+  ) : null;
 
   return (
     <div
@@ -257,7 +271,7 @@ export function FloatingCompanion({
       {style === "pill" && running ? (
         <button
           type="button"
-          className={`relative flex h-full w-full flex-col items-stretch justify-center gap-1 rounded-full border border-border bg-card px-3 shadow-lg transition-colors hover:bg-accent/50 ${pulseClass}`}
+          className={`relative flex h-full w-full flex-col items-stretch justify-center gap-1 rounded-full border border-border bg-card px-3 shadow-lg transition-colors hover:bg-accent/50 ${pulseClass} ${errorRing}`}
           aria-label={ariaLabel}
           {...pointerHandlers}
         >
@@ -275,17 +289,12 @@ export function FloatingCompanion({
               style={{ width: `${Math.round((progress ?? 0) * 100)}%` }}
             />
           </span>
-          {badge ? (
-            <span
-              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
-              aria-hidden
-            />
-          ) : null}
+          {BadgeDot}
         </button>
       ) : style === "ring_time" && running ? (
         <button
           type="button"
-          className={`relative flex h-full w-full items-center justify-center rounded-full bg-card shadow-lg transition-colors hover:bg-accent/50 ${pulseClass}`}
+          className={`relative flex h-full w-full items-center justify-center rounded-full bg-card shadow-lg transition-colors hover:bg-accent/50 ${pulseClass} ${errorRing}`}
           aria-label={ariaLabel}
           {...pointerHandlers}
         >
@@ -293,19 +302,14 @@ export function FloatingCompanion({
           <span className="relative z-10 font-mono text-[11px] font-medium tabular-nums text-foreground">
             {liveLabel}
           </span>
-          {badge ? (
-            <span
-              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
-              aria-hidden
-            />
-          ) : null}
+          {BadgeDot}
         </button>
       ) : (
         <button
           type="button"
           className={`relative flex h-full w-full items-center justify-center rounded-full bg-card shadow-lg transition-colors hover:bg-accent/50 ${
             running ? "" : "border border-border"
-          } ${pulseClass}`}
+          } ${pulseClass} ${errorRing}`}
           aria-label={ariaLabel}
           {...pointerHandlers}
         >
@@ -318,12 +322,7 @@ export function FloatingCompanion({
               {liveLabel}
             </span>
           ) : null}
-          {badge ? (
-            <span
-              className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-primary"
-              aria-hidden
-            />
-          ) : null}
+          {BadgeDot}
         </button>
       )}
     </div>

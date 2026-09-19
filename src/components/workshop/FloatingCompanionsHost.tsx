@@ -7,7 +7,10 @@ import {
   defaultCompanionPosition,
   type CompanionLayoutOptions,
 } from "@/lib/companion-layout";
-import { useLofiAmbient } from "@/hooks/useLofiAmbient";
+import {
+  useLofiAmbient,
+  type LofiIntensity,
+} from "@/hooks/useLofiAmbient";
 import {
   getProjectSettings,
   parseTimerDisplay,
@@ -59,6 +62,8 @@ type FloatingCompanionsHostProps = {
     onSend: (message: string) => void;
     onImageFile?: (file: File) => void;
   };
+  /** Notifie le parent si l'overlay chat est ouvert (notif OS async). */
+  onChatOpenChange?: (open: boolean) => void;
 };
 
 export function FloatingCompanionsHost({
@@ -67,6 +72,7 @@ export function FloatingCompanionsHost({
   layersOpen,
   pomodoro,
   chat,
+  onChatOpenChange,
 }: FloatingCompanionsHostProps) {
   const layoutOptions = useMemo<CompanionLayoutOptions>(
     () => ({ focusMode, layersOpen }),
@@ -84,15 +90,28 @@ export function FloatingCompanionsHost({
   const [lofiMuted, setLofiMuted] = useState(false);
   const [lofiVolume, setLofiVolume] = useState(40);
   const [timerStyle, setTimerStyle] = useState<TimerDisplayStyle>("ring_time");
-  const [sceneDismissedGen, setSceneDismissedGen] = useState<number | null>(null);
+  const [sceneDismissedKey, setSceneDismissedKey] = useState<string | null>(
+    null,
+  );
   const wasLoadingRef = useRef(false);
 
   const workActive = pomodoro.phase === "work";
-  const sceneOpen =
-    workActive && sceneDismissedGen !== pomodoro.workGeneration;
+  const breakActive = pomodoro.phase === "break";
+  const lofiIntensity: LofiIntensity = workActive
+    ? "full"
+    : breakActive
+      ? "soft"
+      : "off";
+  const sceneKey = workActive
+    ? `work:${pomodoro.workGeneration}`
+    : breakActive
+      ? `break:${pomodoro.workGeneration}`
+      : null;
+  const sceneOpen = sceneKey !== null && sceneDismissedKey !== sceneKey;
+  const sceneVariant = breakActive ? "break" : "work";
 
   useLofiAmbient({
-    active: workActive,
+    intensity: lofiIntensity,
     muted: lofiMuted,
     volume: lofiVolume,
   });
@@ -141,11 +160,13 @@ export function FloatingCompanionsHost({
   const openChat = useCallback(() => {
     setChatOpen(true);
     setChatUnread(false);
-  }, []);
+    onChatOpenChange?.(true);
+  }, [onChatOpenChange]);
 
   const closeChat = useCallback(() => {
     setChatOpen(false);
-  }, []);
+    onChatOpenChange?.(false);
+  }, [onChatOpenChange]);
 
   const persistPosition = useCallback(
     async (companion: "chat" | "pomo", position: CompanionPosition) => {
@@ -187,7 +208,10 @@ export function FloatingCompanionsHost({
   );
 
   const chatThinking = chat.loading && !chatOpen;
-  const chatBadge = chatUnread || (!!chat.chatError && !chatOpen);
+  const chatHasError = !!chat.chatError && !chatOpen;
+  const chatDone = chatUnread && !chatHasError && !chatOpen;
+  const chatBadge = chatHasError || chatDone;
+  const chatBadgeTone = chatHasError ? "destructive" : "primary";
 
   // Progression du timer pomodoro (0 → 1)
   const pomoTotalSeconds =
@@ -210,12 +234,15 @@ export function FloatingCompanionsHost({
         ariaLabel={
           chatThinking
             ? "Chat IA — réponse en cours"
-            : chatBadge
-              ? "Chat IA — nouvelle réponse"
-              : "Chat IA — ouvrir"
+            : chatHasError
+              ? "Chat IA — erreur, rouvre pour voir le détail"
+              : chatDone
+                ? "Chat IA — nouvelle réponse"
+                : "Chat IA — ouvrir"
         }
         pulsing={chatThinking}
         badge={chatBadge}
+        badgeTone={chatBadgeTone}
         layoutOptions={layoutOptions}
         onPositionChange={(next) => {
           setChatPos(next);
@@ -293,7 +320,12 @@ export function FloatingCompanionsHost({
 
       <LofiSceneOverlay
         open={sceneOpen}
-        onDismiss={() => setSceneDismissedGen(pomodoro.workGeneration)}
+        variant={sceneVariant}
+        onDismiss={() => {
+          if (sceneKey) {
+            setSceneDismissedKey(sceneKey);
+          }
+        }}
       />
 
       {pomodoro.compactMode && pomodoro.isRunning ? (

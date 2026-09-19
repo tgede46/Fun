@@ -113,6 +113,7 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
   });
 
   const [pomodoroCompact, setPomodoroCompact] = useState(false);
+  const chatOverlayOpenRef = useRef(false);
 
   const refreshDiagramList = useCallback(async () => {
     try {
@@ -561,14 +562,16 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
         setChatHistory(nextHistory);
 
-        void notifyChatComplete(
-          "Fun — Chat",
-          chatCompleteBody({
-            personaDisplay: result.persona_display,
-            diagramUpdated: !!result.diagram_update,
-            diagramCreated: !!result.opened_diagram_path,
-          }),
-        );
+        if (!chatOverlayOpenRef.current) {
+          void notifyChatComplete(
+            "Fun — Chat",
+            chatCompleteBody({
+              personaDisplay: result.persona_display,
+              diagramUpdated: !!result.diagram_update,
+              diagramCreated: !!result.opened_diagram_path,
+            }),
+          );
+        }
       } catch (err) {
         setChatError(
           formatInvokeError(
@@ -577,14 +580,16 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
           ),
         );
         setChatHistory(chatHistory);
-        void notifyChatComplete(
-          "Fun — Chat",
-          chatCompleteBody({
-            diagramUpdated: false,
-            diagramCreated: false,
-            error: "failed",
-          }),
-        );
+        if (!chatOverlayOpenRef.current) {
+          void notifyChatComplete(
+            "Fun — Chat",
+            chatCompleteBody({
+              diagramUpdated: false,
+              diagramCreated: false,
+              error: "failed",
+            }),
+          );
+        }
       } finally {
         setChatLoading(false);
       }
@@ -749,6 +754,9 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
         projectPath={projectPath}
         focusMode={focusMode}
         layersOpen={layersOpen}
+        onChatOpenChange={(open) => {
+          chatOverlayOpenRef.current = open;
+        }}
         chat={{
           aiStatus,
           aiError,

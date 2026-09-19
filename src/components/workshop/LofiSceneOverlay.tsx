@@ -1,17 +1,29 @@
 "use client";
 
-import { LOFI_SCENE_BACKGROUND } from "@/lib/lofi-scene";
+import {
+  LOFI_BREAK_SCENE_BACKGROUND,
+  LOFI_SCENE_BACKGROUND,
+} from "@/lib/lofi-scene";
+
+export type LofiSceneVariant = "work" | "break";
 
 type LofiSceneOverlayProps = {
   open: boolean;
+  variant?: LofiSceneVariant;
   onDismiss: () => void;
 };
 
-/** Scène visuelle légère pendant la phase travail — non bloquante. */
-export function LofiSceneOverlay({ open, onDismiss }: LofiSceneOverlayProps) {
+/** Scène visuelle légère — travail ou pause ; non bloquante. */
+export function LofiSceneOverlay({
+  open,
+  variant = "work",
+  onDismiss,
+}: LofiSceneOverlayProps) {
   if (!open) {
     return null;
   }
+
+  const isBreak = variant === "break";
 
   return (
     <div
@@ -19,9 +31,11 @@ export function LofiSceneOverlay({ open, onDismiss }: LofiSceneOverlayProps) {
       aria-hidden
     >
       <div
-        className="absolute inset-0 opacity-40"
+        className={isBreak ? "absolute inset-0 opacity-25" : "absolute inset-0 opacity-40"}
         style={{
-          background: LOFI_SCENE_BACKGROUND,
+          background: isBreak
+            ? LOFI_BREAK_SCENE_BACKGROUND
+            : LOFI_SCENE_BACKGROUND,
         }}
       />
       <div className="pointer-events-auto absolute bottom-6 left-6">
