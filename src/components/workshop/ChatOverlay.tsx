@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
 import { ChatSidebar } from "./ChatSidebar";
 
@@ -33,6 +33,18 @@ export function ChatOverlay({
 }: ChatOverlayProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  const handleClose = useCallback(() => {
+    if (loading) {
+      const confirmed = window.confirm(
+        "Une réponse est en cours. Fermer l'overlay n'interrompt pas le traitement, mais tu ne verras pas la réponse apparaître. Continuer ?",
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    onClose();
+  }, [loading, onClose]);
+
   useEffect(() => {
     if (!open) {
       return;
@@ -43,13 +55,13 @@ export function ChatOverlay({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, onClose]);
+  }, [open, handleClose]);
 
   if (!open) {
     return null;
@@ -57,11 +69,11 @@ export function ChatOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex justify-end bg-overlay/40"
+      className="fixed inset-0 z-[var(--z-overlay)] flex justify-end bg-overlay/40"
       role="presentation"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
-          onClose();
+          handleClose();
         }
       }}
     >
@@ -84,7 +96,7 @@ export function ChatOverlay({
             ref={closeRef}
             type="button"
             className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent/50"
-            onClick={onClose}
+            onClick={handleClose}
           >
             Fermer
           </button>

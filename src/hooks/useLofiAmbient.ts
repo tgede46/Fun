@@ -40,6 +40,11 @@ export function useLofiAmbient({
     const audio = new Audio(LOFI_SRC);
     audio.loop = true;
     audio.preload = "auto";
+
+    audio.addEventListener("error", () => {
+      console.warn("[lofi] Audio file not found or unsupported:", LOFI_SRC);
+    });
+
     audioRef.current = audio;
 
     return () => {
@@ -66,7 +71,11 @@ export function useLofiAmbient({
     } else {
       audio.pause();
       if (intensity === "off") {
-        audio.currentTime = 0;
+        try {
+          audio.currentTime = 0;
+        } catch {
+          // Audio may not be ready yet
+        }
       }
     }
   }, [intensity, muted, volume]);

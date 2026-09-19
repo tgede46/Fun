@@ -78,14 +78,12 @@ export function clampCompanionPosition(
     return { x, y };
   }
 
-  const clampedY = chromeBounds(options).minY;
-  const maxY = chromeBounds(options).maxY;
-  const safeY = Math.min(Math.max(clampedY, y), maxY);
-  const { minX, maxX } = chromeBounds(options, safeY);
-  const safeMaxX = Math.max(minX, maxX - bubbleWidth);
+  const bounds = chromeBounds(options);
+  const safeY = Math.min(Math.max(bounds.minY, y), bounds.maxY);
+  const safeMaxX = Math.max(bounds.minX, bounds.maxX - bubbleWidth);
 
   return {
-    x: Math.min(Math.max(minX, x), safeMaxX),
+    x: Math.min(Math.max(bounds.minX, x), safeMaxX),
     y: safeY,
   };
 }

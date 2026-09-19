@@ -164,6 +164,9 @@ export function FloatingCompanion({
   );
 
   const handlePointerDown = (event: PointerEvent<HTMLButtonElement>) => {
+    if (dragState.current) {
+      return;
+    }
     event.currentTarget.setPointerCapture(event.pointerId);
     dragState.current = {
       pointerId: event.pointerId,
@@ -259,7 +262,7 @@ export function FloatingCompanion({
 
   return (
     <div
-      className="fixed z-50 touch-none select-none"
+      className="fixed z-[var(--z-companion)] touch-none select-none"
       style={{
         left: pos.x,
         top: pos.y,

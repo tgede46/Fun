@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
 import {
   clampCompanionPosition,
@@ -117,6 +117,12 @@ export function FloatingCompanionsHost({
   });
 
   useEffect(() => {
+    return () => {
+      Object.values(persistPositionTimers.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     void (async () => {
@@ -168,18 +174,27 @@ export function FloatingCompanionsHost({
     onChatOpenChange?.(false);
   }, [onChatOpenChange]);
 
+  const persistPositionTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   const persistPosition = useCallback(
     async (companion: "chat" | "pomo", position: CompanionPosition) => {
-      try {
-        await setCompanionPosition(
-          projectPath,
-          companion,
-          position.x,
-          position.y,
-        );
-      } catch {
-        // keep local
+      const key = companion;
+      const existing = persistPositionTimers.current[key];
+      if (existing) {
+        clearTimeout(existing);
       }
+      persistPositionTimers.current[key] = setTimeout(async () => {
+        try {
+          await setCompanionPosition(
+            projectPath,
+            companion,
+            position.x,
+            position.y,
+          );
+        } catch {
+          // keep local
+        }
+      }, 300);
     },
     [projectPath],
   );

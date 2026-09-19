@@ -159,7 +159,7 @@ export function SoufflePanel({
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex flex-col bg-background"
+      className="fixed inset-0 z-[var(--z-overlay)] flex flex-col bg-background"
       role="dialog"
       aria-modal="true"
       aria-labelledby="souffle-title"

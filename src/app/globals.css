@@ -117,6 +117,11 @@
   --spacing-rail: 48px;
   --spacing-sidebar: 320px;
   --spacing-gutter: 12px;
+
+  --z-scene: 40;
+  --z-overlay: 60;
+  --z-companion: 50;
+  --z-toolbar: 30;
 }
 
 @layer base {
