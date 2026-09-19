@@ -4,14 +4,36 @@ import { useEffect, useRef } from "react";
 
 const LOFI_SRC = "/sounds/lofi/ambient.wav";
 
+/** Volume relatif en pause (CAP-5 « adouci »). */
+export const LOFI_BREAK_SOFT_FACTOR = 0.3;
+
+export type LofiIntensity = "off" | "full" | "soft";
+
 type UseLofiAmbientOptions = {
-  active: boolean;
+  intensity: LofiIntensity;
   muted: boolean;
   volume: number; // 0–100
 };
 
-/** Joue l'ambiance embarquée pendant la phase travail Souffle. */
-export function useLofiAmbient({ active, muted, volume }: UseLofiAmbientOptions) {
+/** Volume HTMLAudio (0–1) selon prefs + intensité de phase. */
+export function lofiEffectiveVolume(
+  volume: number,
+  intensity: LofiIntensity,
+  muted: boolean,
+): number {
+  if (muted || intensity === "off") {
+    return 0;
+  }
+  const base = Math.max(0, Math.min(1, volume / 100));
+  return intensity === "soft" ? base * LOFI_BREAK_SOFT_FACTOR : base;
+}
+
+/** Joue l'ambiance embarquée — pleine en travail, adoucie en pause. */
+export function useLofiAmbient({
+  intensity,
+  muted,
+  volume,
+}: UseLofiAmbientOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -33,18 +55,19 @@ export function useLofiAmbient({ active, muted, volume }: UseLofiAmbientOptions)
       return;
     }
 
-    audio.volume = Math.max(0, Math.min(1, volume / 100));
-    audio.muted = muted;
+    const effective = lofiEffectiveVolume(volume, intensity, muted);
+    audio.volume = effective;
+    audio.muted = muted || intensity === "off";
 
-    if (active && !muted) {
+    if (intensity !== "off" && !muted) {
       void audio.play().catch(() => {
         // Autoplay may be blocked until a user gesture (Souffle start counts).
       });
     } else {
       audio.pause();
-      if (!active) {
+      if (intensity === "off") {
         audio.currentTime = 0;
       }
     }
-  }, [active, muted, volume]);
+  }, [intensity, muted, volume]);
 }
