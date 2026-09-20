@@ -27,6 +27,7 @@ import { toolActions } from "./actions/toolActions";
 import { editActions } from "./actions/editActions";
 import { viewActions } from "./actions/viewActions";
 import type { ActionContext, ActionName } from "./actions/types";
+import { Button } from "@/components/ui/button";
 
 interface FunCanvasProps {
   initialScene?: FunScene;
@@ -491,37 +492,38 @@ export function FunCanvas({
         {/* Undo/Redo */}
         {!previewMode ? (
         <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 shadow-sm pointer-events-auto">
-          <button
-            type="button"
-            className="w-7 h-7 flex items-center justify-center rounded text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          <Button
+            variant="ghost"
+            size="icon-xs"
             title="Annuler (Ctrl+Z)"
             disabled={!canUndo}
             onClick={() => executeAction("undo")}
           >
             ↶
-          </button>
-          <button
-            type="button"
-            className="w-7 h-7 flex items-center justify-center rounded text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-xs"
             title="Rétablir (Ctrl+Y)"
             disabled={!canRedo}
             onClick={() => executeAction("redo")}
           >
             ↷
-          </button>
+          </Button>
         </div>
         ) : <div />}
 
         {/* Import/Export */}
         {!previewMode ? (
         <div className="relative pointer-events-auto">
-          <button
-            type="button"
-            className="h-7 px-2 flex items-center gap-1 rounded text-xs text-muted-foreground bg-card border border-border shadow-sm hover:bg-accent/50 hover:text-foreground transition-colors"
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs"
             onClick={() => setDiagramToolOpen(!diagramToolOpen)}
           >
             ⇄ Import/Export
-          </button>
+          </Button>
           {diagramToolOpen && (
             <div className="absolute top-full left-0 mt-1 z-50">
               <UnifiedDiagramTool
@@ -544,46 +546,44 @@ export function FunCanvas({
         {/* Zoom + Layers */}
         <div className="flex items-center gap-2 pointer-events-auto">
           {!previewMode && !focusMode ? (
-            <button
-              type="button"
-              className={`w-7 h-7 flex items-center justify-center rounded text-sm transition-colors ${
-                layersOpen ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-              }`}
+            <Button
+              variant={layersOpen ? "default" : "ghost"}
+              size="icon-xs"
               title="Calques"
               onClick={() => setLayersOpen(!layersOpen)}
             >
               ☰
-            </button>
+            </Button>
           ) : null}
           <div className="flex items-center gap-1 bg-card border border-border rounded-lg p-1 shadow-sm">
-            <button
-              type="button"
-              className="w-7 h-7 flex items-center justify-center rounded text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               title="Zoom arrière"
               onClick={() => executeAction("zoomOut")}
             >
               −
-            </button>
+            </Button>
             <span className="text-xs text-muted-foreground w-10 text-center font-mono" title="Ctrl+molette pour zoomer">
               {zoomPercent}%
             </span>
-            <button
-              type="button"
-              className="w-7 h-7 flex items-center justify-center rounded text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               title="Zoom avant"
               onClick={() => executeAction("zoomIn")}
             >
               +
-            </button>
+            </Button>
             <div className="w-px h-5 bg-border" />
-            <button
-              type="button"
-              className="w-7 h-7 flex items-center justify-center rounded text-sm text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               title="Ajuster à la vue (Ctrl+Shift+F)"
               onClick={() => executeAction("zoomToFit")}
             >
               ⊞
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -664,29 +664,16 @@ function ToolButton({
   onClick: () => void;
   shortcut: string;
 }) {
-  const [showTooltip, setShowTooltip] = useState(false);
-
   return (
-    <div className="relative">
-      <button
-        type="button"
-        className={`w-9 h-9 flex items-center justify-center rounded-lg text-base transition-all ${
-          active
-            ? "bg-primary text-primary-foreground shadow-sm scale-105"
-            : "text-muted-foreground hover:bg-accent/50 hover:text-foreground hover:scale-105"
-        }`}
-        onClick={onClick}
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-      >
-        {icon}
-      </button>
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-background text-xs rounded whitespace-nowrap z-50 pointer-events-none">
-          {label} <span className="opacity-60">({shortcut})</span>
-        </div>
-      )}
-    </div>
+    <Button
+      variant={active ? "default" : "ghost"}
+      size="icon"
+      className="w-9 h-9 text-base scale-105"
+      onClick={onClick}
+      title={`${label} (${shortcut})`}
+    >
+      {icon}
+    </Button>
   );
 }
 
@@ -764,18 +751,15 @@ function ContextMenuItem({
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      className={`w-full px-3 py-1.5 text-left text-sm flex items-center justify-between ${
-        disabled
-          ? "text-muted-foreground/50 cursor-not-allowed"
-          : "text-foreground hover:bg-accent/50 cursor-pointer"
-      }`}
+    <Button
+      variant="ghost"
+      size="sm"
+      className="w-full justify-between h-8 px-3 text-sm font-normal"
       disabled={disabled}
       onClick={onClick}
     >
       <span>{label}</span>
       <span className="text-xs text-muted-foreground ml-4">{shortcut}</span>
-    </button>
+    </Button>
   );
 }

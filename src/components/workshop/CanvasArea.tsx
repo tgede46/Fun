@@ -8,6 +8,8 @@ import { ExcalidrawCanvas } from "@/canvas/ExcalidrawCanvas";
 import { DrawioEmbed } from "@/canvas/drawio/DrawioEmbed";
 import { PlantUmlEditor } from "./PlantUmlEditor";
 import type { WorkshopMode } from "./ModeRail";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 type CanvasAreaProps = {
   projectPath: string;
@@ -41,16 +43,9 @@ type CanvasAreaProps = {
 
 function StatusBanner({ message, tone }: { message: string; tone: "error" | "info" }) {
   return (
-    <p
-      className={
-        tone === "error"
-          ? "text-xs text-destructive bg-destructive/10 border-b border-border px-4 py-2"
-          : "text-xs text-muted-foreground bg-secondary/40 border-b border-border px-4 py-2"
-      }
-      role={tone === "error" ? "alert" : "status"}
-    >
-      {message}
-    </p>
+    <Alert variant={tone === "error" ? "destructive" : "default"}>
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
   );
 }
 
@@ -97,7 +92,7 @@ export function CanvasArea({
   );
 
   const header = (
-    <div className="flex items-center gap-3 p-3 border-b border-border">
+    <div className="relative z-20 flex items-center gap-3 p-3 border-b border-border bg-background">
       {list}
       <p className="text-sm font-medium text-foreground truncate">
         {diagramName ? formatDiagramName(diagramName) : null}
@@ -119,7 +114,7 @@ export function CanvasArea({
   if (error && !scene && !drawioXml && !plantumlSource) {
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
-        <div className="p-3 border-b border-border">{list}</div>
+        <div className="relative z-20 p-3 border-b border-border bg-background">{list}</div>
         <div className="flex-1 flex items-center justify-center p-6">
           <p className="text-sm text-destructive text-center max-w-md">{error}</p>
         </div>
@@ -131,22 +126,18 @@ export function CanvasArea({
     return (
       <section className="flex flex-col flex-1 min-w-0 bg-canvas" aria-label="Canvas">
         {codeGenError ? <StatusBanner message={codeGenError} tone="error" /> : null}
-        <div className="p-3 border-b border-border">{list}</div>
+        <div className="relative z-20 p-3 border-b border-border bg-background">{list}</div>
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-6">
           <p className="text-lg font-semibold text-foreground">Commencer à dessiner</p>
           <p className="text-sm text-muted-foreground text-center max-w-md leading-relaxed">
             {diagrams.length > 0
               ? "Choisissez un diagramme dans la liste ci-dessus, ou créez-en un nouveau."
-              : "Nouveau diagramme — cliquez sur le bouton de la barre d’outils pour choisir Sketch, draw.io ou PlantUML."}
+              : "Nouveau diagramme — cliquez sur le bouton de la barre d'outils pour choisir Sketch, draw.io ou PlantUML."}
           </p>
           {viewKind === "drawio" ? (
-            <button
-              type="button"
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:opacity-90"
-              onClick={onCreateDrawioDiagram}
-            >
+            <Button onClick={onCreateDrawioDiagram}>
               Créer un diagramme UML
-            </button>
+            </Button>
           ) : null}
         </div>
       </section>

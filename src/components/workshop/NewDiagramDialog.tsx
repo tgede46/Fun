@@ -1,6 +1,14 @@
 "use client";
 
 import type { DiagramKind } from "@/lib/diagram";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type NewDiagramDialogProps = {
   open: boolean;
@@ -15,28 +23,16 @@ const OPTIONS: { kind: DiagramKind; title: string; hint: string }[] = [
 ];
 
 export function NewDiagramDialog({ open, onClose, onChoose }: NewDiagramDialogProps) {
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-overlay/50"
-      role="presentation"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-xl"
-        role="dialog"
-        aria-labelledby="new-diagram-title"
-      >
-        <h2 id="new-diagram-title" className="text-base font-semibold text-foreground">
-          Quel type de diagramme ?
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Un fichier est créé sous .fun/diagrams/ selon le format choisi.
-        </p>
-        <div className="mt-4 grid gap-2">
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>Quel type de diagramme ?</DialogTitle>
+          <DialogDescription>
+            Un fichier est créé sous .fun/diagrams/ selon le format choisi.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-2 pt-2">
           {OPTIONS.map((option) => (
             <button
               key={option.kind}
@@ -49,14 +45,10 @@ export function NewDiagramDialog({ open, onClose, onChoose }: NewDiagramDialogPr
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="mt-4 w-full rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-accent/50"
-          onClick={onClose}
-        >
+        <Button variant="outline" className="w-full mt-2" onClick={onClose}>
           Annuler
-        </button>
-      </div>
-    </div>
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }

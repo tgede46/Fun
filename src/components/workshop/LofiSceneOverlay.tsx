@@ -4,6 +4,7 @@ import {
   LOFI_BREAK_SCENE_BACKGROUND,
   LOFI_SCENE_BACKGROUND,
 } from "@/lib/lofi-scene";
+import { Button } from "@/components/ui/button";
 
 export type LofiSceneVariant = "work" | "break";
 
@@ -39,13 +40,14 @@ export function LofiSceneOverlay({
         }}
       />
       <div className="pointer-events-auto absolute bottom-6 left-6">
-        <button
-          type="button"
-          className="rounded-lg border border-border/60 bg-card/80 px-3 py-1.5 text-xs text-muted-foreground backdrop-blur-sm transition-colors hover:bg-card hover:text-foreground"
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-card/80 backdrop-blur-sm"
           onClick={onDismiss}
         >
           Masquer la scène
-        </button>
+        </Button>
       </div>
     </div>
   );

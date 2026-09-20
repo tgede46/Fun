@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { modelSourceLabel, shortModelName } from "@/lib/ai-labels";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type ChatSidebarProps = {
   aiStatus: AiStatus | null;
@@ -287,39 +290,39 @@ export function ChatSidebar({
           />
         ) : null}
         <div className="flex items-end gap-2">
-        <textarea
-          className="flex-1 resize-none rounded-lg border border-border bg-background text-foreground text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
-          rows={2}
-          placeholder={
-            aiStatus?.key_configured
-              ? "Ex. « Que penses-tu de ce diagramme ? » — ou colle une image"
-              : "Configurez la clé API pour activer le chat"
-          }
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={(event) => {
-            const item = Array.from(event.clipboardData.items).find((entry) =>
-              entry.type.startsWith("image/"),
-            );
-            const file = item?.getAsFile();
-            if (file) {
-              event.preventDefault();
-              acceptImage(file);
+          <Textarea
+            className="flex-1 resize-none"
+            rows={2}
+            placeholder={
+              aiStatus?.key_configured
+                ? "Ex. « Que penses-tu de ce diagramme ? » — ou colle une image"
+                : "Configurez la clé API pour activer le chat"
             }
-          }}
-          disabled={!aiStatus?.key_configured || loading}
-          aria-label="Message pour l'assistant"
-        />
-        <button
-          className="shrink-0 w-9 h-9 flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-          onClick={handleSend}
-          disabled={!canSend}
-          aria-label="Envoyer"
-          title="Envoyer (Entrée)"
-        >
-          ↑
-        </button>
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={(event) => {
+              const item = Array.from(event.clipboardData.items).find((entry) =>
+                entry.type.startsWith("image/"),
+              );
+              const file = item?.getAsFile();
+              if (file) {
+                event.preventDefault();
+                acceptImage(file);
+              }
+            }}
+            disabled={!aiStatus?.key_configured || loading}
+            aria-label="Message pour l'assistant"
+          />
+          <Button
+            size="icon-sm"
+            onClick={handleSend}
+            disabled={!canSend}
+            aria-label="Envoyer"
+            title="Envoyer (Entrée)"
+          >
+            ↑
+          </Button>
         </div>
       </div>
     </aside>

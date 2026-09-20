@@ -1,6 +1,8 @@
 "use client";
 
 import type { PomodoroPhase } from "@/lib/pomodoro";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 type CompactTimerProps = {
   phase: PomodoroPhase;
@@ -36,36 +38,31 @@ export function CompactTimer({
         {timerLabel}
       </span>
 
-      <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className="absolute inset-y-0 left-0 rounded-full bg-primary transition-[width] duration-1000 ease-linear"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+      <Progress value={pct} className="flex-1 h-1.5" />
 
       <span className="font-mono text-xs tabular-nums text-foreground shrink-0">
         {timerDisplay}
       </span>
 
-      <button
-        type="button"
-        className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+      <Button
+        variant="outline"
+        size="icon-xs"
         onClick={onExpand}
         aria-label="Agrandir le timer"
         title="Agrandir"
       >
         ⛶
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        className="shrink-0 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+      <Button
+        variant="destructive"
+        size="icon-xs"
         onClick={onStop}
         aria-label="Arrêter le chrono"
         title="Arrêter"
       >
         ■
-      </button>
+      </Button>
     </div>
   );
 }

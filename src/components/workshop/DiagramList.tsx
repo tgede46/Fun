@@ -2,6 +2,14 @@ import { formatDiagramName } from "@/lib/format-diagram-name";
 import { cn } from "@/lib/utils";
 import type { DiagramKind, DiagramListItem } from "@/lib/diagram";
 import { diagramPathsEqual, kindFromPath } from "@/lib/diagram-convert";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type DiagramListProps = {
   diagrams: DiagramListItem[];
@@ -46,14 +54,10 @@ export function DiagramList({
           return (
             <li key={diagram.path} className="flex items-center">
               {onToggleSelect ? (
-                <button
-                  type="button"
-                  className={cn(
-                    "mr-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors",
-                    isSelected
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-transparent hover:border-muted-foreground",
-                  )}
+                <Button
+                  variant={isSelected ? "default" : "ghost"}
+                  size="icon-xs"
+                  className="mr-0.5"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleSelect(diagram.path);
@@ -66,16 +70,12 @@ export function DiagramList({
                       <path d="M2 5l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : null}
-                </button>
+                </Button>
               ) : null}
-              <button
-                type="button"
-                className={cn(
-                  "px-3 py-1 text-sm rounded-md transition-colors whitespace-nowrap",
-                  isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-                )}
+              <Button
+                variant={isActive ? "default" : "ghost"}
+                size="sm"
+                className="whitespace-nowrap"
                 onClick={() => onSelect(diagram.path)}
                 aria-current={isActive ? "true" : undefined}
                 title={diagram.name}
@@ -89,35 +89,34 @@ export function DiagramList({
                 >
                   {KIND_LABEL[kind]}
                 </span>
-              </button>
+              </Button>
               {onConvert ? (
-                <select
-                  className="ml-0.5 max-w-[7.5rem] rounded-md border-0 bg-transparent py-1 text-[11px] text-muted-foreground"
-                  aria-label={`Dupliquer ${label} en…`}
-                  defaultValue=""
-                  onChange={(event) => {
-                    const next = event.target.value as DiagramKind;
-                    event.target.value = "";
-                    if (next) onConvert(diagram.path, next);
+                <Select
+                  value=""
+                  onValueChange={(value) => {
+                    if (value) onConvert(diagram.path, value as DiagramKind);
                   }}
                 >
-                  <option value="" disabled>
-                    Dupliquer…
-                  </option>
-                  {(["sketch", "drawio", "plantuml"] as DiagramKind[])
-                    .filter((target) => target !== kind)
-                    .map((target) => (
-                      <option key={target} value={target}>
-                        en {KIND_LABEL[target]}
-                      </option>
-                    ))}
-                </select>
+                  <SelectTrigger className="ml-0.5 max-w-[7.5rem] h-6 text-[11px] border-0 bg-transparent">
+                    <SelectValue placeholder="Dupliquer…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(["sketch", "drawio", "plantuml"] as DiagramKind[])
+                      .filter((target) => target !== kind)
+                      .map((target) => (
+                        <SelectItem key={target} value={target}>
+                          en {KIND_LABEL[target]}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
               ) : null}
               {onDelete ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
                   className={cn(
-                    "ml-0.5 px-1.5 py-1 text-xs rounded-md transition-colors",
+                    "ml-0.5",
                     isActive
                       ? "text-primary-foreground/80 hover:bg-primary-foreground/20"
                       : "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
@@ -130,7 +129,7 @@ export function DiagramList({
                   title={`Supprimer ${label}`}
                 >
                   ×
-                </button>
+                </Button>
               ) : null}
             </li>
           );

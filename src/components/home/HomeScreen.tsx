@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { invoke } from "@tauri-apps/api/core";
 import { ProjectCard } from "./ProjectCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type RecentProject = {
   path: string;
@@ -142,20 +145,21 @@ export function HomeScreen() {
 
         <section className="bg-card rounded-xl border border-border p-6">
           <div className="flex gap-3 mb-4">
-            <button
-              className="flex-1 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
-              type="button"
+            <Button
+              className="flex-1"
+              size="lg"
               onClick={() => setShowCreateForm((open) => !open)}
             >
               Créer un projet
-            </button>
-            <button
-              className="flex-1 px-4 py-2.5 rounded-lg border border-border bg-background text-foreground font-medium hover:bg-accent/50 transition-colors"
-              type="button"
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              size="lg"
               onClick={() => void handleOpenFolder()}
             >
               Ouvrir un dossier
-            </button>
+            </Button>
           </div>
 
           {showCreateForm && (
@@ -166,25 +170,21 @@ export function HomeScreen() {
                 void handleCreateProject();
               }}
             >
-              <label className="text-sm font-medium text-foreground" htmlFor="project-name">
-                Nom du projet
-              </label>
-              <input
+              <Label htmlFor="project-name">Nom du projet</Label>
+              <Input
                 id="project-name"
-                className="px-3 py-2 rounded-lg border border-border bg-background text-foreground font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 type="text"
                 value={createName}
                 onChange={(event) => setCreateName(event.target.value)}
                 placeholder="Mon-projet"
                 disabled={creating}
               />
-              <button
-                className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground font-medium hover:opacity-90 transition-opacity"
+              <Button
                 type="submit"
                 disabled={creating}
               >
                 {creating ? "Création…" : "Choisir l'emplacement"}
-              </button>
+              </Button>
             </form>
           )}
 

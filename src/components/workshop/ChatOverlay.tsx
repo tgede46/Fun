@@ -1,8 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useState } from "react";
 import type { AiStatus, BenchmarkUiState, ChatTurn } from "@/lib/ai";
 import { ChatSidebar } from "./ChatSidebar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 type ChatOverlayProps = {
   open: boolean;
@@ -31,92 +46,69 @@ export function ChatOverlay({
   onSend,
   onImageFile,
 }: ChatOverlayProps) {
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   const handleClose = useCallback(() => {
     if (loading) {
-      const confirmed = window.confirm(
-        "Une réponse est en cours. Fermer l'overlay n'interrompt pas le traitement, mais tu ne verras pas la réponse apparaître. Continuer ?",
-      );
-      if (!confirmed) {
-        return;
-      }
+      setConfirmClose(true);
+      return;
     }
     onClose();
   }, [loading, onClose]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    closeRef.current?.focus();
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        handleClose();
-      }
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, handleClose]);
-
-  if (!open) {
-    return null;
-  }
+  const confirmCloseAction = useCallback(() => {
+    setConfirmClose(false);
+    onClose();
+  }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[var(--z-overlay)] flex justify-end bg-overlay/40"
-      role="presentation"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          handleClose();
-        }
-      }}
-    >
-      <div
-        className="flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="chat-overlay-title"
-      >
-        <header className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div>
-            <p id="chat-overlay-title" className="text-sm font-semibold text-foreground">
-              Assistant IA
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Fermer n’interrompt pas une réponse en cours.
-            </p>
+    <>
+      <Sheet open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
+        <SheetContent side="right" showCloseButton={false} className="p-0">
+          <SheetHeader className="border-b border-border px-4 py-3">
+            <SheetTitle>Assistant IA</SheetTitle>
+            <SheetDescription>
+              Fermer n&apos;interrompt pas une réponse en cours.
+            </SheetDescription>
+            <Button variant="outline" size="sm" onClick={handleClose} className="absolute right-4 top-3">
+              Fermer
+            </Button>
+          </SheetHeader>
+          <div className="min-h-0 flex-1">
+            <ChatSidebar
+              variant="overlay"
+              aiStatus={aiStatus}
+              aiError={aiError}
+              benchmarkState={benchmarkState}
+              benchmarkMessage={benchmarkMessage}
+              history={history}
+              loading={loading}
+              chatError={chatError}
+              onSend={onSend}
+              onImageFile={onImageFile}
+            />
           </div>
-          <button
-            ref={closeRef}
-            type="button"
-            className="rounded-lg border border-border px-3 py-1.5 text-sm text-foreground transition-colors hover:bg-accent/50"
-            onClick={handleClose}
-          >
-            Fermer
-          </button>
-        </header>
+        </SheetContent>
+      </Sheet>
 
-        <div className="min-h-0 flex-1">
-          <ChatSidebar
-            variant="overlay"
-            aiStatus={aiStatus}
-            aiError={aiError}
-            benchmarkState={benchmarkState}
-            benchmarkMessage={benchmarkMessage}
-            history={history}
-            loading={loading}
-            chatError={chatError}
-            onSend={onSend}
-            onImageFile={onImageFile}
-          />
-        </div>
-      </div>
-    </div>
+      <Dialog open={confirmClose} onOpenChange={setConfirmClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fermer l&apos;assistant ?</DialogTitle>
+            <DialogDescription>
+              Une réponse est en cours. Fermer l&apos;overlay n&apos;interrompt pas le traitement, mais tu ne verras pas la réponse apparaître. Continuer ?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" onClick={() => setConfirmClose(false)}>
+              Rester
+            </Button>
+            <Button variant="destructive" onClick={confirmCloseAction}>
+              Fermer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -4,6 +4,8 @@ import { useCallback, useRef, useState } from "react";
 import { FunCanvas } from "@/canvas/FunCanvas";
 import { plantumlToFunScene } from "@/canvas/adapters/plantuml";
 import type { FunScene } from "@/canvas/types";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 type PlantUmlEditorProps = {
   source: string;
@@ -91,7 +93,6 @@ export function PlantUmlEditor({
 
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      // Empêche le canvas / les raccourcis atelier d’avaler Ctrl+V / Cmd+V
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "v") {
         event.stopPropagation();
       }
@@ -121,26 +122,25 @@ export function PlantUmlEditor({
         <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
           <p className="text-sm font-medium text-foreground">PlantUML</p>
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              className="rounded-md border border-border px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => void handlePasteButton()}
               title="Coller depuis le presse-papiers"
             >
               Coller
-            </button>
-            <button
-              type="button"
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+            </Button>
+            <Button
+              size="sm"
               onClick={handleGenerate}
             >
               Générer
-            </button>
+            </Button>
           </div>
         </div>
-        <textarea
+        <Textarea
           ref={textareaRef}
-          className="min-h-0 flex-1 resize-none bg-background px-3 py-2 font-mono text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-inset focus:ring-ring"
+          className="min-h-0 flex-1 resize-none font-mono text-xs focus-visible:ring-inset"
           value={source}
           spellCheck={false}
           autoCorrect="off"

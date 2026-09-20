@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { FunTheme } from "@/lib/theme";
 import type { WorkshopMode } from "./ModeRail";
 import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type ToolbarProps = {
   projectName: string;
@@ -50,25 +52,21 @@ export function Toolbar({
           ← Accueil
         </Link>
         <span className="font-semibold text-foreground">{projectName}</span>
-        <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-secondary">
+        <Badge variant="secondary">
           {mode === "uml" ? "◫ UML" : mode === "plantuml" ? "{ } PlantUML" : "✎ Excalidraw"}
-        </span>
+        </Badge>
       </div>
       <div className="flex items-center gap-2">
         {mode !== "uml" ? (
-          <button
-            type="button"
-            className={`px-3 py-1.5 text-sm rounded-md border transition-colors ${
-              focusMode
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-            }`}
+          <Button
+            variant={focusMode ? "default" : "outline"}
+            size="sm"
             onClick={onToggleFocusMode}
             title="Masquer calques et propriétés pour se concentrer sur le dessin"
             aria-pressed={focusMode}
           >
             {focusMode ? "Focus actif" : "Focus"}
-          </button>
+          </Button>
         ) : null}
         {themeError ? (
           <span className="text-xs text-destructive" role="status">
@@ -80,45 +78,43 @@ export function Toolbar({
           onToggle={onToggleTheme}
           projectPath={projectPath}
         />
-        {/* Boutons disponibles dans les deux modes */}
-        <button
-          type="button"
-          className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onGenerateFromCode}
           disabled={isGeneratingFromCode}
           title="Scanne les fichiers source du projet et génère un diagramme via l'IA"
         >
           {isGeneratingFromCode ? "Analyse du code…" : "Depuis le code"}
-        </button>
-        <button
-          type="button"
-          className="px-3 py-1.5 text-sm rounded-md border border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onGenerateFromImage}
           disabled={isGeneratingFromCode}
           title="Importer une capture ou une image et générer un diagramme"
         >
           Depuis une image
-        </button>
+        </Button>
         {canDeleteDiagram && (
-          <button
-            type="button"
-            className="px-3 py-1.5 text-sm rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-50"
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={onDeleteDiagram}
             disabled={isDeletingDiagram}
             title="Supprimer le diagramme ouvert (.fun/diagrams/)"
           >
             {isDeletingDiagram ? "Suppression…" : "Supprimer"}
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          className="px-3 py-1.5 text-sm rounded-md bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+        <Button
+          size="sm"
           onClick={onNewDiagram}
           disabled={isCreatingDiagram}
           title="Choisir le type (Sketch, draw.io, PlantUML) puis créer le fichier"
         >
           {isCreatingDiagram ? "Création…" : "Nouveau diagramme"}
-        </button>
+        </Button>
       </div>
     </header>
   );
