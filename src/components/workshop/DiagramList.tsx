@@ -4,12 +4,11 @@ import type { DiagramKind, DiagramListItem } from "@/lib/diagram";
 import { diagramPathsEqual, kindFromPath } from "@/lib/diagram-convert";
 import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type DiagramListProps = {
   diagrams: DiagramListItem[];
@@ -91,25 +90,26 @@ export function DiagramList({
                 </span>
               </Button>
               {onConvert ? (
-                <Select
-                  value=""
-                  onValueChange={(value) => {
-                    if (value) onConvert(diagram.path, value as DiagramKind);
-                  }}
-                >
-                  <SelectTrigger className="ml-0.5 max-w-[7.5rem] h-6 text-[11px] border-0 bg-transparent">
-                    <SelectValue placeholder="Dupliquer…" />
-                  </SelectTrigger>
-                  <SelectContent>
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    className="inline-flex items-center justify-center h-6 w-6 rounded-md text-xs text-muted-foreground hover:bg-accent/50 hover:text-foreground transition-colors"
+                    title="Dupliquer en un autre format"
+                  >
+                    ⋯
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
                     {(["sketch", "drawio", "plantuml"] as DiagramKind[])
                       .filter((target) => target !== kind)
                       .map((target) => (
-                        <SelectItem key={target} value={target}>
+                        <DropdownMenuItem
+                          key={target}
+                          onSelect={() => onConvert(diagram.path, target)}
+                        >
                           en {KIND_LABEL[target]}
-                        </SelectItem>
+                        </DropdownMenuItem>
                       ))}
-                  </SelectContent>
-                </Select>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : null}
               {onDelete ? (
                 <Button
