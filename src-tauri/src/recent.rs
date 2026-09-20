@@ -130,6 +130,17 @@ pub fn touch_recent_project(app: AppHandle, project_path: String) -> Result<Rece
     Ok(entry)
 }
 
+pub fn remove_recent_project(app: AppHandle, project_path: String) -> Result<(), String> {
+    let canonical = canonicalize_safe(&project_path);
+    let path = store_path(&app)?;
+    let mut store = read_store(&path);
+    store
+        .projects
+        .retain(|p| canonicalize_safe(&p.path) != canonical);
+    write_store(&path, &store)?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

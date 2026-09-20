@@ -2,7 +2,7 @@ use crate::ai::{self, resolve_active_model_for_project};
 use crate::project::diagram;
 use crate::project::init;
 use crate::project::settings::{self, FunTheme, ProjectSettings};
-use crate::recent::{list_recent_projects, touch_recent_project, RecentProject};
+use crate::recent::{list_recent_projects, remove_recent_project, touch_recent_project, RecentProject};
 use crate::state::AppState;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -106,6 +106,11 @@ pub fn settings_to_result(settings: ProjectSettings) -> ProjectSettingsResult {
 #[tauri::command]
 pub fn get_recent_projects(app: AppHandle) -> Result<Vec<RecentProject>, String> {
     list_recent_projects(app)
+}
+
+#[tauri::command]
+pub fn remove_recent_project_cmd(app: AppHandle, project_path: String) -> Result<(), String> {
+    remove_recent_project(app, project_path)
 }
 
 #[tauri::command]

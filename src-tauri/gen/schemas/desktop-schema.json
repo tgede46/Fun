@@ -471,6 +471,12 @@
           "markdownDescription": "Charge le JSON d'un diagramme Excalidraw."
         },
         {
+          "description": "Charge le XML d'un diagramme draw.io.",
+          "type": "string",
+          "const": "allow-load-drawio-diagram",
+          "markdownDescription": "Charge le XML d'un diagramme draw.io."
+        },
+        {
           "description": "Notification OS fin de réponse chat IA.",
           "type": "string",
           "const": "allow-notify-chat-complete",
@@ -507,6 +513,12 @@
           "markdownDescription": "Reconstruit l'index RAG lexical sous `.fun/rag/`."
         },
         {
+          "description": "Retire un projet de la liste récente.",
+          "type": "string",
+          "const": "allow-remove-recent-project",
+          "markdownDescription": "Retire un projet de la liste récente."
+        },
+        {
           "description": "Réinitialise le diagramme courant.",
           "type": "string",
           "const": "allow-reset-diagram",
@@ -523,6 +535,12 @@
           "type": "string",
           "const": "allow-save-diagram",
           "markdownDescription": "Persiste le JSON d'un diagramme Excalidraw."
+        },
+        {
+          "description": "Persiste le XML d'un diagramme draw.io.",
+          "type": "string",
+          "const": "allow-save-drawio-diagram",
+          "markdownDescription": "Persiste le XML d'un diagramme draw.io."
         },
         {
           "description": "Envoie un message au Chat IA.",

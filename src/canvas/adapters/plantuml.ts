@@ -116,7 +116,28 @@ function parseActivityDiagram(puml: string): {
     lastName = toName;
   };
 
+  // Pré-traitement : joindre les actions multi-lignes (":foo\nbar;" → ":foo bar;")
+  const mergedLines: string[] = [];
+  let pendingAction = "";
   for (const rawLine of lines) {
+    const trimmed = rawLine.trim();
+    if (pendingAction) {
+      pendingAction += " " + trimmed;
+      if (trimmed.endsWith(";")) {
+        mergedLines.push(pendingAction);
+        pendingAction = "";
+      }
+      continue;
+    }
+    if (trimmed.startsWith(":") && !trimmed.endsWith(";") && !trimmed.includes("->")) {
+      pendingAction = trimmed;
+      continue;
+    }
+    mergedLines.push(rawLine);
+  }
+  if (pendingAction) mergedLines.push(pendingAction);
+
+  for (const rawLine of mergedLines) {
     let line = rawLine.trim();
     if (!line || line.startsWith("'") || line.startsWith("@startuml") || line.startsWith("@enduml")) {
       continue;
@@ -155,7 +176,7 @@ function parseActivityDiagram(puml: string): {
 
     // if (cond) then (yes)
     const ifMatch = line.match(
-      /^if\s*\((.+)\)\s*then(?:\s*\(([^)]*)\))?\s*$/i,
+      /^if\s*\(([^)]+)\)\s*then(?:\s*\(([^)]*)\))?\s*$/i,
     );
     if (ifMatch) {
       const node = addEntity("state", ifMatch[1].trim());
@@ -203,7 +224,7 @@ function parseActivityDiagram(puml: string): {
 
     // while (cond) is (yes)
     const whileMatch = line.match(
-      /^while\s*\((.+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
+      /^while\s*\(([^)]+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
     );
     if (whileMatch) {
       const node = addEntity("state", whileMatch[1].trim());
@@ -250,7 +271,7 @@ function parseActivityDiagram(puml: string): {
 
     // repeat while (cond) is (yes)
     const repeatWhileMatch = line.match(
-      /^repeat\s+while\s*\((.+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
+      /^repeat\s+while\s*\(([^)]+)\)(?:\s*is\s*\(([^)]*)\))?\s*$/i,
     );
     if (repeatWhileMatch) {
       const node = addEntity("state", repeatWhileMatch[1].trim());

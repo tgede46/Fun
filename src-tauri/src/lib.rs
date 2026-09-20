@@ -28,6 +28,7 @@ pub fn run() {
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::get_recent_projects,
+            commands::remove_recent_project_cmd,
             commands::open_project,
             commands::create_project,
             commands::pick_project_folder,

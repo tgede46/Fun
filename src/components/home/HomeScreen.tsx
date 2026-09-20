@@ -7,6 +7,7 @@ import { ProjectCard } from "./ProjectCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ConfirmDialog } from "@/components/workshop/ConfirmDialog";
 
 type RecentProject = {
   path: string;
@@ -32,6 +33,8 @@ export function HomeScreen() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createName, setCreateName] = useState("Mon-projet");
   const [creating, setCreating] = useState(false);
+  const [deletePending, setDeletePending] = useState<{ path: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,6 +85,27 @@ export function HomeScreen() {
     },
     [reloadProjects, router],
   );
+
+  const removeProject = useCallback(
+    async (projectPath: string, projectName: string) => {
+      setDeletePending({ path: projectPath, name: projectName });
+    },
+    [],
+  );
+
+  const confirmRemoveProject = useCallback(async () => {
+    if (!deletePending) return;
+    setDeleting(true);
+    try {
+      await invoke("remove_recent_project_cmd", { projectPath: deletePending.path });
+      setDeletePending(null);
+      await reloadProjects();
+    } catch {
+      setError("Impossible de retirer ce projet.");
+    } finally {
+      setDeleting(false);
+    }
+  }, [deletePending, reloadProjects]);
 
   const handleOpenFolder = useCallback(async () => {
     setShowCreateForm(false);
@@ -135,12 +159,6 @@ export function HomeScreen() {
         <header className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground">Fun</h1>
           <p className="text-muted-foreground mt-1">Ton atelier desktop — canvas, IA et focus.</p>
-          <p className="text-xs text-muted-foreground mt-3 max-w-md mx-auto leading-relaxed">
-            Un projet = un dossier sur ton disque, avec un sous-dossier{" "}
-            <code className="font-mono bg-secondary px-1 rounded">.fun/</code> pour les diagrammes
-            et les réglages. L&apos;IA nécessite une clé OpenRouter dans{" "}
-            <code className="font-mono bg-secondary px-1 rounded">.env</code>.
-          </p>
         </header>
 
         <section className="bg-card rounded-xl border border-border p-6">
@@ -205,6 +223,7 @@ export function HomeScreen() {
                     name={project.name}
                     path={project.path}
                     onSelect={() => void openProject(project.path)}
+                    onDelete={() => void removeProject(project.path, project.name)}
                   />
                 </li>
               ))}
@@ -212,6 +231,16 @@ export function HomeScreen() {
           )}
         </section>
       </div>
+
+      <ConfirmDialog
+        open={deletePending != null}
+        title={`Retirer « ${deletePending?.name ?? ""} » ?`}
+        message="Le projet ne sera plus affiché dans la liste. Le dossier sur le disque ne sera pas supprimé."
+        confirmLabel="Retirer"
+        loading={deleting}
+        onConfirm={() => void confirmRemoveProject()}
+        onCancel={() => { if (!deleting) setDeletePending(null); }}
+      />
     </main>
   );
 }

@@ -206,12 +206,14 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   const openDiagram = useCallback(
     async (path: string) => {
+      console.log("[openDiagram] starting for:", path, "projectPath:", projectPath);
       setDiagramError(null);
       setSaveError(null);
 
       try {
         const kind = kindFromPath(path);
         const loaded = await loadDiagram(projectPath, path);
+        console.log("[openDiagram] loaded successfully, kind:", kind, "path:", loaded.path);
 
         if (kind === "drawio") {
           setDrawioXml(loaded.content);
@@ -232,9 +234,11 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
         const name =
           path.split(/[/\\]/).pop()?.replace(/\.(excalidraw|drawio|puml)$/, "") ?? "diagramme";
+        console.log("[openDiagram] setting activeDiagramPath to:", loaded.path, "name:", name);
         setActiveDiagramPath(loaded.path);
         setDiagramName(name);
       } catch (err) {
+        console.error("[openDiagram] error:", err);
         setDiagramError(
           err instanceof Error ? err.message : "Impossible d'ouvrir ce diagramme.",
         );
@@ -271,7 +275,11 @@ export function WorkshopLayout({ projectName, projectPath }: WorkshopLayoutProps
 
   const handleSelectDiagram = useCallback(
     (path: string) => {
-      if (diagramPathsEqual(path, activeDiagramPath)) return;
+      console.log("[handleSelectDiagram]", path, "activeDiagramPath:", activeDiagramPath);
+      if (diagramPathsEqual(path, activeDiagramPath)) {
+        console.log("[handleSelectDiagram] paths equal, skipping");
+        return;
+      }
       void openDiagram(path);
     },
     [activeDiagramPath, openDiagram],
